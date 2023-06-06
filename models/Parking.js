@@ -38,6 +38,9 @@ const Parking = new Schema(
         totalEntries: {
             type: Number
         },
+        address: {
+            type: String
+        },
         totalExits: {
             type: Number
         },

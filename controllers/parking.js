@@ -13,6 +13,7 @@ exports.createParking = async (req, res) => {
         const totalEntries = req.body.totalEntries
         const totalExits = req.body.totalExits
         const connectedTariff = req.body.connectedTariff
+        const address = req.body.address
 
 
         await Parking.create({
@@ -22,6 +23,7 @@ exports.createParking = async (req, res) => {
             totalEntries: totalEntries,
             totalExits: totalExits,
             connectedTariff: connectedTariff,
+            address: address,
             isActive: true,
         }).then(async (createdParking) => {
 
