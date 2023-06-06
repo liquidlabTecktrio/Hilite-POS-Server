@@ -6,6 +6,7 @@ const appLoginController = require("../controllers/admin");
 // const printerController = require("../controllers/printer");
 const shiftController = require("../controllers/shift");
 // const tafiffController = require("../controllers/tafiff");
+const transactionController = require("../controllers/transaction");
 
 router.post("/appLogin", appLoginController.appLogin);
 
@@ -30,6 +31,8 @@ router.post("/startShift", shiftController.startShift);
 
 // router.post("/closeShift", shiftController.closeShift);
 
+router.post("/createTransaction", transactionController.createTransaction);
+router.post("/calculatecCharge", transactionController.calculatecCharge);
 
 
 
