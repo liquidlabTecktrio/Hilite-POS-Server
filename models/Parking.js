@@ -44,11 +44,11 @@ const Parking = new Schema(
         totalExits: {
             type: Number
         },
-        connectedTariff:[tariffObj],
-        isActive: {
-            type: Boolean,
-            required: true,
-        },
+        // connectedTariff:[tariffObj],
+        // isActive: {
+        //     type: Boolean,
+        //     required: true,
+        // },
     },
     {
         timestamps: true,
