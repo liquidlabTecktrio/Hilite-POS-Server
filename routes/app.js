@@ -29,7 +29,7 @@ router.post("/appLogout", appLoginController.appLogout);
 
 router.post("/startShift", shiftController.startShift);
 
-// router.post("/closeShift", shiftController.closeShift);
+router.post("/closeShift", shiftController.closeShift);
 
 router.post("/createTransaction", transactionController.createTransaction);
 router.post("/calculatecCharge", transactionController.calculatecCharge);

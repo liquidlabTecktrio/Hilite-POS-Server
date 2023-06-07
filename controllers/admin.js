@@ -105,13 +105,13 @@ exports.appLogin = async (req, res, next) => {
       });
     } else {
 
-      if (findOpretor.isLogedIn) {
+      // if (findOpretor.isLogedIn) {
 
-        return res.status(201).json({
-          status: 201,
-          message: "you can login only one device at a time or logout from other devices!!!",
-        });
-      } else {
+      //   return res.status(201).json({
+      //     status: 201,
+      //     message: "you can login only one device at a time or logout from other devices!!!",
+      //   });
+      // } else {
 
         const findParking = await Parking.findById(findOpretor.parkingId)
 
@@ -226,6 +226,7 @@ exports.appLogin = async (req, res, next) => {
               status: 200,
               message: "opretor login successfull",
               data: {
+                parkingId: findParking._id,
                 parkingName: findParking.parkingName,
                 opretorId: findOpretor._id,
                 opretorName: findOpretor.opretorName,
@@ -242,7 +243,7 @@ exports.appLogin = async (req, res, next) => {
             message: "parking not found",
           });
         }
-      }
+      // }
     }
 
 

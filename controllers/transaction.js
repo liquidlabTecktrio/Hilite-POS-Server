@@ -39,24 +39,28 @@ exports.createTransaction = async (req, res) => {
                 $inc: {
                     totalTicketIssued: transactionType != 'exit' ? 1 : 0,
                     totalTicketCollected: transactionType == 'exit' ? 1 : 0,
+                },
+                $push:{
+
                 }
             }
 
             if (transactionType == 'exit') {
 
-                if (findShift?.totalCollection?.filter(c => c.paymentType == transactionType).length <= 0)
+                console.log('findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length: ', findShift?.totalCollection?.filter(c => c.paymentType == paymentType));
+                if (findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
                     obj['$push']['totalCollection'] = [{
-                        paymentType: transactionType,
+                        paymentType: paymentType,
                         amount: amount,
                     }]
                 else
-                    obj['inc']['totalCollection.$[a].amount'] = amount
+                    obj['$inc']['totalCollection.$[a].amount'] = amount
             }
 
             await Shift.findByIdAndUpdate(shiftId, obj,
                 {
                     arrayFilters: [
-                        { "a.paymentType": transactionType },
+                        { "a.paymentType": paymentType },
                     ],
                 }
             )
@@ -91,7 +95,8 @@ exports.createTransaction = async (req, res) => {
             );
         });
 
-    } catch {
+    } catch(error) {
+        console.log('error: ', error);
         return res.status(500).json({
             status: 500,
             message: "Unexpected server error while creating Transaction",
