@@ -33,14 +33,44 @@ exports.createTransaction = async (req, res) => {
 
             // update shift and opretor here
 
-            await Transaction.find().then(async (parkingData) => {
+            const findShift = await Shift.findById(shiftId)
 
+            let obj = {
+                $inc: {
+                    totalTicketIssued: transactionType != 'exit' ? 1 : 0,
+                    totalTicketCollected: transactionType == 'exit' ? 1 : 0,
+                }
+            }
+
+            if (transactionType == 'exit') {
+
+                if (findShift?.totalCollection?.filter(c => c.paymentType == transactionType).length <= 0)
+                    obj['$push']['totalCollection'] = [{
+                        paymentType: transactionType,
+                        amount: amount,
+                    }]
+                else
+                    obj['inc']['totalCollection.$[a].amount'] = amount
+            }
+
+            await Shift.findByIdAndUpdate(shiftId, obj,
+                {
+                    arrayFilters: [
+                        { "a.paymentType": transactionType },
+                    ],
+                }
+            )
+
+
+            await Shift.findById(shiftId).then(async (shiftData) => {
 
                 utils.commonResponce(
                     res,
                     200,
-                    "Successfully fetched Transaction",
-                    parkingData
+                    "Successfully created transaction",
+                    {
+                        shiftData: shiftData
+                      }
                 );
 
             }).catch((err) => {
@@ -180,7 +210,7 @@ exports.calculatecCharge = async (req, res) => {
             });
         }
 
-    } catch (error){
+    } catch (error) {
         console.log('error: ', error);
         return res.status(500).json({
             status: 500,
@@ -191,7 +221,7 @@ exports.calculatecCharge = async (req, res) => {
 
 function calculateAmountBasedOnActiveTariff(duration, tariffData) {
     let amount = 0
-    
+
     if (tariffData)
         tariffData.tariffData.map(tariffData => {
 

@@ -126,7 +126,7 @@ exports.appLogin = async (req, res, next) => {
             const data_1 = await Tariff.findById(data1.tariffId)
             tariffData.push({
               tariffType: data1.tariffType,
-              tariffData: data_1
+              tariff: data_1
             })
           }
 
@@ -135,7 +135,7 @@ exports.appLogin = async (req, res, next) => {
             const data_2 = await Tariff.findById(data2.tariffId)
             tariffData.push({
               tariffType: data2.tariffType,
-              tariffData: data_2
+              tariff: data_2
             })
           }
 
@@ -145,7 +145,7 @@ exports.appLogin = async (req, res, next) => {
             const data_3 = await Tariff.findById(data3.tariffId)
             tariffData.push({
               tariffType: data3.tariffType,
-              tariffData: data_3
+              tariff: data_3
             })
           }
 
@@ -172,7 +172,7 @@ exports.appLogin = async (req, res, next) => {
           }
 
           // const findParking.cennectedTariff.filter(t=> t.dayIndex == new Date().getDay())
-          console.log('activeTariffIds: ', activeTariffIds);
+          // console.log('activeTariffIds: ', activeTariffIds);
 
           // const tariffData = await Tariff.aggregate([
           //   {
@@ -230,7 +230,7 @@ exports.appLogin = async (req, res, next) => {
                 opretorId: findOpretor._id,
                 opretorName: findOpretor.opretorName,
                 shiftData: isShiftActive ? isShiftActive : {},
-                tariffData: tariffData,
+                tariffs: tariffData,
                 devices: devices
               },
             });
@@ -254,176 +254,25 @@ exports.appLogin = async (req, res, next) => {
   }
 };
 
-exports.checkBeforeLogout = async (req, res, next) => {
-  const username = req.body.username;
-  const userId = req.body.userId;
-  const shiftId = req.body.shiftId;
-
-
-  // checking admin exist or not
-  const findAdmin = await Opretor.findOne({ username: username, isLogedIn: true });
-  if (findAdmin) {
-
-    // await Opretor.findOneAndUpdate({ username: username },{
-    //   isLogedIn:false,
-    //   logOutTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-    //   lastLogin: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss")
-    // }).then((userData)=>{
-
-    const findShift = await Shift.findOne(
-      {
-        _id: mongoose.Types.ObjectId(shiftId),
-        username: username,
-        userId: mongoose.Types.ObjectId(userId),
-        isActive: true
-      }
-    );
-    if (findShift) {
-
-      const shiftReport = Receipt.aggregate(
-        [
-          {
-            '$match': {
-              'username': username,
-              'userId': mongoose.Types.ObjectId(userId)
-            }
-          }, {
-            '$addFields': {
-              'receiptTimeISO': {
-                '$dateFromString': {
-                  'dateString': '$receiptTime',
-                  'format': '%d-%m-%Y %H:%M:%S'
-                }
-              },
-              'logedInTimeISO': {
-                '$dateFromString': {
-                  'dateString': findShift.entryTime,
-                  'format': '%d-%m-%Y %H:%M:%S'
-                }
-              },
-              'logOutTimeISO': {
-                '$dateFromString': {
-                  'dateString': moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-                  'format': '%d-%m-%Y %H:%M:%S'
-                }
-              }
-            }
-          }, {
-            '$addFields': {
-              'isMatched': {
-                '$cond': {
-                  'if': {
-                    '$and': [
-                      {
-                        '$gte': [
-                          '$receiptTimeISO', '$logedInTimeISO'
-                        ]
-                      }, {
-                        '$lte': [
-                          '$receiptTimeISO', '$logOutTimeISO'
-                        ]
-                      }
-                    ]
-                  },
-                  'then': true,
-                  'else': false
-                }
-              }
-            }
-          }, {
-            '$match': {
-              'isMatched': true
-            }
-          }, {
-            '$group': {
-              '_id': '$paymentType',
-              'amount': {
-                '$sum': '$$ROOT.amount'
-              }
-            }
-          }, {
-            '$addFields': {
-              'paymentType': '$_id'
-            }
-          }, {
-            '$project': {
-              '_id': 0
-            }
-          }
-        ]
-      ).then((shiftReportData) => {
-
-        return res.status(200).json({
-          status: 200,
-          message: "receipts fetched successfull",
-          data: {
-            username: username,
-            userId: findAdmin._id,
-            payments: shiftReportData,
-            entryTime: findShift.entryTime,
-            exitTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-          },
-        });
-
-
-      }).catch((error) => {
-        console.log('error: ', error);
-        return res.status(201).json({
-          status: 201,
-          message: error
-        });
-      })
-
-
-      // })
-    } else {
-      return res.status(404).json({
-        status: 404,
-        message: "active shift not found",
-      });
-    }
-  } else {
-    return res.status(404).json({
-      status: 404,
-      message: "active user not found",
-    });
-  }
-};
-
 exports.appLogout = async (req, res, next) => {
-  const username = req.body.username;
-  const userId = req.body.userId;
-
-  const newDate = new Date()
-  const date = newDate.getDate() + '-' + (newDate.getMonth() + 1) + '-' + newDate.getFullYear()
+  const opretorId = req.body.opretorId;
 
   // checking admin exist or not
-  const findAdmin = await Opretor.findOne({ username: username, isLogedIn: true });
-  if (findAdmin) {
+  const findOpretor = await Opretor.findOne({ _id: mongoose.Types.ObjectId(opretorId), isLogedIn: true });
+  if (findOpretor) {
 
-    // await Shift.create({
-    //   username: username,
-    //   userId: userId,
-    //   entryTime: entryTime,
-    //   exitTime: exitTime,
-    //   payments: payments,
-    //   date: date,
-    // }).then(async (userData) => {
-
-    await Opretor.findOneAndUpdate({ username: username, userId: userId }, {
+    await Opretor.findOneAndUpdate({ _id: mongoose.Types.ObjectId(opretorId)}, {
       isLogedIn: false,
       logOutTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-      // lastLogin: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-      lastLogin: findAdmin.logedInTime,
+      lastLogin: findOpretor.logedInTime,
     }).then((shiftCreatedData) => {
 
       return res.status(200).json({
         status: 200,
-        message: "user logout successfull",
+        message: "Opretor logout successfull",
         data: {
-          username: username,
-          userId: findAdmin._id,
-          entryTime: findAdmin.logedInTime,
+          _id: findOpretor._id,
+          entryTime: findOpretor.logedInTime,
           exitTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
         },
       });
@@ -434,9 +283,6 @@ exports.appLogout = async (req, res, next) => {
         message: error
       });
     })
-
-
-    // })
 
   } else {
     return res.status(404).json({

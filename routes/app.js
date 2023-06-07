@@ -23,7 +23,7 @@ router.post("/appLogin", appLoginController.appLogin);
 
 // router.get("/getPrinters", printerController.getPrinters);
 
-// router.post("/adminLogout", appLoginController.appLogout);
+router.post("/appLogout", appLoginController.appLogout);
 
 // router.post("/checkBeforeLogout", appLoginController.checkBeforeLogout);
 
