@@ -34,7 +34,7 @@ exports.createDevice = async (req, res) => {
                 utils.commonResponce(
                     res,
                     200,
-                    "Successfully fetched Device",
+                    "Successfully created Device",
                     deviceData
                 );
 

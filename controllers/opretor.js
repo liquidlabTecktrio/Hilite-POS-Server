@@ -46,7 +46,7 @@ exports.createOpretor = async (req, res) => {
                     utils.commonResponce(
                         res,
                         200,
-                        "Successfully fetched Opretor",
+                        "Successfully created Opretor",
                         opretorData
                     );
 

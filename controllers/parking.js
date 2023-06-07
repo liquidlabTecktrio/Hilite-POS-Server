@@ -40,7 +40,7 @@ exports.createParking = async (req, res) => {
                     utils.commonResponce(
                         res,
                         200,
-                        "Successfully fetched Parking",
+                        "Successfully created Parking",
                         parkingData
                     );
 
