@@ -40,7 +40,7 @@ exports.createTariff = async (req, res) => {
             }).catch((err) => {
                 utils.commonResponce(
                     res,
-                    202,
+                    201,
                     "Error Occured While fetching tariff",
                     err.toString()
                 );
@@ -49,7 +49,7 @@ exports.createTariff = async (req, res) => {
         }).catch((err) => {
             utils.commonResponce(
                 res,
-                202,
+                201,
                 "Error Occured While creating tariff",
                 err.toString()
             );
@@ -82,7 +82,7 @@ exports.getTariff = async (req, res) => {
         }).catch((err) => {
             utils.commonResponce(
                 res,
-                202,
+                201,
                 "Error Occured While fetching tariff",
                 err.toString()
             );
@@ -167,7 +167,7 @@ exports.connectTariff = async (req, res) => {
                 }).catch((err) => {
                     utils.commonResponce(
                         res,
-                        202,
+                        201,
                         "Error Occured While fetching tariff",
                         err.toString()
                     );
@@ -260,7 +260,7 @@ exports.connectTariff = async (req, res) => {
         }).catch((err) => {
             utils.commonResponce(
                 res,
-                202,
+                201,
                 "Error Occured While updating tariff",
                 err.toString()
             );

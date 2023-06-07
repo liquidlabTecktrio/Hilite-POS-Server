@@ -38,16 +38,22 @@ router.post("/createTariff",
 
 
 router.post("/createParking", 
-// verifyTokenMiddleware,
+verifyTokenMiddleware,
 parkingController.createParking);
 
+router.post("/getParkings", verifyTokenMiddleware, parkingController.getParkings);
+
 router.post("/createOpretor", 
-// verifyTokenMiddleware,
+verifyTokenMiddleware,
 opretorController.createOpretor);
 
+router.post("/getOpretors", verifyTokenMiddleware, opretorController.getOpretors);
+
 router.post("/createDevice", 
-// verifyTokenMiddleware,
+verifyTokenMiddleware,
 deviceController.createDevice);
+
+router.post("/getDevices", verifyTokenMiddleware, deviceController.getDevices);
 
 
 module.exports = router;

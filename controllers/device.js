@@ -12,7 +12,14 @@ exports.createDevice = async (req, res) => {
         const parkingId = req.body.parkingId
         const DeviceMacAddress = req.body.DeviceMacAddress
         
-
+        const findSameMacAddress = await Device.findOne({ DeviceMacAddress: DeviceMacAddress })
+        if (findSameMacAddress)
+            utils.commonResponce(
+                res,
+                201,
+                "Mac Address already exist",
+            );
+        else
         await Device.create({
             deviceName: deviceName,
             deviceType: deviceType,
@@ -34,7 +41,7 @@ exports.createDevice = async (req, res) => {
             }).catch((err) => {
                 utils.commonResponce(
                     res,
-                    202,
+                    201,
                     "Error Occured While fetching Device",
                     err.toString()
                 );
@@ -43,7 +50,7 @@ exports.createDevice = async (req, res) => {
         }).catch((err) => {
             utils.commonResponce(
                 res,
-                202,
+                201,
                 "Error Occured While creating Device",
                 err.toString()
             );
@@ -57,3 +64,32 @@ exports.createDevice = async (req, res) => {
     }
 }
 
+exports.getDevices = async (req, res) => {
+    try {
+
+            await Device.find().then(async (deviceData) => {
+
+
+                utils.commonResponce(
+                    res,
+                    200,
+                    "Successfully fetched Device",
+                    deviceData
+                );
+
+            }).catch((err) => {
+                utils.commonResponce(
+                    res,
+                    201,
+                    "Error Occured While fetching Device",
+                    err.toString()
+                );
+            });
+
+    } catch {
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Device",
+        });
+    }
+}

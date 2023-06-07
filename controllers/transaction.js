@@ -46,7 +46,7 @@ exports.createTransaction = async (req, res) => {
             }).catch((err) => {
                 utils.commonResponce(
                     res,
-                    202,
+                    201,
                     "Error Occured While fetching Transaction",
                     err.toString()
                 );
@@ -55,7 +55,7 @@ exports.createTransaction = async (req, res) => {
         }).catch((err) => {
             utils.commonResponce(
                 res,
-                202,
+                201,
                 "Error Occured While creating Transaction",
                 err.toString()
             );
