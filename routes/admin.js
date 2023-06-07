@@ -13,47 +13,41 @@ const opretorController = require("../controllers/opretor");
 const deviceController = require("../controllers/device");
 
 
-
-
-
 router.post("/adminLogin", appLoginController.adminLogin);
 
 router.post("/createTariff", 
 // verifyTokenMiddleware,
  tafiffController.createTariff);
 
-// router.post("/createPrinter",  printerController.createPrinter);
+ router.get("/getTariffs", verifyTokenMiddleware, tafiffController.getTariffs);
 
+
+// router.post("/createPrinter",  printerController.createPrinter);
 
 // router.post("/createRegisteredVehicle",  registeredVehicleController.createRegisteredVehicle);
 
 // router.post("/createRegisteredCustomer",  registeredCustomerController.createRegisteredCustomer);
 
-// router.get("/getTariff", verifyTokenMiddleware, tafiffController.getTariff);
 // router.get("/getRegisteredCustomer",verifyTokenMiddleware,registeredCustomerController.getRegisteredCustomer )
-
-// router.post("/connectTariff", 
-// // verifyTokenMiddleware,
-//  tafiffController.connectTariff);
 
 
 router.post("/createParking", 
 verifyTokenMiddleware,
 parkingController.createParking);
 
-router.post("/getParkings", verifyTokenMiddleware, parkingController.getParkings);
+router.get("/getParkings", verifyTokenMiddleware, parkingController.getParkings);
 
 router.post("/createOpretor", 
 verifyTokenMiddleware,
 opretorController.createOpretor);
 
-router.post("/getOpretors", verifyTokenMiddleware, opretorController.getOpretors);
+router.get("/getOpretors", verifyTokenMiddleware, opretorController.getOpretors);
 
 router.post("/createDevice", 
 verifyTokenMiddleware,
 deviceController.createDevice);
 
-router.post("/getDevices", verifyTokenMiddleware, deviceController.getDevices);
+router.get("/getDevices", verifyTokenMiddleware, deviceController.getDevices);
 
 
 module.exports = router;
