@@ -79,7 +79,7 @@ exports.closeShift = async (req, res, next) => {
     await Shift.findByIdAndUpdate(shiftId, {
       shiftStopTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
       isActive: false
-    }).then(async (shiftData) => {
+    }, {new: true}).then(async (shiftData) => {
 
       await Opretor.findByIdAndUpdate(findShift.opretorId, {
         isShiftIn: false

@@ -62,11 +62,10 @@ exports.createTransaction = async (req, res) => {
                     arrayFilters: [
                         { "a.paymentType": paymentType },
                     ],
-                }
+                }, {new: true}
             )
-
-
-            await Shift.findById(shiftId).then(async (shiftData) => {
+            // await Shift.findById(shiftId)
+            .then(async (shiftData) => {
 
                 utils.commonResponce(
                     res,

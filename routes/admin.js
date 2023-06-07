@@ -20,7 +20,8 @@ router.post("/createTariff",
  tafiffController.createTariff);
 
  router.get("/getTariffs", verifyTokenMiddleware, tafiffController.getTariffs);
-
+ 
+ router.get("/getTariffForParking", verifyTokenMiddleware, tafiffController.getTariffForParking);
 
 // router.post("/createPrinter",  printerController.createPrinter);
 

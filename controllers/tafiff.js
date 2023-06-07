@@ -96,3 +96,37 @@ exports.getTariffs = async (req, res) => {
     }
 }
 
+
+exports.getTariffForParking = async (req, res) => {
+
+
+
+    try {
+
+        await Tariff.aggregate([{$project:{tariffName:1}}]).then(async (TariffData) => {
+
+
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully fetched tariff",
+                TariffData
+            );
+
+        }).catch((err) => {
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While fetching tariff",
+                err.toString()
+            );
+        });
+
+    } catch {
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while fetching tariff",
+        });
+    }
+}
+
