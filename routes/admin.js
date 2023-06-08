@@ -45,7 +45,7 @@ opretorController.createOpretor);
 router.get("/getOpretors", verifyTokenMiddleware, opretorController.getOpretors);
 
 router.post("/createDevice", 
-verifyTokenMiddleware,
+// verifyTokenMiddleware,
 deviceController.createDevice);
 
 router.get("/getDevices", verifyTokenMiddleware, deviceController.getDevices);

@@ -228,8 +228,10 @@ exports.appLogin = async (req, res, next) => {
               data: {
                 parkingId: findParking._id,
                 parkingName: findParking.parkingName,
+                parkingNo: findParking.parkingNo,
                 opretorId: findOpretor._id,
                 opretorName: findOpretor.opretorName,
+                opretorNo: findOpretor.opretorNo,
                 shiftData: isShiftActive ? isShiftActive : {},
                 tariffs: tariffData,
                 devices: devices

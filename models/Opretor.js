@@ -8,7 +8,7 @@ const Opretor = new Schema(
       required: true,
     },
     opretorNo: {
-      type: Number,
+      type: String,
       required: true,
     },
     parkingId: {

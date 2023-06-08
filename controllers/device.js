@@ -10,6 +10,7 @@ exports.createDevice = async (req, res) => {
         const deviceName = req.body.deviceName
         const deviceType = req.body.deviceType
         const parkingId = req.body.parkingId
+        const deviceNo = req.body.deviceNo
         const DeviceMacAddress = req.body.DeviceMacAddress
         
         const findSameMacAddress = await Device.findOne({ DeviceMacAddress: DeviceMacAddress })
@@ -24,6 +25,7 @@ exports.createDevice = async (req, res) => {
             deviceName: deviceName,
             deviceType: deviceType,
             parkingId: parkingId,
+            deviceNo: deviceNo,
             DeviceMacAddress: DeviceMacAddress,
             isActive: true,
         }).then(async (createdDevice) => {

@@ -7,6 +7,10 @@ const Device = new Schema(
       type: String,
       required: true,
     },
+    deviceNo: {
+      type: String,
+      required: true,
+    },
     deviceType: {
       type: String,
       required: true,
