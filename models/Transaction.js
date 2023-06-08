@@ -23,6 +23,9 @@ const Transaction = new Schema(
         },
         paymentType: {
             type: String,
+        },
+        lostTicket: {
+            type: Boolean,
         }
     },
     {

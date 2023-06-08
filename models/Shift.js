@@ -31,10 +31,17 @@ const Shift = new Schema(
             type: Number,
             default: 0
         },
+        totalLostTicketIssued: {
+            type: Number,
+            default: 0
+        },
         totalTicketCollected: {
             type: Number,
             default: 0
-
+        },
+        totalLostTicketCollected: {
+            type: Number,
+            default: 0
         },
         isActive: {
             type: Boolean

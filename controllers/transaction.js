@@ -17,6 +17,7 @@ exports.createTransaction = async (req, res) => {
         const vehicleType = req.body.vehicleType
         const amount = req.body.amount
         const paymentType = req.body.paymentType
+        const lostTicket = req.body.lostTicket
 
 
         var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -29,6 +30,7 @@ exports.createTransaction = async (req, res) => {
             amount: amount,
             paymentType: paymentType,
             vehicleType: vehicleType,
+            lostTicket: lostTicket
         }).then(async (createdParking) => {
 
             // update shift and opretor here
@@ -39,15 +41,14 @@ exports.createTransaction = async (req, res) => {
                 $inc: {
                     totalTicketIssued: transactionType != 'exit' ? 1 : 0,
                     totalTicketCollected: transactionType == 'exit' ? 1 : 0,
+                    totalLostTicketIssued: lostTicket ? transactionType != 'exit' ? 1 : 0 : 0,
+                    totalLostTicketCollected: lostTicket ? transactionType == 'exit' ? 1 : 0 : 0,
                 },
-                $push: {
-
-                }
+                $push: {}
             }
 
             if (transactionType == 'exit') {
 
-                console.log('findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length: ', findShift?.totalCollection?.filter(c => c.paymentType == paymentType));
                 if (findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
                     obj['$push']['totalCollection'] = [{
                         paymentType: paymentType,
@@ -62,9 +63,11 @@ exports.createTransaction = async (req, res) => {
                     arrayFilters: [
                         { "a.paymentType": paymentType },
                     ],
-                }, { new: true }
+                }
+                // , { new: true }
             )
-                // await Shift.findById(shiftId)
+
+                await Shift.findById(shiftId)
                 .then(async (shiftData) => {
 
                     utils.commonResponce(
