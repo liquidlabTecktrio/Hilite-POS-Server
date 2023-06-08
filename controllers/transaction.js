@@ -40,7 +40,7 @@ exports.createTransaction = async (req, res) => {
                     totalTicketIssued: transactionType != 'exit' ? 1 : 0,
                     totalTicketCollected: transactionType == 'exit' ? 1 : 0,
                 },
-                $push:{
+                $push: {
 
                 }
             }
@@ -62,28 +62,28 @@ exports.createTransaction = async (req, res) => {
                     arrayFilters: [
                         { "a.paymentType": paymentType },
                     ],
-                }, {new: true}
+                }, { new: true }
             )
-            // await Shift.findById(shiftId)
-            .then(async (shiftData) => {
+                // await Shift.findById(shiftId)
+                .then(async (shiftData) => {
 
-                utils.commonResponce(
-                    res,
-                    200,
-                    "Successfully created transaction",
-                    {
-                        shiftData: shiftData
-                      }
-                );
+                    utils.commonResponce(
+                        res,
+                        200,
+                        "Successfully created transaction",
+                        {
+                            shiftData: shiftData
+                        }
+                    );
 
-            }).catch((err) => {
-                utils.commonResponce(
-                    res,
-                    201,
-                    "Error Occured While fetching Transaction",
-                    err.toString()
-                );
-            });
+                }).catch((err) => {
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Error Occured While fetching Transaction",
+                        err.toString()
+                    );
+                });
 
         }).catch((err) => {
             utils.commonResponce(
@@ -94,7 +94,7 @@ exports.createTransaction = async (req, res) => {
             );
         });
 
-    } catch(error) {
+    } catch (error) {
         console.log('error: ', error);
         return res.status(500).json({
             status: 500,
@@ -107,12 +107,13 @@ exports.calculatecCharge = async (req, res) => {
     try {
 
         const entryTime = req.body.entryTime
+        const exitTime = req.body.exitTime
         const shiftId = req.body.shiftId
         const vehicleType = req.body.vehicleType
+        const lostTicket = req.body.lostTicket
 
-        var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-
-        var mins = Math.ceil((moment(currentTime, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+        // var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+        // var mins = Math.ceil((moment(currentTime, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
 
         const findShift = await Shift.findById(shiftId)
 
@@ -168,23 +169,30 @@ exports.calculatecCharge = async (req, res) => {
                 }
 
 
-                var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-                var mins = Math.ceil((moment(currentTime, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                // var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                // var mins = Math.ceil((moment(currentTime, "DD-MM-YYYY HH:mm:ss").diff(moment('07-06-2023 20:01:05', "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+
+
+                var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
 
                 let charge = 0
 
                 switch (vehicleType) {
                     case 2:
-                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData)
+                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
                         break;
                     case 3:
-                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData)
+                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
                         break;
                     case 4:
-                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData)
+                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
                         break;
                     default:
-                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData)
+                        charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
                 }
 
 
@@ -223,29 +231,32 @@ exports.calculatecCharge = async (req, res) => {
     }
 }
 
-function calculateAmountBasedOnActiveTariff(duration, tariffData) {
+function calculateAmountBasedOnActiveTariff(duration, tariffData, lostTicket) {
     let amount = 0
 
     if (tariffData)
-        tariffData.tariffData.map(tariffData => {
+        if (lostTicket)
+            amount += tariffData.lostTicket
+        else
+            tariffData.tariffData.map(tariffData => {
 
-            if (duration >= tariffData.starting) {
-                if (tariffData.isInfinite == true) {
-                    if (tariffData.isIterate == true) {
-                        iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
+                if (duration >= tariffData.starting) {
+                    if (tariffData.isInfinite == true) {
+                        if (tariffData.isIterate == true) {
+                            iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
+                        } else {
+                            amount += tariffData.price
+                        }
                     } else {
-                        amount += tariffData.price
-                    }
-                } else {
-                    if (tariffData.isIterate == true) {
-                        iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
-                    } else {
-                        amount += tariffData.price
+                        if (tariffData.isIterate == true) {
+                            iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
+                        } else {
+                            amount += tariffData.price
+                        }
                     }
                 }
-            }
 
-        })
+            })
 
     function iterateFunction(starting, ending, iterateEvery, price) {
         for (let i = starting; i <= ending; i += iterateEvery) {

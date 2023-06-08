@@ -50,6 +50,10 @@ const Tariff = new Schema(
             type: [tariffObj]
         },
         // dailyData:[dailyObj],
+        lostTicket: {
+            type: Number,
+            required: true,
+        },
         isActive: {
             type: Boolean,
             required: true,

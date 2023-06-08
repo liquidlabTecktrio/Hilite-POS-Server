@@ -9,21 +9,24 @@ exports.createTariff = async (req, res) => {
 
         const tariffData = req.body.tariffData
         const isActive = req.body.isActive
+        const lostTicket = req.body.lostTicket
         const tariffName = req.body.tariffName
-        let dailyData = []
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        days.map((day, index) => {
-            dailyData.push({
-                dayName: day,
-                dayIndex: index,
-                isActive: false
-            })
-        })
+
+        // let dailyData = []
+        // const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // days.map((day, index) => {
+        //     dailyData.push({
+        //         dayName: day,
+        //         dayIndex: index,
+        //         isActive: false
+        //     })
+        // })
 
         await Tariff.create({
             tariffName: tariffName,
             tariffData: tariffData,
-            dailyData: dailyData,
+            lostTicket: lostTicket,
             isActive: isActive,
         }).then(async (createdTariff) => {
 
@@ -95,7 +98,6 @@ exports.getTariffs = async (req, res) => {
         });
     }
 }
-
 
 exports.getTariffForParking = async (req, res) => {
 
