@@ -32,6 +32,9 @@ function setupCORS(req, res, next) {
 
 app.all("/*", setupCORS);
 
+app.use("/", express.static(__dirname + "/build"));
+app.use("/*", express.static(__dirname + "/build"));
+
 //app api's
 app.use("/v1/api", apiRoutes);
 app.use("/v1/admin", adminRoutes);

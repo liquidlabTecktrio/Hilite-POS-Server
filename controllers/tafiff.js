@@ -11,6 +11,7 @@ exports.createTariff = async (req, res) => {
         const isActive = req.body.isActive
         const lostTicket = req.body.lostTicket
         const tariffName = req.body.tariffName
+        const isTariffInHour = req.body.isTariffInHour
 
         // let dailyData = []
         // const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -27,6 +28,7 @@ exports.createTariff = async (req, res) => {
             tariffName: tariffName,
             tariffData: tariffData,
             lostTicket: lostTicket,
+            isTariffInHour: isTariffInHour,
             isActive: isActive,
         }).then(async (createdTariff) => {
 

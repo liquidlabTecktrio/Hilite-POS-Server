@@ -34,6 +34,9 @@ const tariffObj = new Schema({
     iterateEvery: {
         type: Number
     },
+    iterrateType: {
+        type: String
+    },
     isInfinite: {
         type: Boolean,
         required: true,
@@ -48,6 +51,9 @@ const Tariff = new Schema(
         },
         tariffData: {
             type: [tariffObj]
+        },
+        isTariffInHour: {
+            type: Boolean
         },
         // dailyData:[dailyObj],
         lostTicket: {
