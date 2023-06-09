@@ -11,17 +11,20 @@ const tafiffController = require("../controllers/tafiff");
 const parkingController = require("../controllers/parking");
 const opretorController = require("../controllers/opretor");
 const deviceController = require("../controllers/device");
+const dashboardController = require("../controllers/dashboard");
 
 
 router.post("/adminLogin", appLoginController.adminLogin);
 
-router.post("/createTariff", 
-// verifyTokenMiddleware,
- tafiffController.createTariff);
+router.post("/createTariff",
+    // verifyTokenMiddleware,
+    tafiffController.createTariff);
 
- router.post("/getTariffs", verifyTokenMiddleware, tafiffController.getTariffs);
- 
- router.post("/getTariffForParking", verifyTokenMiddleware, tafiffController.getTariffForParking);
+router.post("/getDashboardData", verifyTokenMiddleware, dashboardController.getDashboardData);
+
+router.post("/getTariffs", verifyTokenMiddleware, tafiffController.getTariffs);
+
+router.post("/getTariffForParking", verifyTokenMiddleware, tafiffController.getTariffForParking);
 
 // router.post("/createPrinter",  printerController.createPrinter);
 
@@ -32,21 +35,22 @@ router.post("/createTariff",
 // router.post("/getRegisteredCustomer",verifyTokenMiddleware,registeredCustomerController.getRegisteredCustomer )
 
 
-router.post("/createParking", 
-verifyTokenMiddleware,
-parkingController.createParking);
+router.post("/createParking",
+    verifyTokenMiddleware,
+    parkingController.createParking);
 
 router.post("/getParkings", verifyTokenMiddleware, parkingController.getParkings);
+router.post("/getParkingDataForGraph", verifyTokenMiddleware, parkingController.getParkingDataForGraph);
 
-router.post("/createOpretor", 
-verifyTokenMiddleware,
-opretorController.createOpretor);
+router.post("/createOpretor",
+    verifyTokenMiddleware,
+    opretorController.createOpretor);
 
 router.post("/getOpretors", verifyTokenMiddleware, opretorController.getOpretors);
 
-router.post("/createDevice", 
-// verifyTokenMiddleware,
-deviceController.createDevice);
+router.post("/createDevice",
+    // verifyTokenMiddleware,
+    deviceController.createDevice);
 
 router.post("/getDevices", verifyTokenMiddleware, deviceController.getDevices);
 
