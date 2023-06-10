@@ -3,6 +3,7 @@ const utils = require("./utils")
 const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const Shift = require("../models/Shift");
+const Transaction = require("../models/Transaction");
 
 
 exports.createParking = async (req, res) => {
@@ -105,44 +106,101 @@ exports.getParkingDataForGraph = async (req, res) => {
         const parkingId = req.body.parkingId
         const period = req.body.period
 
-        let shiftsDate = []
+        let totalIncome = await Shift.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'totalIncome': {
+                            '$sum': {
+                                '$map': {
+                                    'input': {
+                                        '$filter': {
+                                            'input': '$totalCollection',
+                                            'as': 'ms',
+                                            'cond': {
+                                                '$ne': [
+                                                    '$$ms.paymentType', 'waved off'
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    'as': 'payment',
+                                    'in': {
+                                        '$sum': [
+                                            '$$payment.amount'
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }, {
+                    '$group': {
+                        '_id': null,
+                        'totalAmount': {
+                            '$sum': '$totalIncome'
+                        }
+                    }
+                }
+            ]
+        )
+
+        if (totalIncome.length > 0)
+            totalIncome = totalIncome[0].totalAmount
+        else
+            totalIncome = 0
+
+        let shiftsDetails = []
+        let entryExitDetails = []
 
         const dates = getDates(period)
-        console.log('dates: ', dates);
-        for (j = 1; j <= dates.length; j++) {
+        const weekDates = getDates('week')
+        
 
-            shiftsDate.push(
+        for (j = 0; j <= dates.length - 1; j++) {
+
+            shiftsDetails.push(
                 await this.parkingAggregateForGraph(parkingId, dates[j])
             );
         }
 
+        for (j = 0; j <= weekDates.length - 1; j++) {
 
+            entryExitDetails.push(
+                await this.entryExitAggregateForGraph(parkingId, weekDates[j])
+            );
+        }
+
+        let totalEntries = 0
+        let totalExits = 0
 
         let activeShiftData = [
             {
                 name: 'Cash',
-                data: shiftsDate.map(d => 0)
+                data: dates.map(d => 0)
             },
             {
                 name: 'Card',
-                data: shiftsDate.map(d => 0)
+                data: dates.map(d => 0)
             },
             {
                 name: 'Upi',
-                data: shiftsDate.map(d => 0)
+                data: dates.map(d => 0)
             },
             {
                 name: 'Waved Off',
-                data: shiftsDate.map(d => 0)
+                data: dates.map(d => 0)
             }
         ]
 
         let paymentTypes = ['cash', 'card', 'upi', 'waved off']
 
-        shiftsDate.reverse().map((d, index) => {
-            let activePaymentType = []
+        shiftsDetails.map((d, index) => {
 
             d.shiftData.map(shift => {
+                totalEntries += shift.totalTicketIssued
+                totalExits += shift.totalTicketCollected
+
                 shift.totalCollection.map(c => {
                     activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
                 })
@@ -150,13 +208,144 @@ exports.getParkingDataForGraph = async (req, res) => {
 
         })
 
-        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+
+        let entryExitData = [
+            {
+                name: '2 Wheeler Entry',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '3 Wheeler Entry',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '4 Wheeler Entry',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '2 Wheeler Exit',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '3 Wheeler Exit',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '4 Wheeler Exit',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '2 Wheeler Lost Ticket',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '3 Wheeler Lost Ticket',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '4 Wheeler Lost Ticket',
+                data: weekDates.map(d => 0)
+            },
+        ]
+
+        let entryExitTypes = entryExitData.map(d => d.name)
+
+        let entryExitTotalEntries = 0
+        let entryExitTotalExits = 0
+
+        entryExitDetails.map((d, index) => {
+
+            d.entryExitData.map(transaction => {
+
+                switch (transaction.vehicleType) {
+                    case '2':
+
+                        switch (transaction.transactionType) {
+                            case 'entry':
+                                entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += transaction.count
+                                entryExitTotalEntries += transaction.count
+                                break;
+                            case 'exit':
+                                entryExitTotalExits += transaction.count
+                                switch (transaction.lostTicket) {
+                                    case true:
+                                        entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += transaction.count
+                                        break;
+                                    default:
+                                        entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += transaction.count
+                                        break;
+                                }
+                                break;
+                        }
+
+
+                        break;
+                    case '3':
+
+                        switch (transaction.transactionType) {
+                            case 'entry':
+                                entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += transaction.count
+                                entryExitTotalEntries += transaction.count
+                                break;
+                            case 'exit':
+                                entryExitTotalExits += transaction.count
+                                switch (transaction.lostTicket) {
+                                    case true:
+                                        entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += transaction.count
+                                        break;
+                                    default:
+                                        entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += transaction.count
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
+                    case '4':
+
+                        switch (transaction.transactionType) {
+                            case 'entry':
+                                entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += transaction.count
+                                entryExitTotalEntries += transaction.count
+                                break;
+                            case 'exit':
+                                entryExitTotalExits += transaction.count
+                                switch (transaction.lostTicket) {
+                                    case true:
+                                        entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += transaction.coun
+                                        break;
+                                    default:
+                                        entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += transaction.coun
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            })
+
+        })
+
+        const parkingData = await Parking.findById(parkingId)
 
         utils.commonResponce(
             res,
             200,
             "Successfull",
-            { categories: dates.map(d => months[parseInt(d.start.split('-')[1]) - 1] + ' ' + d.start.split('-')[2]), series: activeShiftData }
+            {
+                categories: dates.map(d => d.category),
+                series: activeShiftData,
+                totalEntries,
+                totalExits,
+                entryExitCategories: weekDates.map(d => d.category),
+                entryExitSeries: entryExitData,
+                entryExitTotalEntries,
+                entryExitTotalExits,
+                parkingData
+
+            }
         );
 
     } catch (error) {
@@ -170,6 +359,7 @@ exports.getParkingDataForGraph = async (req, res) => {
 
 
 exports.parkingAggregateForGraph = async (parkingId, date) => {
+
     try {
 
         const shiftData = await Shift.aggregate(
@@ -189,6 +379,9 @@ exports.parkingAggregateForGraph = async (parkingId, date) => {
                 }, {
                     '$match': {
                         'parkingId': mongoose.Types.ObjectId(parkingId),
+                        'totalCollectionSize': {
+                            '$gt': 0
+                        },
                         '$and': [
                             {
                                 'dateISO': {
@@ -198,11 +391,12 @@ exports.parkingAggregateForGraph = async (parkingId, date) => {
                                 'dateISO': {
                                     '$lt': new Date(date.end)
                                 }
-                            }, {
-                                'totalCollectionSize': {
-                                    '$gt': 0
-                                }
-                            }
+                            },
+                            // {
+                            //     'totalCollectionSize': {
+                            //         '$gt': 0
+                            //     } 
+                            // }
                         ]
                     }
                 },
@@ -227,16 +421,112 @@ exports.parkingAggregateForGraph = async (parkingId, date) => {
 }
 
 
+exports.entryExitAggregateForGraph = async (parkingId, date) => {
+
+    try {
+
+        const entryExitData = await Transaction.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'dateISO': {
+                            '$dateFromString': {
+                                'dateString': '$time',
+                                'format': '%d-%m-%Y %H:%M:%S'
+                            }
+                        }
+                    }
+                }, {
+                    '$lookup': {
+                        'from': 'shifts',
+                        'localField': 'shiftId',
+                        'foreignField': '_id',
+                        'pipeline': [
+                            {
+                                '$project': {
+                                    'parkingId': 1
+                                }
+                            }
+                        ],
+                        'as': 'parkingId'
+                    }
+                }, {
+                    '$addFields': {
+                        'parkingId': {
+                            '$first': '$parkingId'
+                        }
+                    }
+                }, {
+                    '$addFields': {
+                        'parkingId': '$parkingId.parkingId'
+                    }
+                }, {
+                    '$match': {
+                        'parkingId': mongoose.Types.ObjectId(parkingId),
+                        '$and': [
+                            {
+                                'dateISO': {
+                                    '$gte': new Date(date.start)
+                                }
+                            }, {
+                                'dateISO': {
+                                    '$lt': new Date(date.end)
+                                }
+                            }
+                        ]
+                    }
+                }, {
+                    '$group': {
+                        '_id': {
+                            'transactionType': '$transactionType',
+                            'vehicleType': '$vehicleType',
+                            'lostTicket': '$lostTicket'
+                        },
+                        'data': {
+                            '$push': '$$ROOT'
+                        }
+                    }
+                }, {
+                    '$addFields': {
+                        'transactionType': '$_id.transactionType',
+                        'vehicleType': '$_id.vehicleType',
+                        'lostTicket': '$_id.lostTicket',
+                        'count': {
+                            '$size': '$data'
+                        }
+                    }
+                }, {
+                    '$project': {
+                        '_id': 0,
+                        'data': 0
+                    }
+                }
+            ]
+        )
+        return { date, entryExitData };
+
+    } catch {
+        return { date, entryExitData: [] };
+
+    }
+}
+
+
 function getDates(period) {
     let dates = []
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
     const date = new Date()
+    const startingMonth = new Date(date.getFullYear(), date.getMonth(), 1)
+    const endingMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+
     switch (period) {
 
-        case 'today':
+        case 'day':
             for (d = 0; d < 1; d++) {
                 let obj = {
-                    start: formateDate(date)
+                    start: formateDate(date),
+                    category: months[parseInt(formateDate(date).split('-')[1]) - 1] + ' ' + formateDate(date).split('-')[2]
                 }
                 date.setDate(date.getDate() + 1)
                 obj.end = formateDate(date)
@@ -247,13 +537,51 @@ function getDates(period) {
         case 'week':
             for (d = 0; d < 7; d++) {
                 let obj = {
-                    start: formateDate(date)
+                    start: formateDate(date),
+                    category: months[parseInt(formateDate(date).split('-')[1]) - 1] + ' ' + formateDate(date).split('-')[2]
                 }
                 date.setDate(date.getDate() + 1)
                 obj.end = formateDate(date)
                 date.setDate(date.getDate() - 2)
                 dates.push(obj)
             }
+            break
+        case 'twoWeeks':
+            for (d = 0; d < 14; d++) {
+                let obj = {
+                    start: formateDate(date),
+                    category: months[parseInt(formateDate(date).split('-')[1]) - 1] + ' ' + formateDate(date).split('-')[2]
+                }
+                date.setDate(date.getDate() + 1)
+                obj.end = formateDate(date)
+                date.setDate(date.getDate() - 2)
+                dates.push(obj)
+            }
+            break
+
+        case 'month':
+            let obj = {
+                start: formateDate(startingMonth),
+                category: months[parseInt(formateDate(date).split('-')[1]) - 1]
+            }
+            obj.end = formateDate(endingMonth)
+            dates.push(obj)
+
+            break
+
+        case 'threeMonths':
+            for (d = 0; d < 3; d++) {
+
+                startingMonth.setMonth(startingMonth.getMonth() - 1)
+                endingMonth.setMonth(endingMonth.getMonth() - 1)
+                let obj = {
+                    start: formateDate(startingMonth),
+                    category: months[parseInt(formateDate(startingMonth).split('-')[1]) - 1]
+                }
+                obj.end = formateDate(endingMonth)
+                dates.push(obj)
+            }
+
             break
     }
 
@@ -265,5 +593,5 @@ function getDates(period) {
         return d.getFullYear() + '-' + addZero(d.getMonth() + 1) + '-' + addZero(d.getDate())
     }
 
-    return dates
+    return dates.reverse()
 }

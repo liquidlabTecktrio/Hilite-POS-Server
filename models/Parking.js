@@ -35,6 +35,10 @@ const Parking = new Schema(
         totalSpaces: {
             type: Number
         },
+        currentOccupiedSpaces: {
+            type: Number,
+            default:0
+        },
         totalEntries: {
             type: Number
         },

@@ -36,6 +36,12 @@ exports.createTransaction = async (req, res) => {
             // update shift and opretor here
 
             const findShift = await Shift.findById(shiftId)
+            
+            await Parking.findByIdAndUpdate(findShift.parkingId, {
+                $inc: {
+                    currentOccupiedSpaces: transactionType == 'entry' ? 1 : -1,
+                },
+            })
 
             let obj = {
                 $inc: {
@@ -67,7 +73,7 @@ exports.createTransaction = async (req, res) => {
                 // , { new: true }
             )
 
-                await Shift.findById(shiftId)
+            await Shift.findById(shiftId)
                 .then(async (shiftData) => {
 
                     utils.commonResponce(
