@@ -4,6 +4,7 @@ const Shift = require("../models/Shift");
 const utils = require("./utils")
 const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
+const PosHeartbeat = require("../models/PosHeartbeat");
 
 
 exports.getDashboardData = async (req, res) => {
@@ -97,6 +98,8 @@ exports.getDashboardData = async (req, res) => {
             }
         })
 
+        const posHeartbeats = await PosHeartbeat.find({ isActive: true })
+
         utils.commonResponce(
             res,
             200,
@@ -106,7 +109,8 @@ exports.getDashboardData = async (req, res) => {
                 pastTwoWeeksIncomeSeries: pastTwoWeeksIncomeDeta,
                 pastTwoWeeksIncomeCategories: twoWeekDates.map(d => d.category),
                 thisWeekTotalIncome,
-                lastWeekTotalIncome
+                lastWeekTotalIncome,
+                posHeartbeats
              }
         );
 

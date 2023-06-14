@@ -13,6 +13,9 @@ const opretorController = require("../controllers/opretor");
 const deviceController = require("../controllers/device");
 const dashboardController = require("../controllers/dashboard");
 
+const posHeartbeatController = require("../controllers/posHeartbeat");
+
+const vehicleController = require("../controllers/vehicle");
 
 router.post("/adminLogin", appLoginController.adminLogin);
 
@@ -53,6 +56,13 @@ router.post("/createDevice",
     deviceController.createDevice);
 
 router.post("/getDevices", verifyTokenMiddleware, deviceController.getDevices);
+
+
+router.post("/createVehicle",
+    // verifyTokenMiddleware,
+    vehicleController.createVehicle);
+
+router.post("/getVehicles", verifyTokenMiddleware, vehicleController.getVehicles);
 
 
 module.exports = router;
