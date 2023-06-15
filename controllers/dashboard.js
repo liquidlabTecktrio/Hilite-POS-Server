@@ -98,7 +98,7 @@ exports.getDashboardData = async (req, res) => {
             }
         })
 
-        const posHeartbeats = await PosHeartbeat.find({ isActive: true })
+        const posHeartbeats = await PosHeartbeat.find()
 
         utils.commonResponce(
             res,

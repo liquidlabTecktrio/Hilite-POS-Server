@@ -10,7 +10,7 @@ exports.createVehicle = async (req, res) => {
         const vehicleName = req.body.vehicleName
         const vehicleWheels = req.body.vehicleWheels
         
-        const findSameMacvehicle = await Vehicle.findOne({ vehicleWheels: vehicleWheels, vehicleName:vehicleName })
+        const findSameMacvehicle = await Vehicle.findOne({ vehicleWheels: vehicleWheels })
         if (findSameMacvehicle)
             utils.commonResponce(
                 res,

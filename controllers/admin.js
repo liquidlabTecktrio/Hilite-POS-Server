@@ -290,7 +290,7 @@ exports.appLogout = async (req, res, next) => {
       lastLogin: findOpretor.logedInTime,
     }).then(async(shiftCreatedData) => {
 
-      await PosHeartbeat.findOneAndUpdate({ posDeviceID, isActive:true }, { isActive: false, isAlive: false })
+      await PosHeartbeat.findOneAndUpdate({ posDeviceID, isActive:true }, { isActive: false})
 
       return res.status(200).json({
         status: 200,

@@ -59,6 +59,6 @@ const PosHeartbeat = new Schema(
   }
 );
 
-PosHeartbeat.index({ createdAt: 1 }, { expireAfterSeconds: 7200 });
+PosHeartbeat.index({ createdAt: 1 }, { expireAfterSeconds: 60*720 });
 
 module.exports = mongoose.model("PosHeartbeat", PosHeartbeat);

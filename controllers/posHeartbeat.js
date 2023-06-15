@@ -9,8 +9,9 @@ exports.updateHeartbeat = async (req, res) => {
     try {
 
         const posDeviceID = req.body.posDeviceID;
+        console.log('posDeviceID: ', posDeviceID);
 
-        await PosHeartbeat.findOneAndUpdate({ posDeviceID, isActive: true },
+        await PosHeartbeat.findOneAndUpdate({ posDeviceID},
             {
                 isAlive: true,
                 lastUpdated: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss")
@@ -43,8 +44,7 @@ exports.updateHeartbeat = async (req, res) => {
 exports.getActivePosHeartbeats = async (req, res) => {
     try {
 
-        await PosHeartbeat.find({ isActive: true }).then(async (PosHeartbeatData) => {
-
+        await PosHeartbeat.find().then(async (PosHeartbeatData) => {
 
             utils.commonResponce(
                 res,
@@ -73,7 +73,7 @@ exports.getActivePosHeartbeats = async (req, res) => {
 const updateHeartbeats = schedule.scheduleJob("*/1 * * * *", async function () {
     try {
 
-        await PosHeartbeat.find({ isActive: true }).then(async (PosHeartbeatData) => {
+        await PosHeartbeat.find().then(async (PosHeartbeatData) => {
 
             await Bluebird.each(PosHeartbeatData, async (ele) => {
                 console.log('ele: ', ele.lastUpdated);
@@ -87,7 +87,7 @@ const updateHeartbeats = schedule.scheduleJob("*/1 * * * *", async function () {
 
                 console.log('mins: ', mins);
 
-                if (mins > 3)
+                if (mins > 4)
                     await PosHeartbeat.findByIdAndUpdate(ele._id, { isAlive: false })
 
             })
