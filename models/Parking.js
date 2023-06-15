@@ -48,6 +48,7 @@ const Parking = new Schema(
         totalExits: {
             type: Number
         },
+        vehicles:[mongoose.Types.ObjectId],
         connectedTariff:[tariffObj],
         isActive: {
             type: Boolean,
