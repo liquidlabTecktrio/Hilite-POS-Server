@@ -94,13 +94,16 @@ const updateHeartbeats = schedule.scheduleJob("*/1 * * * *", async function () {
 
             })
 
+            const PosHeartbeats = await PosHeartbeat.find()
+
             designaPOS.wss.clients.forEach(function each(client) {
                     
                     if (client.readyState === WebSocket.OPEN) {
                         // console.log(client)
-                        client.send(JSON.stringify(PosHeartbeatData));
+                        client.send(JSON.stringify(PosHeartbeats));
                     }
             })
+            console.log('sent');
 
         }).catch((err) => {
             console.log('err: ', err);
