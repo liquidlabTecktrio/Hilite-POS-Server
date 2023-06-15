@@ -4,6 +4,8 @@ const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const schedule = require('node-schedule');
 const moment = require("moment-timezone");
+const { WebSocket, WebSocketServer } = require('ws');
+const designaPOS = require("../designaPOS");
 
 exports.updateHeartbeat = async (req, res) => {
     try {
@@ -90,6 +92,14 @@ const updateHeartbeats = schedule.scheduleJob("*/1 * * * *", async function () {
                 if (mins > 4)
                     await PosHeartbeat.findByIdAndUpdate(ele._id, { isAlive: false })
 
+            })
+
+            designaPOS.wss.clients.forEach(function each(client) {
+                    
+                    if (client.readyState === WebSocket.OPEN) {
+                        // console.log(client)
+                        client.send(JSON.stringify(PosHeartbeatData));
+                    }
             })
 
         }).catch((err) => {

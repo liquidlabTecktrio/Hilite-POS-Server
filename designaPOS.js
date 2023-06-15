@@ -7,11 +7,24 @@ const bodyParser = require("body-parser");
 const apiRoutes = require("./routes/app");
 const adminRoutes = require("./routes/admin");
 var cors = require('cors')
+const { WebSocket, WebSocketServer } = require('ws');
+const wss = new WebSocket.Server({ port: 7777 });
 
 app.use(bodyParser.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors())
+
+wss.on('connection', function connection(ws) {
+  console.log("websocket connected");
+  wss.clients.forEach(function each(client) {
+        
+    if (client.readyState === WebSocket.OPEN) {
+      // console.log(client)
+      client.send(JSON.stringify("test data"));
+    }
+  });
+})
 
 
 function setupCORS(req, res, next) {
@@ -58,3 +71,5 @@ mongoose
   .catch((err) => {
     console.log("catched database connection error :", err);
   });
+
+  exports.wss = wss;
