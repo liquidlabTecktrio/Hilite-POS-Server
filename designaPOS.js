@@ -20,7 +20,7 @@ wss.on('connection', function connection(ws) {
   wss.clients.forEach(function each(client) {
         
     if (client.readyState === WebSocket.OPEN) {
-      console.log(client)
+      // console.log(client)
       client.send(JSON.stringify("test data"));
     }
   });
@@ -71,3 +71,5 @@ mongoose
   .catch((err) => {
     console.log("catched database connection error :", err);
   });
+
+  exports.wss = wss;
