@@ -15,6 +15,9 @@ const Transaction = new Schema(
         vehicleType: {
             type: String,
         },
+        vehicleNo: {
+            type: String,
+        },
         shiftId: {
             type: mongoose.Types.ObjectId,
         },
@@ -25,6 +28,9 @@ const Transaction = new Schema(
             type: String,
         },
         lostTicket: {
+            type: Boolean,
+        },
+        cancelledTicket: {
             type: Boolean,
         }
     },

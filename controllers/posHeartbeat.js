@@ -6,6 +6,7 @@ const schedule = require('node-schedule');
 const moment = require("moment-timezone");
 const { WebSocket, WebSocketServer } = require('ws');
 const designaPOS = require("../designaPOS");
+const dashboardController = require("../controllers/dashboard");
 
 exports.updateHeartbeat = async (req, res) => {
     try {
@@ -13,7 +14,7 @@ exports.updateHeartbeat = async (req, res) => {
         const posDeviceID = req.body.posDeviceID;
         console.log('posDeviceID: ', posDeviceID);
 
-        await PosHeartbeat.findOneAndUpdate({ posDeviceID},
+        await PosHeartbeat.findOneAndUpdate({ posDeviceID },
             {
                 isAlive: true,
                 lastUpdated: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss")
@@ -89,21 +90,24 @@ const updateHeartbeats = schedule.scheduleJob("*/1 * * * *", async function () {
 
                 console.log('mins: ', mins);
 
-                if (mins > 4)
+                if (mins > 2)
                     await PosHeartbeat.findByIdAndUpdate(ele._id, { isAlive: false })
 
             })
 
-            const PosHeartbeats = await PosHeartbeat.find()
 
-            designaPOS.wss.clients.forEach(function each(client) {
-                    
-                    if (client.readyState === WebSocket.OPEN) {
-                        // console.log(client)
-                        client.send(JSON.stringify(PosHeartbeats));
-                    }
-            })
-            console.log('sent');
+            // web socket 
+            dashboardController.getDashboardDataFunction()
+            // // console.log('dashboardData: ', dashboardData);
+
+            // designaPOS.wss.clients.forEach(function each(client) {
+
+            //     if (client.readyState === WebSocket.OPEN) {
+            //         // console.log(client)
+            //         client.send(JSON.stringify(dashboardData));
+            //     }
+            // })
+            // console.log('sent');
 
         }).catch((err) => {
             console.log('err: ', err);

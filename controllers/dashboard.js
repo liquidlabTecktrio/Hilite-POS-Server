@@ -5,12 +5,24 @@ const utils = require("./utils")
 const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const PosHeartbeat = require("../models/PosHeartbeat");
-
+const parkingController = require("../controllers/parking");
+const { WebSocket, WebSocketServer } = require('ws');
+const designaPOS = require("../designaPOS");
 
 exports.getDashboardData = async (req, res) => {
     try {
 
-        const parkings = await Parking.find()
+        let parkings = JSON.parse(JSON.stringify(await Parking.find()))
+
+
+        await Bluebird.each(parkings, async (parking, index) => {
+            const cancelIncomeGraph = index == 0 ? false : true
+
+            parking.graphData = await parkingController.getParkingDataForGraphFunction({ parkingId: parking._id, period: 'week', cancelIncomeGraph })
+            // console.log('parking.graphData: ', parking.graphData);
+
+        })
+
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
 
@@ -98,24 +110,44 @@ exports.getDashboardData = async (req, res) => {
             }
         })
 
-        const posHeartbeats = await PosHeartbeat.find()
+        // const posHeartbeats = await PosHeartbeat.find()
+
+
+        // designaPOS.wss.clients.forEach(function each(client) {
+
+        //     if (client.readyState === WebSocket.OPEN) {
+
+        //         client.send(JSON.stringify({
+        //             parkings, opretors,
+        //             totalIncome,
+        //             pastTwoWeeksIncomeSeries: pastTwoWeeksIncomeDeta,
+        //             pastTwoWeeksIncomeCategories: twoWeekDates.map(d => d.category),
+        //             thisWeekTotalIncome,
+        //             lastWeekTotalIncome,
+        //             posHeartbeats
+        //         }));
+        //     }
+        // })
+
+        // console.log('dashboard sent');
 
         utils.commonResponce(
             res,
             200,
             "Successfully fetched data",
-            { parkings, opretors,
+            {
+                parkings, opretors,
                 totalIncome,
                 pastTwoWeeksIncomeSeries: pastTwoWeeksIncomeDeta,
                 pastTwoWeeksIncomeCategories: twoWeekDates.map(d => d.category),
                 thisWeekTotalIncome,
                 lastWeekTotalIncome,
-                posHeartbeats
-             }
+                // posHeartbeats
+            }
         );
 
 
-    } catch(error) {
+    } catch (error) {
         console.log('error: ', error);
         return res.status(500).json({
             status: 500,
@@ -124,8 +156,145 @@ exports.getDashboardData = async (req, res) => {
     }
 }
 
+async function getDashboardDataFunction(requestData) {
+    try {
 
-exports.parkingAggregateForGraph = async ( date) => {
+        let parkings = JSON.parse(JSON.stringify(await Parking.find()))
+
+        await Bluebird.each(parkings, async (parking, index) => {
+
+            parking.graphData = await parkingController.getParkingDataForGraphFunction({ parkingId: parking._id, period: 'week' })
+            // console.log('parking.graphData: ', parking.graphData);
+
+        })
+
+        const opretors = await Opretor.find()
+        // const totalIncome = await Opretor.find()
+
+        let totalIncome = await Shift.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'totalIncome': {
+                            '$sum': {
+                                '$map': {
+                                    'input': {
+                                        '$filter': {
+                                            'input': '$totalCollection',
+                                            'as': 'ms',
+                                            'cond': {
+                                                '$ne': [
+                                                    '$$ms.paymentType', 'waved off'
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    'as': 'payment',
+                                    'in': {
+                                        '$sum': [
+                                            '$$payment.amount'
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }, {
+                    '$group': {
+                        '_id': null,
+                        'totalAmount': {
+                            '$sum': '$totalIncome'
+                        }
+                    }
+                }
+            ]
+        )
+
+        if (totalIncome.length > 0)
+            totalIncome = totalIncome[0].totalAmount
+        else
+            totalIncome = 0
+
+        let pastTwoWeeksIncomeDetails = []
+        const twoWeekDates = getDates('twoWeeks')
+
+        for (j = 0; j <= twoWeekDates.length - 1; j++) {
+            pastTwoWeeksIncomeDetails.push(
+                await this.parkingAggregateForGraph(twoWeekDates[j])
+            );
+        }
+
+        let thisWeekTotalIncome = 0;
+        let lastWeekTotalIncome = 0;
+
+        let pastTwoWeeksIncomeDeta = [
+            {
+                name: 'Net Profit',
+                data: twoWeekDates.map(d => 0)
+            }
+        ]
+
+        pastTwoWeeksIncomeDetails.map((d, index) => {
+
+            const total = d.shiftData.reduce((allTotal, shift) => {
+                const sum = shift.totalCollection.reduce((total, collected) => {
+                    return total + collected.amount;
+                }, 0);
+                return allTotal + sum;
+            }, 0)
+
+            if (index < 7) {
+                // lastWeekTotalIncome += 100
+                // pastTwoWeeksIncomeDeta[0].data[index] += 100
+                lastWeekTotalIncome += total
+                pastTwoWeeksIncomeDeta[0].data[index] += total
+            }
+            else {
+                thisWeekTotalIncome += total
+                pastTwoWeeksIncomeDeta[0].data[index] += total
+            }
+        })
+
+        // utils.commonResponce(
+        //     res,
+        //     200,
+        //     "Successfully fetched data",
+        const obj = {
+            parkings, opretors,
+            totalIncome,
+            pastTwoWeeksIncomeSeries: pastTwoWeeksIncomeDeta,
+            pastTwoWeeksIncomeCategories: twoWeekDates.map(d => d.category),
+            thisWeekTotalIncome,
+            lastWeekTotalIncome,
+            // posHeartbeats
+        }
+
+        console.log('obj: web socket ', obj);
+        designaPOS.wss.clients.forEach(function each(client) {
+
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify(obj));
+            }
+        })
+        // );
+
+
+    } catch (error) {
+        console.log('error: ', error);
+        // return {
+        //     parkings: [],
+        //     opretors: [],
+        //     totalIncome: 0,
+        //     pastTwoWeeksIncomeSeries: [],
+        //     pastTwoWeeksIncomeCategories: [],
+        //     thisWeekTotalIncome: 0,
+        //     lastWeekTotalIncome: 0,
+        //     // posHeartbeats
+        // }
+    }
+}
+
+exports.parkingAggregateForGraph = async (date) => {
 
     try {
 
@@ -164,13 +333,12 @@ exports.parkingAggregateForGraph = async ( date) => {
 
         return { date, shiftData };
 
-    } catch(error) {
+    } catch (error) {
         console.log('error: ', error);
         return { date, shiftData: [] };
 
     }
 }
-
 
 function getDates(period) {
     let dates = []
@@ -255,3 +423,5 @@ function getDates(period) {
 
     return dates.reverse()
 }
+
+exports.getDashboardDataFunction = getDashboardDataFunction

@@ -10,6 +10,7 @@ const Device = require("../models/Device");
 const Shift = require("../models/Shift");
 const Tariff = require("../models/Tariff");
 const PosHeartbeat = require("../models/PosHeartbeat");
+const dashboardController = require("../controllers/dashboard");
 
 
 exports.adminLogin = async (req, res, next) => {
@@ -236,6 +237,11 @@ exports.appLogin = async (req, res, next) => {
             isActive: true
           })
 
+
+          // web socket 
+          dashboardController.getDashboardDataFunction()
+
+
           const isShiftActive = await Shift.findOne({
             opretorId: mongoose.Types.ObjectId(findOpretor._id),
             isActive: true
@@ -288,9 +294,12 @@ exports.appLogout = async (req, res, next) => {
       isLogedIn: false,
       logOutTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
       lastLogin: findOpretor.logedInTime,
-    }).then(async(shiftCreatedData) => {
+    }).then(async (shiftCreatedData) => {
 
-      await PosHeartbeat.findOneAndUpdate({ posDeviceID, isActive:true }, { isActive: false})
+      await PosHeartbeat.findOneAndUpdate({ posDeviceID, isActive: true }, { isActive: false })
+
+      // web socket 
+      dashboardController.getDashboardDataFunction()
 
       return res.status(200).json({
         status: 200,

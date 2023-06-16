@@ -4,7 +4,7 @@ const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const Shift = require("../models/Shift");
 const Transaction = require("../models/Transaction");
-
+const PosHeartbeat = require("../models/PosHeartbeat")
 
 exports.createParking = async (req, res) => {
     try {
@@ -157,7 +157,7 @@ exports.getParkingDataForGraph = async (req, res) => {
 
         const dates = getDates(period)
         const weekDates = getDates('week')
-        
+
 
         for (j = 0; j <= dates.length - 1; j++) {
 
@@ -331,6 +331,19 @@ exports.getParkingDataForGraph = async (req, res) => {
         })
 
         const parkingData = await Parking.findById(parkingId)
+        const posHeartbeats = await PosHeartbeat.find({
+            $and: [
+                {
+                    $or: [
+                        { isActive: true },
+                        { isAlive: true }
+                    ]
+                },
+                {
+                    parkingId: mongoose.Types.ObjectId(parkingId)
+                }
+            ]
+        })
 
         utils.commonResponce(
             res,
@@ -345,7 +358,8 @@ exports.getParkingDataForGraph = async (req, res) => {
                 entryExitSeries: entryExitData,
                 entryExitTotalEntries,
                 entryExitTotalExits,
-                parkingData
+                parkingData,
+                posHeartbeats
 
             }
         );
@@ -359,6 +373,290 @@ exports.getParkingDataForGraph = async (req, res) => {
     }
 }
 
+async function getParkingDataForGraphFunction(requestData) {
+    try {
+
+        const parkingId = requestData.parkingId
+        const period = requestData.period
+        const cancelIncomeGraphData = requestData.cancelIncomeGraph
+
+        let totalIncome = await Shift.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'totalIncome': {
+                            '$sum': {
+                                '$map': {
+                                    'input': {
+                                        '$filter': {
+                                            'input': '$totalCollection',
+                                            'as': 'ms',
+                                            'cond': {
+                                                '$ne': [
+                                                    '$$ms.paymentType', 'waved off'
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    'as': 'payment',
+                                    'in': {
+                                        '$sum': [
+                                            '$$payment.amount'
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }, {
+                    '$group': {
+                        '_id': null,
+                        'totalAmount': {
+                            '$sum': '$totalIncome'
+                        }
+                    }
+                }
+            ]
+        )
+
+        if (totalIncome.length > 0)
+            totalIncome = totalIncome[0].totalAmount
+        else
+            totalIncome = 0
+
+        let shiftsDetails = []
+        let entryExitDetails = []
+
+        const dates = getDates(period)
+        const weekDates = getDates('week')
+
+        if (!cancelIncomeGraphData)
+            for (j = 0; j <= dates.length - 1; j++) {
+
+                shiftsDetails.push(
+                    await this.parkingAggregateForGraph(parkingId, dates[j])
+                );
+            }
+
+        if (!cancelIncomeGraphData)
+            for (j = 0; j <= weekDates.length - 1; j++) {
+
+                entryExitDetails.push(
+                    await this.entryExitAggregateForGraph(parkingId, weekDates[j])
+                );
+            }
+
+        let totalEntries = 0
+        let totalExits = 0
+
+        let activeShiftData = [
+            {
+                name: 'Cash',
+                data: dates.map(d => 0)
+            },
+            {
+                name: 'Card',
+                data: dates.map(d => 0)
+            },
+            {
+                name: 'Upi',
+                data: dates.map(d => 0)
+            },
+            {
+                name: 'Waved Off',
+                data: dates.map(d => 0)
+            }
+        ]
+
+        let paymentTypes = ['cash', 'card', 'upi', 'waved off']
+        if (!cancelIncomeGraphData)
+            shiftsDetails.map((d, index) => {
+
+                d.shiftData.map(shift => {
+                    totalEntries += shift.totalTicketIssued
+                    totalExits += shift.totalTicketCollected
+
+                    shift.totalCollection.map(c => {
+                        activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
+                    })
+                })
+
+            })
+
+
+        let entryExitData = [
+            {
+                name: '2 Wheeler Entry',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '3 Wheeler Entry',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '4 Wheeler Entry',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '2 Wheeler Exit',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '3 Wheeler Exit',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '4 Wheeler Exit',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '2 Wheeler Lost Ticket',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '3 Wheeler Lost Ticket',
+                data: weekDates.map(d => 0)
+            },
+            {
+                name: '4 Wheeler Lost Ticket',
+                data: weekDates.map(d => 0)
+            },
+        ]
+
+        let entryExitTypes = entryExitData.map(d => d.name)
+
+        let entryExitTotalEntries = 0
+        let entryExitTotalExits = 0
+        if (!cancelIncomeGraphData)
+            entryExitDetails.map((d, index) => {
+
+                d.entryExitData.map(transaction => {
+
+                    switch (transaction.vehicleType) {
+                        case '2':
+
+                            switch (transaction.transactionType) {
+                                case 'entry':
+                                    entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += transaction.count
+                                    entryExitTotalEntries += transaction.count
+                                    break;
+                                case 'exit':
+                                    entryExitTotalExits += transaction.count
+                                    switch (transaction.lostTicket) {
+                                        case true:
+                                            entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += transaction.count
+                                            break;
+                                        default:
+                                            entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += transaction.count
+                                            break;
+                                    }
+                                    break;
+                            }
+
+
+                            break;
+                        case '3':
+
+                            switch (transaction.transactionType) {
+                                case 'entry':
+                                    entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += transaction.count
+                                    entryExitTotalEntries += transaction.count
+                                    break;
+                                case 'exit':
+                                    entryExitTotalExits += transaction.count
+                                    switch (transaction.lostTicket) {
+                                        case true:
+                                            entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += transaction.count
+                                            break;
+                                        default:
+                                            entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += transaction.count
+                                            break;
+                                    }
+                                    break;
+                            }
+                            break;
+                        case '4':
+
+                            switch (transaction.transactionType) {
+                                case 'entry':
+                                    entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += transaction.count
+                                    entryExitTotalEntries += transaction.count
+                                    break;
+                                case 'exit':
+                                    entryExitTotalExits += transaction.count
+                                    switch (transaction.lostTicket) {
+                                        case true:
+                                            entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += transaction.coun
+                                            break;
+                                        default:
+                                            entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += transaction.coun
+                                            break;
+                                    }
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                })
+
+            })
+
+        const parkingData = await Parking.findById(parkingId)
+        const posHeartbeats = await PosHeartbeat.find({
+            $and: [
+                {
+                    $or: [
+                        { isActive: true },
+                        { isAlive: true }
+                    ]
+                },
+                {
+                    parkingId: mongoose.Types.ObjectId(parkingId)
+                }
+            ]
+        })
+
+        // utils.commonResponce(
+        //     res,
+        //     200,
+        //     "Successfull",
+        return {
+            categories: dates.map(d => d.category),
+            series: activeShiftData,
+            totalEntries,
+            totalExits,
+            entryExitCategories: weekDates.map(d => d.category),
+            entryExitSeries: entryExitData,
+            entryExitTotalEntries,
+            entryExitTotalExits,
+            parkingData,
+            posHeartbeats
+
+        }
+        // );
+
+    } catch (error) {
+        console.log('error: ', error);
+        // return res.status(500).json({
+        //     status: 500,
+        //     message: "Unexpected server error while creating Parking",
+        // });
+        return {
+            categories: [],
+            series: [],
+            totalEntries: 0,
+            totalExits: 0,
+            entryExitCategories: [],
+            entryExitSeries: [],
+            entryExitTotalEntries: 0,
+            entryExitTotalExits: 0,
+            parkingData: [],
+            PosHeartbeat: []
+        }
+    }
+}
 
 exports.parkingAggregateForGraph = async (parkingId, date) => {
 
@@ -597,3 +895,6 @@ function getDates(period) {
 
     return dates.reverse()
 }
+
+
+exports.getParkingDataForGraphFunction = getParkingDataForGraphFunction

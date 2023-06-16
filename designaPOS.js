@@ -17,13 +17,13 @@ app.use(cors())
 
 wss.on('connection', function connection(ws) {
   console.log("websocket connected");
-  wss.clients.forEach(function each(client) {
-        
-    if (client.readyState === WebSocket.OPEN) {
-      // console.log(client)
-      client.send(JSON.stringify("test data"));
-    }
-  });
+  // wss.clients.forEach(function each(client) {
+
+  //   if (client.readyState === WebSocket.OPEN) {
+  //     // console.log(client)
+  //     // client.send(JSON.stringify("test data"));
+  //   }
+  // });
 })
 
 
@@ -72,4 +72,4 @@ mongoose
     console.log("catched database connection error :", err);
   });
 
-  exports.wss = wss;
+exports.wss = wss;
