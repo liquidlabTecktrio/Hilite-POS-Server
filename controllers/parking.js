@@ -330,7 +330,7 @@ exports.getParkingDataForGraph = async (req, res) => {
 
         })
 
-        const parkingData = await Parking.findById(parkingId)
+        // const parkingData = await Parking.findById(parkingId)
         const posHeartbeats = await PosHeartbeat.find({
             $and: [
                 {
@@ -358,7 +358,7 @@ exports.getParkingDataForGraph = async (req, res) => {
                 entryExitSeries: entryExitData,
                 entryExitTotalEntries,
                 entryExitTotalExits,
-                parkingData,
+                // parkingData,
                 posHeartbeats
 
             }
@@ -603,7 +603,7 @@ async function getParkingDataForGraphFunction(requestData) {
 
             })
 
-        const parkingData = await Parking.findById(parkingId)
+        // const parkingData = await Parking.findById(parkingId)
         const posHeartbeats = await PosHeartbeat.find({
             $and: [
                 {
@@ -631,7 +631,7 @@ async function getParkingDataForGraphFunction(requestData) {
             entryExitSeries: entryExitData,
             entryExitTotalEntries,
             entryExitTotalExits,
-            parkingData,
+            // parkingData,
             posHeartbeats
 
         }
