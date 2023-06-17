@@ -31,7 +31,7 @@ const Shift = new Schema(
             type: Number,
             default: 0
         },
-        totalLostTicketIssued: {
+        totalTicketCancelled: {
             type: Number,
             default: 0
         },
@@ -40,6 +40,11 @@ const Shift = new Schema(
             default: 0
         },
         totalLostTicketCollected: {
+            type: Number,
+            default: 0
+        },
+        // need to remove after informing praveen to change app provider
+        totalLostTicketIssued: {
             type: Number,
             default: 0
         },

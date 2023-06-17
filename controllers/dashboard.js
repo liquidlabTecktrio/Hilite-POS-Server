@@ -269,7 +269,7 @@ async function getDashboardDataFunction(requestData) {
             // posHeartbeats
         }
 
-        console.log('obj: web socket ', obj);
+        // console.log('obj: web socket ', obj);
         designaPOS.wss.clients.forEach(function each(client) {
 
             if (client.readyState === WebSocket.OPEN) {

@@ -35,6 +35,7 @@ router.post("/closeShift", shiftController.closeShift);
 router.post("/createTransaction", transactionController.createTransaction);
 router.post("/cancelTicket", transactionController.cancelTicket);
 router.post("/calculatecCharge", transactionController.calculatecCharge);
+router.post("/getReceipts", transactionController.getReceipts);
 
 router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 

@@ -79,18 +79,18 @@ const updateHeartbeats = schedule.scheduleJob("*/1 * * * *", async function () {
         await PosHeartbeat.find().then(async (PosHeartbeatData) => {
 
             await Bluebird.each(PosHeartbeatData, async (ele) => {
-                console.log('ele: ', ele.lastUpdated);
+                // console.log('ele: ', ele.lastUpdated);
 
                 // var lastUpdatedISO = moment.unix(ele.lastUpdated).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
                 // console.log('lastUpdatedISO: ', lastUpdatedISO);
 
                 var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss")
-                console.log('currentTime: ', currentTime);
+                // console.log('currentTime: ', currentTime);
                 var mins = Math.ceil((moment(currentTime, "DD-MM-YYYY HH:mm:ss").diff(moment(ele.lastUpdated, "DD-MM-YYYY HH:mm:ss"))) / 60000)
 
-                console.log('mins: ', mins);
+                // console.log('mins: ', mins);
 
-                if (mins > 2)
+                if (mins > 3)
                     await PosHeartbeat.findByIdAndUpdate(ele._id, { isAlive: false })
 
             })

@@ -20,6 +20,7 @@ exports.createTransaction = async (req, res) => {
         // const paymentType = req.body.paymentType
         // const lostTicket = req.body.lostTicket
         const transactions = req.body.transactions
+        console.log('transactions: ', transactions);
         const faildTransactions = []
 
         await Bluebird.each(transactions, async (transaction, index) => {
@@ -73,7 +74,6 @@ exports.createTransaction = async (req, res) => {
         //         $inc: {
         //             totalTicketIssued: transactionType != 'exit' ? 1 : 0,
         //             totalTicketCollected: transactionType == 'exit' ? 1 : 0,
-        //             totalLostTicketIssued: lostTicket ? transactionType != 'exit' ? 1 : 0 : 0,
         //             totalLostTicketCollected: lostTicket ? transactionType == 'exit' ? 1 : 0 : 0,
         //         },
         //         $push: {}
@@ -186,7 +186,6 @@ async function createTransactionfunction(transactionData) {
                 $inc: {
                     totalTicketIssued: transactionType != 'exit' ? 1 : 0,
                     totalTicketCollected: transactionType == 'exit' ? 1 : 0,
-                    totalLostTicketIssued: lostTicket ? transactionType != 'exit' ? 1 : 0 : 0,
                     totalLostTicketCollected: lostTicket ? transactionType == 'exit' ? 1 : 0 : 0,
                 },
                 $push: {}
@@ -272,6 +271,8 @@ async function cancelTicketfunction(transactionData) {
     let message = '';
     try {
 
+        // alwasy ticket no will be there for calcelling a ticket
+
         const ticketId = transactionData.ticketId
         const shiftId = transactionData.shiftId
 
@@ -311,6 +312,7 @@ async function cancelTicketfunction(transactionData) {
                         {
                             $inc: {
                                 totalTicketIssued: -1,
+                                totalTicketCancelled: 1,
                             }
                         }
                     )
@@ -355,7 +357,7 @@ exports.calculatecCharge = async (req, res) => {
         const vehicleNo = req.body.vehicleNo
         const lostTicket = req.body.lostTicket
 
-        const findEntryTicket = await Transaction.findOne({
+        let findEntryTicket = await Transaction.findOne({
             ticketId: ticketId,
             transactionType: 'entry'
         })
@@ -364,6 +366,33 @@ exports.calculatecCharge = async (req, res) => {
             ticketId: ticketId,
             transactionType: 'exit'
         })
+
+        if (!ticketId && lostTicket) {
+            const lastTransactionByVehicleNo = await Transaction.aggregate([
+                {
+                    '$match': {
+                        vehicleNo
+                    }
+                }, {
+                    '$sort': {
+                        time: -1
+                    }
+                }, {
+                    '$limit': 1
+                }
+            ])
+
+            console.log('lastTransactionByVehicleNo: ', lastTransactionByVehicleNo);
+            if (lastTransactionByVehicleNo.length > 0) {
+
+                if (lastTransactionByVehicleNo[0].transactionType == 'entry') {
+
+                    findEntryTicket = lastTransactionByVehicleNo[0]
+                }
+
+            }
+
+        }
 
         if (findEntryTicket) {
 
@@ -438,25 +467,63 @@ exports.calculatecCharge = async (req, res) => {
                             }
 
 
+
                             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
                             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                            var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
                             var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-
-
                             let charge = 0
+                            var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
 
-                            switch (vehicleType) {
-                                case 2:
-                                    charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
-                                    break;
-                                case 3:
-                                    charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
-                                    break;
-                                case 4:
-                                    charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
-                                    break;
-                                default:
-                                    charge = calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
+                            if (!ticketId && lostTicket) {
+
+                                let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
+                                let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+                                var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
+
+                                for (i = 0; i <= daysdiff + 1; i++) {
+
+                                    if (moment(_entrytime).isBefore(_exitTime, 'day')) {
+
+                                        var prev_mins = Math.ceil((moment(_entryDateEndingTime, "DD-MM-YYYY HH:mm:ss").diff(moment(_entrytime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+                                        calculateAmount(prev_mins, false)
+                                        _entrytime.add(1, 'days')
+                                        _entrytime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00')
+                                        _entryDateEndingTime.add(1, 'days')
+
+                                    }
+                                    else if (moment(_entrytime).isSame(_exitTime, 'day')) {
+
+                                        const _exitDateStaringTime = moment(_exitTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00').format("DD-MM-YYYY HH:mm:ss");
+
+                                        console.log('_exitDateStaringTime: ', _exitDateStaringTime);
+                                        console.log('exitTimeISO: ', exitTimeISO);
+                                        mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(_exitDateStaringTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                                        break
+                                    }
+
+                                }
+
+
+                            }
+
+                            calculateAmount(mins, lostTicket)
+                            function calculateAmount(mins, lostTicket) {
+
+                                switch (vehicleType) {
+                                    case 2:
+                                        charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
+                                        break;
+                                    case 3:
+                                        charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
+                                        break;
+                                    case 4:
+                                        charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
+                                        break;
+                                    default:
+                                        charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
+                                }
                             }
 
 
@@ -465,7 +532,7 @@ exports.calculatecCharge = async (req, res) => {
                                 200,
                                 "Successfully calculated charge",
                                 {
-                                    stayDuration: mins,
+                                    stayDuration: totalMin,
                                     charge: charge
                                 }
                             );
@@ -506,7 +573,11 @@ exports.calculatecCharge = async (req, res) => {
 }
 
 function calculateAmountBasedOnActiveTariff(duration, tariffData, lostTicket) {
+    console.log('lostTicket: ', lostTicket);
+    console.log('duration: ', duration);
     let amount = 0
+
+    // if lost ticket then check all trasactions of vehicle to apply each day tariff
 
     if (tariffData)
         if (lostTicket)
@@ -539,5 +610,63 @@ function calculateAmountBasedOnActiveTariff(duration, tariffData, lostTicket) {
             }
         }
     }
+    console.log('amount: ', amount);
     return amount
+}
+
+exports.getReceipts = async (req, res) => {
+    try {
+
+        const ticketId = req.body.ticketId
+        const vehicleNo = req.body.vehicleNo
+
+        await Transaction.aggregate([
+            {
+                '$match': {
+                    '$and': [
+                        {
+                            'transactionType': 'exit'
+                        }, {
+                            '$or': [
+                                {
+                                    ticketId: ticketId,
+                                }, {
+                                    vehicleNo: vehicleNo,
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }, {
+                '$sort': {
+                    'time': -1
+                }
+            }, {
+                '$limit': 10
+            }
+        ]).then(async (receipts) => {
+
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully fetched receipts",
+                receipts
+            );
+
+        }).catch((err) => {
+            console.log('err: ', err);
+            utils.commonResponce(
+                res,
+                201,
+                err.toString()
+            );
+        });
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Transaction",
+        });
+    }
 }

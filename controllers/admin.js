@@ -220,22 +220,37 @@ exports.appLogin = async (req, res, next) => {
         }).then(async (userData) => {
 
 
-
-          await PosHeartbeat.create({
-            posDeviceID: posDeviceID,
-            opretorId: findOpretor._id,
-            opretorName: findOpretor.opretorName,
-            opretorNo: findOpretor.opretorNo,
-            mobileNo: findOpretor.mobileNo,
-            opretorEmail: findOpretor.opretorEmail,
-            parkingId: findParking._id,
-            parkingName: findParking.parkingName,
-            parkingNo: findParking.parkingNo,
-            loginTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-            lastUpdated: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-            isAlive: true,
-            isActive: true
-          })
+          if (await PosHeartbeat.findOne({ posDeviceID }))
+            await PosHeartbeat.findOneAndUpdate({ posDeviceID }, {
+              opretorId: findOpretor._id,
+              opretorName: findOpretor.opretorName,
+              opretorNo: findOpretor.opretorNo,
+              mobileNo: findOpretor.mobileNo,
+              opretorEmail: findOpretor.opretorEmail,
+              parkingId: findParking._id,
+              parkingName: findParking.parkingName,
+              parkingNo: findParking.parkingNo,
+              loginTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
+              lastUpdated: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
+              isAlive: true,
+              isActive: true
+            })
+          else
+            await PosHeartbeat.create({
+              posDeviceID: posDeviceID,
+              opretorId: findOpretor._id,
+              opretorName: findOpretor.opretorName,
+              opretorNo: findOpretor.opretorNo,
+              mobileNo: findOpretor.mobileNo,
+              opretorEmail: findOpretor.opretorEmail,
+              parkingId: findParking._id,
+              parkingName: findParking.parkingName,
+              parkingNo: findParking.parkingNo,
+              loginTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
+              lastUpdated: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
+              isAlive: true,
+              isActive: true
+            })
 
 
           // web socket 
