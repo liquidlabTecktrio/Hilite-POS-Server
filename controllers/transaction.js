@@ -368,7 +368,7 @@ exports.calculatecCharge = async (req, res) => {
         })
 
         if (!ticketId && lostTicket && !vehicleNo) {
-            return res.status(200).json({
+            return res.status(201).json({
                 status: 201,
                 message: "Ticket ID / vehicle No is must for lost ticket",
             });
@@ -401,17 +401,20 @@ exports.calculatecCharge = async (req, res) => {
 
             }
 
+            console.log('findEntryTicket: ', findEntryTicket);
+            console.log('findExitTicket: ', findExitTicket);
+            
             if (findEntryTicket) {
 
                 if (findEntryTicket.cancelledTicket) {
-                    return res.status(200).json({
+                    return res.status(201).json({
                         status: 201,
                         message: "Fraud ticket found",
                     });
                 } else {
 
                     if (findExitTicket) {
-                        return res.status(200).json({
+                        return res.status(201).json({
                             status: 201,
                             message: "Payment already received for Ticket ID",
                         });
@@ -544,14 +547,14 @@ exports.calculatecCharge = async (req, res) => {
 
 
                             } else {
-                                return res.status(200).json({
-                                    status: 200,
+                                return res.status(201).json({
+                                    status: 201,
                                     message: "parking not found",
                                 });
                             }
 
                         } else {
-                            return res.status(200).json({
+                            return res.status(201).json({
                                 status: 201,
                                 message: "shift not found",
                             });
@@ -561,7 +564,7 @@ exports.calculatecCharge = async (req, res) => {
                 }
 
             } else {
-                return res.status(200).json({
+                return res.status(201).json({
                     status: 201,
                     message: "Ticket ID not found",
                 });

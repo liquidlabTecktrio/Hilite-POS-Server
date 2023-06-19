@@ -14,6 +14,9 @@ const paymentObj = new Schema(
 
 const Shift = new Schema(
     {
+        shiftNo: {
+            type: Number,
+        },
         opretorId: {
             type: mongoose.Types.ObjectId,
         },
@@ -44,10 +47,10 @@ const Shift = new Schema(
             default: 0
         },
         // need to remove after informing praveen to change app provider
-        totalLostTicketIssued: {
-            type: Number,
-            default: 0
-        },
+        // totalLostTicketIssued: {
+        //     type: Number,
+        //     default: 0
+        // },
         isActive: {
             type: Boolean
         }

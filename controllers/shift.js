@@ -3,6 +3,7 @@ const Opretor = require("../models/Opretor");
 const utils = require("./utils")
 const moment = require("moment-timezone");
 const mongoose = require("mongoose")
+const SerialNumbers = require("../models/SerialNumbers");
 
 
 exports.startShift = async (req, res) => {
@@ -16,6 +17,16 @@ exports.startShift = async (req, res) => {
       isActive: true
     })
 
+
+    let findSerialNumbers = await SerialNumbers.findOne({
+      parkingId: parkingId
+    })
+
+    if (!findSerialNumbers)
+      await SerialNumbers.create({ parkingId, shiftNo: 1001 }).then(created => {
+        findSerialNumbers = created
+      })
+
     if (isShiftActiveExist) {
       utils.commonResponce(
         res,
@@ -25,6 +36,7 @@ exports.startShift = async (req, res) => {
     } else {
 
       await Shift.create({
+        shiftNo: findSerialNumbers.shiftNo,
         opretorId: opretorId,
         parkingId: parkingId,
         shiftStartTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
@@ -79,7 +91,7 @@ exports.closeShift = async (req, res, next) => {
     await Shift.findByIdAndUpdate(shiftId, {
       shiftStopTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
       isActive: false
-    }, {new: true}).then(async (shiftData) => {
+    }, { new: true }).then(async (shiftData) => {
 
       await Opretor.findByIdAndUpdate(findShift.opretorId, {
         isShiftIn: false
