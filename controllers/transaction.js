@@ -38,10 +38,13 @@ exports.createTransaction = async (req, res) => {
         // web socket 
         dashboardController.getDashboardDataFunction()
 
+        console.log('faildTransactions: ', faildTransactions);
+        console.log('transactions: ', transactions);
+        
         utils.commonResponce(
             res,
-            200,
-            "Successfully created Transactions",
+            transactions.length==faildTransactions.length? 201: 200,
+            transactions.length==faildTransactions.length? "Some transaction could'nt create": "Successfully created Transactions",
             {
                 shiftData, faildTransactions
             }
@@ -346,9 +349,10 @@ async function cancelTicketfunction(transactionData) {
     }
 }
 
-exports.calculatecCharge = async (req, res) => {
+exports.calculateCharge = async (req, res) => {
     try {
 
+        console.log('req.body: ', req.body);
         const ticketId = req.body.ticketId
         const entryTime = req.body.entryTime
         const exitTime = req.body.exitTime
