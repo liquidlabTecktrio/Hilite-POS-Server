@@ -16,7 +16,7 @@ exports.createParking = async (req, res) => {
         const totalExits = req.body.totalExits
         const connectedTariff = req.body.connectedTariff
         const address = req.body.address
-        const vehicles = req.body.vehicles
+        // const vehicles = req.body.vehicles
 
         const findParkingWithSameNo = await Parking.findOne({ parkingNo: parkingNo })
         if (findParkingWithSameNo)
@@ -34,7 +34,7 @@ exports.createParking = async (req, res) => {
                 totalExits: totalExits,
                 connectedTariff: connectedTariff,
                 address: address,
-                vehicles: vehicles,
+                // vehicles: vehicles,
                 isActive: true,
             }).then(async (createdParking) => {
 
