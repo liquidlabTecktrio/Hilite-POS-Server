@@ -330,7 +330,7 @@ exports.getParkingDataForGraph = async (req, res) => {
 
         })
 
-        // const parkingData = await Parking.findById(parkingId)
+        const parkingData = await Parking.findById(parkingId)
         const posHeartbeats = await PosHeartbeat.find({
             $and: [
                 {
@@ -359,6 +359,8 @@ exports.getParkingDataForGraph = async (req, res) => {
                 entryExitTotalEntries,
                 entryExitTotalExits,
                 // parkingData,
+                totalSpaces:parkingData.totalSpaces,
+                currentOccupiedSpaces:parkingData.currentOccupiedSpaces,
                 posHeartbeats
 
             }

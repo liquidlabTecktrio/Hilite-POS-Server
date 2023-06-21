@@ -17,8 +17,10 @@ exports.getDashboardData = async (req, res) => {
 
         await Bluebird.each(parkings, async (parking, index) => {
             const cancelIncomeGraph = index == 0 ? false : true
-
+            if(index == 0)
             parking.graphData = await parkingController.getParkingDataForGraphFunction({ parkingId: parking._id, period: 'week', cancelIncomeGraph })
+            else
+            parking.graphData = {}
             // console.log('parking.graphData: ', parking.graphData);
 
         })
