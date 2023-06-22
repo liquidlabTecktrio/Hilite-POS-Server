@@ -27,12 +27,15 @@ const Transaction = new Schema(
         paymentType: {
             type: String,
         },
+        cancelledTicket: {
+            type: Boolean,
+        },
         lostTicket: {
             type: Boolean,
         },
-        cancelledTicket: {
-            type: Boolean,
-        }
+        supervisorId: {
+            type: mongoose.Types.ObjectId,
+        },
     },
     {
         timestamps: true,

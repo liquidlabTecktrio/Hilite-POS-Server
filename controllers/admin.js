@@ -269,6 +269,8 @@ exports.appLogin = async (req, res, next) => {
               parkingId: findParking._id,
               parkingName: findParking.parkingName,
               parkingNo: findParking.parkingNo,
+              isAutoCloseBarrier: findParking.isAutoCloseBarrier,
+              closeBarrierAfter: findParking.closeBarrierAfter,
               opretorId: findOpretor._id,
               opretorName: findOpretor.opretorName,
               opretorNo: findOpretor.opretorNo,

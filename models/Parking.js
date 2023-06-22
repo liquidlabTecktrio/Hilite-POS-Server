@@ -54,6 +54,12 @@ const Parking = new Schema(
             type: Boolean,
             required: true,
         },
+        isAutoCloseBarrier: {
+            type: Boolean,
+        },
+        closeBarrierAfter: {
+            type: Number,
+        },
     },
     {
         timestamps: true,

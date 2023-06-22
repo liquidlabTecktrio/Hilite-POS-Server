@@ -16,6 +16,8 @@ exports.createParking = async (req, res) => {
         const totalExits = req.body.totalExits
         const connectedTariff = req.body.connectedTariff
         const address = req.body.address
+        const isAutoCloseBarrier = req.body.isAutoCloseBarrier
+        const closeBarrierAfter = req.body.closeBarrierAfter
         // const vehicles = req.body.vehicles
 
         const findParkingWithSameNo = await Parking.findOne({ parkingNo: parkingNo })
@@ -34,6 +36,8 @@ exports.createParking = async (req, res) => {
                 totalExits: totalExits,
                 connectedTariff: connectedTariff,
                 address: address,
+                isAutoCloseBarrier: isAutoCloseBarrier,
+                closeBarrierAfter: closeBarrierAfter,
                 // vehicles: vehicles,
                 isActive: true,
             }).then(async (createdParking) => {

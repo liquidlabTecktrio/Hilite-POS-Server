@@ -15,11 +15,32 @@ exports.createOpretor = async (req, res) => {
         const opretorEmail = req.body.opretorEmail
         const username = req.body.username
         const password = req.body.password
+        const isSupervisor = req.body.isSupervisor
 
         const hashedPassword = await bcrypt.hash(
             password,
             12
         );
+
+        let supervisorPin = null
+        if (isSupervisor) {
+            // get All pincode
+            const existingSupervisorPinParkiongWise = await Opretor.aggregate([
+                {
+                    '$match': {
+                        parkingId: mongoose.Types.ObjectId(parkingId),
+                        isSupervisor: true
+                    }
+                }, {
+                    '$project': {
+                        supervisorPin: 1,
+                        _id: 0
+                    }
+                }
+            ])
+
+            supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
+        }
 
         const findOpratorWithSameUsername = await Opretor.findOne({ username: username })
         if (findOpratorWithSameUsername)
@@ -37,6 +58,8 @@ exports.createOpretor = async (req, res) => {
                 opretorEmail: opretorEmail,
                 username: username,
                 password: hashedPassword,
+                isSupervisor: isSupervisor,
+                supervisorPin: supervisorPin,
                 isActive: true,
             }).then(async (createdOpretor) => {
 
@@ -75,6 +98,16 @@ exports.createOpretor = async (req, res) => {
             message: "Unexpected server error while creating Opretor",
         });
     }
+}
+
+function getRandomNumber(excludedNumbers) {
+    var randomNumber;
+
+    do {
+        randomNumber = Math.floor(Math.random() * 9000) + 1000;
+    } while (excludedNumbers.includes(randomNumber));
+
+    return randomNumber;
 }
 
 exports.getOpretors = async (req, res) => {

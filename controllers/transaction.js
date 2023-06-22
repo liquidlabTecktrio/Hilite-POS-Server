@@ -12,15 +12,7 @@ const dashboardController = require("../controllers/dashboard");
 exports.createTransaction = async (req, res) => {
     try {
 
-        // const ticketId = req.body.ticketId
-        // const transactionType = req.body.transactionType
-        // const shiftId = req.body.shiftId
-        // const vehicleType = req.body.vehicleType
-        // const amount = req.body.amount
-        // const paymentType = req.body.paymentType
-        // const lostTicket = req.body.lostTicket
         const transactions = req.body.transactions
-        // console.log('transactions: ', transactions);
         const faildTransactions = []
 
         await Bluebird.each(transactions, async (transaction, index) => {
@@ -38,105 +30,14 @@ exports.createTransaction = async (req, res) => {
         // web socket 
         dashboardController.getDashboardDataFunction()
 
-        console.log('faildTransactions: ', faildTransactions);
-        console.log('transactions: ', transactions);
-        
         utils.commonResponce(
             res,
-            transactions.length==faildTransactions.length? 201: 200,
-            transactions.length==faildTransactions.length? "Some transaction could'nt create": "Successfully created Transactions",
+            transactions.length == faildTransactions.length ? 201 : 200,
+            transactions.length == faildTransactions.length ? "Some transaction could'nt create" : "Successfully created Transactions",
             {
                 shiftData, faildTransactions
             }
         );
-
-        // var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-
-        // await Transaction.create({
-        //     ticketId: ticketId,
-        //     transactionType: transactionType,
-        //     time: currentTime,
-        //     shiftId: shiftId,
-        //     amount: amount,
-        //     paymentType: paymentType,
-        //     vehicleType: vehicleType,
-        //     lostTicket: lostTicket
-        // }).then(async (createdParking) => {
-
-        //     // update shift and opretor here
-
-        //     const findShift = await Shift.findById(shiftId)
-
-        //     await Parking.findByIdAndUpdate(findShift.parkingId, {
-        //         $inc: {
-        //             currentOccupiedSpaces: transactionType == 'entry' ? 1 : -1,
-        //         },
-        //     })
-
-        //     let obj = {
-        //         $inc: {
-        //             totalTicketIssued: transactionType != 'exit' ? 1 : 0,
-        //             totalTicketCollected: transactionType == 'exit' ? 1 : 0,
-        //             totalLostTicketCollected: lostTicket ? transactionType == 'exit' ? 1 : 0 : 0,
-        //         },
-        //         $push: {}
-        //     }
-
-        //     if (transactionType == 'exit') {
-
-        //         if (findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
-        //             obj['$push']['totalCollection'] = [{
-        //                 paymentType: paymentType,
-        //                 amount: amount,
-        //             }]
-        //         else
-        //             obj['$inc']['totalCollection.$[a].amount'] = amount
-        //     }
-
-        //     await Shift.findByIdAndUpdate(shiftId, obj,
-        //         {
-        //             arrayFilters: [
-        //                 { "a.paymentType": paymentType },
-        //             ],
-        //         }
-        //         // , { new: true }
-        //     )
-
-        //     await Shift.findById(shiftId)
-        //         .then(async (shiftData) => {
-
-
-        //             // web socket 
-        //             dashboardController.getDashboardDataFunction()
-
-        //             utils.commonResponce(
-        //                 res,
-        //                 200,
-        //                 "Successfully created transaction",
-        //                 {
-        //                     shiftData: shiftData
-        //                 }
-        //             );
-
-        //         }).catch((err) => {
-        //             utils.commonResponce(
-        //                 res,
-        //                 201,
-        //                 "Error Occured While fetching Transaction",
-        //                 err.toString()
-        //             );
-        //         });
-
-        // }).catch((err) => {
-        // utils.commonResponce(
-        //     res,
-        //     201,
-        //     "Error Occured While creating Transaction",
-        //     err.toString()
-        // );
-        // });
-
-
 
     } catch (error) {
         console.log('error: ', error);
@@ -160,66 +61,100 @@ async function createTransactionfunction(transactionData) {
         const amount = transactionData.amount
         const paymentType = transactionData.paymentType
         const lostTicket = transactionData.lostTicket
+        const supervisorId = transactionData.supervisorId
 
-        var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+        if (lostTicket && !supervisorId) {
 
-        await Transaction.create({
-            ticketId: ticketId,
-            transactionType: transactionType,
-            time: currentTime,
-            shiftId: shiftId,
-            amount: amount,
-            paymentType: paymentType,
-            vehicleType: vehicleType,
-            vehicleNo: vehicleNo,
-            lostTicket: lostTicket
-        }).then(async (createdParking) => {
-
-            // update shift and opretor here
-
-            const findShift = await Shift.findById(shiftId)
-
-            await Parking.findByIdAndUpdate(findShift.parkingId, {
-                $inc: {
-                    currentOccupiedSpaces: transactionType == 'entry' ? 1 : -1,
-                },
-            })
-
-            let obj = {
-                $inc: {
-                    totalTicketIssued: transactionType != 'exit' ? 1 : 0,
-                    totalTicketCollected: transactionType == 'exit' ? 1 : 0,
-                    totalLostTicketCollected: lostTicket ? transactionType == 'exit' ? 1 : 0 : 0,
-                },
-                $push: {}
-            }
-
-            if (transactionType == 'exit') {
-
-                if (findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
-                    obj['$push']['totalCollection'] = [{
-                        paymentType: paymentType,
-                        amount: amount,
-                    }]
-                else
-                    obj['$inc']['totalCollection.$[a].amount'] = amount
-            }
-
-            await Shift.findByIdAndUpdate(shiftId, obj,
-                {
-                    arrayFilters: [
-                        { "a.paymentType": paymentType },
-                    ],
-                }
-            )
-
-            statusCode = 200
-            message = 'Successfully created transaction'
-
-        }).catch((err) => {
             statusCode = 201
-            message = err.toString()
-        });
+            message = 'supervisor id is must for lost ticket'
+        } else {
+
+            var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+
+
+            await Transaction.create({
+                ticketId: ticketId,
+                transactionType: transactionType,
+                time: currentTime,
+                shiftId: shiftId,
+                amount: amount,
+                paymentType: paymentType,
+                vehicleType: vehicleType,
+                vehicleNo: vehicleNo,
+                lostTicket: lostTicket,
+                supervisorId: supervisorId._id
+            }).then(async (createdParking) => {
+
+                // update shift and opretor here
+
+                const findShift = await Shift.findById(shiftId)
+
+                await Parking.findByIdAndUpdate(findShift.parkingId, {
+                    $inc: {
+                        currentOccupiedSpaces: transactionType == 'entry' ? 1 : -1,
+                    },
+                })
+
+                let obj = {
+                    $inc: {
+                        totalTicketIssued: transactionType != 'exit' ? 1 : 0,
+                        totalTicketCollected: transactionType == 'exit' ? 1 : 0,
+                        totalLostTicketCollected: lostTicket ? transactionType == 'exit' ? 1 : 0 : 0,
+                    },
+                    $push: {}
+                }
+
+                if (transactionType == 'exit') {
+
+                    if (findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
+                        obj['$push']['totalCollection'] = [{
+                            paymentType: paymentType,
+                            amount: amount,
+                        }]
+                    else
+                        obj['$inc']['totalCollection.$[a].amount'] = amount
+                }
+
+                await Shift.findByIdAndUpdate(shiftId, obj,
+                    {
+                        arrayFilters: [
+                            { "a.paymentType": paymentType },
+                        ],
+                    }
+                )
+
+
+                // update supervisor pin because lost ticket transaction is valid online
+                if (lostTicket && !supervisorId) {
+                    // get All pincode
+                    const existingSupervisorPinParkiongWise = await Opretor.aggregate([
+                        {
+                            '$match': {
+                                parkingId: mongoose.Types.ObjectId(findShift.parkingId),
+                                isSupervisor: true
+                            }
+                        }, {
+                            '$project': {
+                                supervisorPin: 1,
+                                _id: 0
+                            }
+                        }
+                    ])
+
+                    supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
+                    if (supervisorPin)
+                        await Opretor.findByIdAndUpdate(supervisorId, { supervisorPin })
+                }
+
+
+                statusCode = 200
+                message = 'Successfully created transaction'
+
+            }).catch((err) => {
+                statusCode = 201
+                message = err.toString()
+            });
+        }
 
     } catch (error) {
         statusCode = 201
@@ -230,6 +165,17 @@ async function createTransactionfunction(transactionData) {
         statusCode, message
     }
 }
+
+function getRandomNumber(excludedNumbers) {
+    var randomNumber;
+
+    do {
+        randomNumber = Math.floor(Math.random() * 9000) + 1000;
+    } while (excludedNumbers.includes(randomNumber));
+
+    return randomNumber;
+}
+
 
 exports.cancelTicket = async (req, res) => {
     try {
@@ -352,7 +298,6 @@ async function cancelTicketfunction(transactionData) {
 exports.calculateCharge = async (req, res) => {
     try {
 
-        console.log('req.body: ', req.body);
         const ticketId = req.body.ticketId
         const entryTime = req.body.entryTime
         const exitTime = req.body.exitTime
@@ -360,16 +305,21 @@ exports.calculateCharge = async (req, res) => {
         const vehicleType = req.body.vehicleType
         const vehicleNo = req.body.vehicleNo
         const lostTicket = req.body.lostTicket
+        const supervisorPin = req.body.supervisorPin
 
-        let findEntryTicket = await Transaction.findOne({
-            ticketId: ticketId,
-            transactionType: 'entry'
-        })
+        let findEntryTicket;
+        if (ticketId)
+            findEntryTicket = await Transaction.findOne({
+                ticketId: ticketId,
+                transactionType: 'entry'
+            })
 
-        const findExitTicket = await Transaction.findOne({
-            ticketId: ticketId,
-            transactionType: 'exit'
-        })
+        let findExitTicket;
+        if (ticketId)
+            findExitTicket = await Transaction.findOne({
+                ticketId: ticketId,
+                transactionType: 'exit'
+            })
 
         if (!ticketId && lostTicket && !vehicleNo) {
             return res.status(201).json({
@@ -379,7 +329,7 @@ exports.calculateCharge = async (req, res) => {
 
         } else {
 
-            if (!ticketId && lostTicket) {
+            if (lostTicket) {
                 const lastTransactionByVehicleNo = await Transaction.aggregate([
                     {
                         '$match': {
@@ -400,14 +350,10 @@ exports.calculateCharge = async (req, res) => {
 
                         findEntryTicket = lastTransactionByVehicleNo[0]
                     }
-
                 }
-
             }
 
-            console.log('findEntryTicket: ', findEntryTicket);
-            console.log('findExitTicket: ', findExitTicket);
-            
+
             if (findEntryTicket) {
 
                 if (findEntryTicket.cancelledTicket) {
@@ -430,132 +376,170 @@ exports.calculateCharge = async (req, res) => {
                         const findShift = await Shift.findById(shiftId)
 
                         if (findShift) {
+
                             const findParking = await Parking.findById(findShift.parkingId)
 
-                            if (findParking) {
-                                let tariffData = []
+                            let findSupervisor = await Opretor.findOne({
+                                parkingId: findShift.parkingId,
+                                supervisorPin: supervisorPin
+                            })
 
-                                const data1 = returnTariffID(2)
-                                if (data1.tariffId) {
-                                    const data_1 = await Tariff.findById(data1.tariffId)
-                                    tariffData.push({
-                                        tariffType: data1.tariffType,
-                                        tariffData: data_1
-                                    })
-                                }
+                            console.log('supervisorPin: ', supervisorPin);
+                            console.log('findSupervisor: ', findSupervisor);
 
-                                const data2 = returnTariffID(3)
-                                if (data2.tariffId) {
-                                    const data_2 = await Tariff.findById(data2.tariffId)
-                                    tariffData.push({
-                                        tariffType: data2.tariffType,
-                                        tariffData: data_2
-                                    })
-                                }
+                            if (lostTicket && !findSupervisor) {
 
-                                const data3 = returnTariffID(4)
-
-                                if (data3.tariffId) {
-                                    const data_3 = await Tariff.findById(data3.tariffId)
-                                    tariffData.push({
-                                        tariffType: data3.tariffType,
-                                        tariffData: data_3
-                                    })
-                                }
-
-
-                                function returnTariffID(tariffType) {
-                                    let obj = {}
-                                    const dayIndex = new Date().getDay()
-                                    const data = findParking.connectedTariff.filter(t => t.tariffType == tariffType)
-                                    if (data.length == 1) {
-
-                                        const data2 = data[0].tariffData.filter(t => t.dayIndex == dayIndex)
-                                        if (data2.length > 0)
-                                            obj = {
-                                                tariffId: data2[0].tariffId,
-                                                tariffType: tariffType
-                                            }
-                                    }
-                                    return obj
-                                }
-
-
-
-                                var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-                                var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-                                var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-                                var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-                                let charge = 0
-                                var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
-
-                                if (!ticketId && lostTicket) {
-
-                                    let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
-                                    let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
-                                    var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
-
-                                    for (i = 0; i <= daysdiff + 1; i++) {
-
-                                        if (moment(_entrytime).isBefore(_exitTime, 'day')) {
-
-                                            var prev_mins = Math.ceil((moment(_entryDateEndingTime, "DD-MM-YYYY HH:mm:ss").diff(moment(_entrytime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-
-                                            calculateAmount(prev_mins, false)
-                                            _entrytime.add(1, 'days')
-                                            _entrytime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00')
-                                            _entryDateEndingTime.add(1, 'days')
-
-                                        }
-                                        else if (moment(_entrytime).isSame(_exitTime, 'day')) {
-
-                                            const _exitDateStaringTime = moment(_exitTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00').format("DD-MM-YYYY HH:mm:ss");
-                                            mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(_exitDateStaringTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-                                            break
-                                        }
-
-                                    }
-
-
-                                }
-
-                                calculateAmount(mins, lostTicket)
-                                function calculateAmount(mins, lostTicket) {
-
-                                    switch (vehicleType) {
-                                        case 2:
-                                            charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
-                                            break;
-                                        case 3:
-                                            charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
-                                            break;
-                                        case 4:
-                                            charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
-                                            break;
-                                        default:
-                                            charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
-                                    }
-                                }
-
-
-                                utils.commonResponce(
-                                    res,
-                                    200,
-                                    "Successfully calculated charge",
-                                    {
-                                        stayDuration: totalMin,
-                                        charge: charge
-                                    }
-                                );
-
-
-
-                            } else {
                                 return res.status(201).json({
                                     status: 201,
-                                    message: "parking not found",
+                                    message: "Incorrect Supervisor Pin",
                                 });
+
+                            } else {
+
+                                if (findParking) {
+                                    let tariffData = []
+
+                                    const data1 = returnTariffID(2)
+                                    if (data1.tariffId) {
+                                        const data_1 = await Tariff.findById(data1.tariffId)
+                                        tariffData.push({
+                                            tariffType: data1.tariffType,
+                                            tariffData: data_1
+                                        })
+                                    }
+
+                                    const data2 = returnTariffID(3)
+                                    if (data2.tariffId) {
+                                        const data_2 = await Tariff.findById(data2.tariffId)
+                                        tariffData.push({
+                                            tariffType: data2.tariffType,
+                                            tariffData: data_2
+                                        })
+                                    }
+
+                                    const data3 = returnTariffID(4)
+                                    if (data3.tariffId) {
+                                        const data_3 = await Tariff.findById(data3.tariffId)
+                                        tariffData.push({
+                                            tariffType: data3.tariffType,
+                                            tariffData: data_3
+                                        })
+                                    }
+
+                                    function returnTariffID(tariffType) {
+                                        let obj = {}
+                                        const dayIndex = new Date().getDay()
+                                        const data = findParking.connectedTariff.filter(t => t.tariffType == tariffType)
+                                        if (data.length == 1) {
+
+                                            const data2 = data[0].tariffData.filter(t => t.dayIndex == dayIndex)
+                                            if (data2.length > 0)
+                                                obj = {
+                                                    tariffId: data2[0].tariffId,
+                                                    tariffType: tariffType
+                                                }
+                                        }
+                                        return obj
+                                    }
+
+                                    var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                                    var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                                    var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                                    var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                                    let charge = 0
+                                    var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
+
+                                    if (lostTicket) {
+
+                                        let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
+                                        let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+                                        var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
+
+                                        for (i = 0; i <= daysdiff + 1; i++) {
+
+                                            if (moment(_entrytime).isBefore(_exitTime, 'day')) {
+
+                                                var prev_mins = Math.ceil((moment(_entryDateEndingTime, "DD-MM-YYYY HH:mm:ss").diff(moment(_entrytime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+                                                calculateAmount(prev_mins, false)
+                                                _entrytime.add(1, 'days')
+                                                _entrytime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00')
+                                                _entryDateEndingTime.add(1, 'days')
+
+                                            }
+                                            else if (moment(_entrytime).isSame(_exitTime, 'day')) {
+
+                                                const _exitDateStaringTime = moment(_exitTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00').format("DD-MM-YYYY HH:mm:ss");
+                                                mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(_exitDateStaringTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                                                break
+                                            }
+
+                                        }
+
+
+                                    }
+
+                                    calculateAmount(mins, lostTicket)
+                                    function calculateAmount(mins, lostTicket) {
+
+                                        switch (vehicleType) {
+                                            case 2:
+                                                charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
+                                                break;
+                                            case 3:
+                                                charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
+                                                break;
+                                            case 4:
+                                                charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 3)[0].tariffData, lostTicket)
+                                                break;
+                                            default:
+                                                charge += calculateAmountBasedOnActiveTariff(mins, tariffData.filter(t => t.tariffType == 2)[0].tariffData, lostTicket)
+                                        }
+                                    }
+
+                                    // update supervisor pin because lost ticket transaction is valid online
+                                    if (lostTicket && supervisorPin) {
+                                        // get All pincode
+                                        const existingSupervisorPinParkiongWise = await Opretor.aggregate([
+                                            {
+                                                '$match': {
+                                                    parkingId: mongoose.Types.ObjectId(findShift.parkingId),
+                                                    isSupervisor: true
+                                                }
+                                            }, {
+                                                '$project': {
+                                                    supervisorPin: 1,
+                                                    _id: 0
+                                                }
+                                            }
+                                        ])
+
+                                        const supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
+                                        if (supervisorPin)
+                                            await Opretor.findByIdAndUpdate(findSupervisor._id, { supervisorPin })
+                                    }
+
+                                    utils.commonResponce(
+                                        res,
+                                        200,
+                                        "Successfully calculated charge",
+                                        {
+                                            stayDuration: totalMin,
+                                            charge: charge,
+                                            supervisorId: findSupervisor._id
+                                        }
+                                    );
+
+
+
+                                } else {
+                                    return res.status(201).json({
+                                        status: 201,
+                                        message: "parking not found",
+                                    });
+                                }
                             }
+
 
                         } else {
                             return res.status(201).json({

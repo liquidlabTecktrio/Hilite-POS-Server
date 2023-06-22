@@ -47,6 +47,13 @@ const Opretor = new Schema(
     lastLogin: {
       type: String,
     },
+    isSupervisor: {
+      type: Boolean,
+    },
+    supervisorPin:{
+      type:Number
+    }
+
   },
   {
     timestamps: true,
