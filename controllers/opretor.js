@@ -139,3 +139,32 @@ exports.getOpretors = async (req, res) => {
     }
 }
 
+exports.getSupervisorPin = async (req, res) => {
+    try {
+        const opretorId = req.body.opretorId;
+
+        await Opretor.findOne({ opretorId: mongoose.Types.ObjectId(opretorId), isSupervisor: true }).then(async (opretorData) => {
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully fetched Opretor",
+                opretorData
+            );
+
+        }).catch((err) => {
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While fetching Opretor",
+                err.toString()
+            );
+        });
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Opretor",
+        });
+    }
+}

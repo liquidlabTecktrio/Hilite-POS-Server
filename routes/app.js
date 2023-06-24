@@ -8,6 +8,7 @@ const shiftController = require("../controllers/shift");
 // const tafiffController = require("../controllers/tafiff");
 const transactionController = require("../controllers/transaction");
 const posHeartbeatController = require("../controllers/posHeartbeat");
+const opretorController = require("../controllers/opretor");
 
 router.post("/appLogin", appLoginController.appLogin);
 
@@ -39,7 +40,7 @@ router.post("/getReceipts", transactionController.getReceipts);
 
 router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 
-
+router.post("/getSupervisorPin", opretorController.getSupervisorPin);
 
 
 
