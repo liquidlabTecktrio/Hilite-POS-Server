@@ -158,7 +158,7 @@ async function createTransactionfunction(transactionData) {
 
     } catch (error) {
         statusCode = 201
-        message = err.toString()
+        message = error.toString()
     }
 
     return {
