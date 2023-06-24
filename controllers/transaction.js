@@ -82,7 +82,7 @@ async function createTransactionfunction(transactionData) {
                 vehicleType: vehicleType,
                 vehicleNo: vehicleNo,
                 lostTicket: lostTicket,
-                supervisorId: supervisorId._id
+                supervisorId: supervisorId
             }).then(async (createdParking) => {
 
                 // update shift and opretor here
