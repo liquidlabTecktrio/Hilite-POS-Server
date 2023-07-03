@@ -15,7 +15,10 @@ const dashboardController = require("../controllers/dashboard");
 
 exports.adminLogin = async (req, res, next) => {
   const username = req.body.username;
+  console.log("username",username)
   const password = req.body.password;
+  console.log("password",password)
+
 
   //console.log("login");
   // validate the request

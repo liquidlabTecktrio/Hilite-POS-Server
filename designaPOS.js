@@ -27,6 +27,7 @@ wss.on('connection', function connection(ws) {
 })
 
 
+
 function setupCORS(req, res, next) {
   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
   res.header(
@@ -44,6 +45,11 @@ function setupCORS(req, res, next) {
 
 
 app.all("/*", setupCORS);
+
+
+
+
+
 
 app.use("/", express.static(__dirname + "/build"));
 app.use("/*", express.static(__dirname + "/build"));
