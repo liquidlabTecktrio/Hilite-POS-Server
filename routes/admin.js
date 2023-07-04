@@ -23,7 +23,7 @@ router.post("/createTariff",
     // verifyTokenMiddleware,
     tafiffController.createTariff);
 
-router.post("/getDashboardData", verifyTokenMiddleware, dashboardController.getDashboardData);
+router.post("/getDashboardData", dashboardController.getDashboardData);
 
 router.post("/getTariffs", verifyTokenMiddleware, tafiffController.getTariffs);
 

@@ -24,8 +24,8 @@ exports.adminLogin = async (req, res, next) => {
   // validate the request
   const validation = await validateUserInput(username, password);
   if (validation) {
-    return res.status(400).json({
-      status: 400,
+    return res.status(202).json({
+      status: 202,
       message: "username and password should not be empty",
     });
   }
@@ -36,8 +36,8 @@ exports.adminLogin = async (req, res, next) => {
     // comparing the password
     const comparePassword = await bcrypt.compare(password, findAdmin.password);
     if (!comparePassword) {
-      return res.status(404).json({
-        status: 404,
+      return res.status(201).json({
+        status: 201,
         message: "username/password is incorrect!!!",
       });
     }
@@ -55,8 +55,8 @@ exports.adminLogin = async (req, res, next) => {
       },
     });
   } else {
-    return res.status(404).json({
-      status: 404,
+    return res.status(202).json({
+      status: 202,
       message: "admin not found",
     });
   }
