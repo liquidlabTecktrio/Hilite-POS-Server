@@ -12,6 +12,7 @@ const parkingController = require("../controllers/parking");
 const opretorController = require("../controllers/opretor");
 const deviceController = require("../controllers/device");
 const dashboardController = require("../controllers/dashboard");
+const reportsController = require("../controllers/reports")
 
 const posHeartbeatController = require("../controllers/posHeartbeat");
 
@@ -63,6 +64,7 @@ router.post("/createVehicle",
     vehicleController.createVehicle);
 
 router.post("/getVehicles", verifyTokenMiddleware, vehicleController.getVehicles);
+router.post("/getParkingRevenue", verifyTokenMiddleware, reportsController.getParkingRevenue)
 
 
 module.exports = router;
