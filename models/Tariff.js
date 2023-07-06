@@ -52,6 +52,9 @@ const weeklyRateSchema = new mongoose.Schema({
 const monthlyRateSchema = new mongoose.Schema({
     amount: { type: Number }
 })
+const lostTicketSchema = new mongoose.Schema({
+    amount: { type: Number }
+})
 
 
 const Tariff = new Schema(
@@ -67,8 +70,8 @@ const Tariff = new Schema(
         },
         // dailyData:[dailyObj],
         lostTicket: {
-            type: Number,
-            required: true,
+            type: lostTicketSchema,
+
         },
         isActive: {
             type: Boolean,

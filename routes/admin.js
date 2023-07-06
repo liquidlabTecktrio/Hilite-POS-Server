@@ -14,6 +14,7 @@ const deviceController = require("../controllers/device");
 const dashboardController = require("../controllers/dashboard");
 const reportsController = require("../controllers/reports")
 
+
 const posHeartbeatController = require("../controllers/posHeartbeat");
 
 const vehicleController = require("../controllers/vehicle");

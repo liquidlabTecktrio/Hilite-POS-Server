@@ -41,6 +41,7 @@ router.post("/getReceipts", transactionController.getReceipts);
 router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 
 router.post("/getSupervisorPin", opretorController.getSupervisorPin);
+router.post("/checkLostTicket", transactionController.checkLostTicket)
 
 
 

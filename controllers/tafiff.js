@@ -10,6 +10,7 @@ exports.createTariff = async (req, res) => {
         const hourlyRate = req.body.hourlyRate
         const isActive = req.body.isActive
         const lostTicket = req.body.lostTicket
+        console.log("lostTicket", lostTicket)
         const tariffName = req.body.tariffName
         const isTariffInHour = req.body.isTariffInHour
         const dailyRate = req.body.dailyRate
@@ -52,14 +53,18 @@ exports.createTariff = async (req, res) => {
             // weeklyRate: weeklyRate,
             // monthlyRate: monthlyRate
 
+
         }
-        if (dailyRate !== undefined || dailyRate !== null) {
+        if (lostTicket.amount !== "") {
+            createdTariffObj.lostTicket = lostTicket
+        }
+        if (dailyRate.amount != "") {
             createdTariffObj.dailyRate = dailyRate
         }
-        if (weeklyRate !== undefined || weeklyRate !== null) {
+        if (weeklyRate.amount != "") {
             createdTariffObj.weeklyRate = weeklyRate
         }
-        if (monthlyRate !== undefined || monthlyRate !== null) {
+        if (monthlyRate.amount != "") {
             createdTariffObj.monthlyRate = monthlyRate
         }
         await Tariff.create(createdTariffObj)
