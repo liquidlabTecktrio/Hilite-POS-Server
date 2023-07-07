@@ -1,0 +1,149 @@
+const MonthlyPass = require("../models/MonthlyPass")
+const utils = require("./utils")
+const mongoose = require("mongoose");
+exports.createMonthlyPass = async (req, res) => {
+    try {
+        const name = req.body.name
+        const phoneNumber = req.body.phoneNumber
+        const email = req.body.email
+        const address = req.body.address
+        const passDuration = req.body.passDuration
+        const startMonth = req.body.startMonth
+        const endMonth = req.body.endMonth
+        const cardNumber = req.body.cardNumber
+        const vehicalModel = req.body.vehicalModel
+        const vehicalColor = req.body.vehicalColor
+        const cardType = req.body.cardType
+        const amount = req.body.amount
+        const licenseNumber = req.body.licenseNumber
+        await MonthlyPass.create({
+            name: name,
+            phoneNumber: phoneNumber,
+            email: email,
+            address: address,
+            passDuration: passDuration,
+            startMonth: startMonth,
+            endMonth: endMonth,
+            cardNumber: cardNumber,
+            vehicalModel: vehicalModel,
+            vehicalColor: vehicalColor,
+            cardType: cardType,
+            amount: amount,
+            licenseNumber: licenseNumber
+        }).then(createMonthlyPass => {
+
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully created Monthly Pass",
+                createMonthlyPass
+            );
+        }).catch((err) => {
+            console.log("err", err)
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While fetching Monthly Pass",
+                err.toString()
+            );
+        });
+
+
+    } catch (error) {
+        console.log("error", error)
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Monthly Pass",
+        });
+    }
+}
+exports.getMonthlyPass = async (req, res) => {
+    try {
+
+        await MonthlyPass.find().then(async (monthlyPassData) => {
+
+
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully fetched Monthly Pass",
+                monthlyPassData
+            );
+
+        }).catch((err) => {
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While fetching Monthly Pass",
+                err.toString()
+            );
+        });
+
+    } catch {
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Device",
+        });
+    }
+}
+exports.updateMonthlyPass = async (req, res) => {
+    try {
+        const monthlyPassId = req.body.updateMonthlyPassData.monthlyPassId
+
+        const name = req.body.updateMonthlyPassData.updateName
+
+        const phoneNumber = req.body.updateMonthlyPassData.updatePhoneNumber;
+        const email = req.body.updateMonthlyPassData.updateEmail;
+        const address = req.body.updateMonthlyPassData.updateAdress;
+        const passDuration = req.body.updateMonthlyPassData.updatePassDuration;
+        const startMonth = req.body.updateMonthlyPassData.updateStartMonth
+        const endMonth = req.body.updateMonthlyPassData.updateEndMonth;
+        const cardNumber = req.body.updateMonthlyPassData.updateCardNumber;
+        const vehicalModel = req.body.updateMonthlyPassData.updateVehicalModel;
+        const vehicalColor = req.body.updateMonthlyPassData.updateVehicalColor;
+        const cardType = req.body.updateMonthlyPassData.updateCardType;
+        const licenseNumber = req.body.updateMonthlyPassData.updateLicenseNumber
+        // const designation = req.body.designation;
+        const amount = req.body.updateMonthlyPassData.updateAmount;
+
+        const monthlyPassExist = await MonthlyPass.findById(monthlyPassId);
+        if (monthlyPassExist) {
+
+            const options = { useFindAndModify: false, new: true };
+            await MonthlyPass.findByIdAndUpdate(
+                { _id: monthlyPassId },
+                {
+                    name: name,
+                    phoneNumber: phoneNumber,
+                    email: email,
+                    address: address,
+                    passDuration: passDuration,
+                    startMonth: startMonth,
+                    endMonth: endMonth,
+                    cardNumber: cardNumber,
+                    vehicalModel: vehicalModel,
+                    vehicalColor: vehicalColor,
+                    cardType: cardType,
+                    amount: amount,
+                    licenseNumber: licenseNumber,
+
+                },
+                options
+            )
+                .then(updateMonthlyPass => {
+
+
+                    utils.commonResponce(res, 200, "Monthly Pass Updated Sucessfully", updateMonthlyPass)
+                }).catch(function (error) {
+                    console.log(error);
+                    utils.commonResponce(res, 201, "Error while update Monthly Pass ", error.toString())
+
+                });
+        } else {
+            utils.commonResponce(res, 404, "Monthly Pass is not found ")
+        }
+
+    } catch (error) {
+        console.log(error)
+    }
+}
