@@ -790,26 +790,30 @@ exports.checkLostTicket = async (req, res) => {
             if (checkTransaction[0].transactionType == "entry") {
                 ticketId = checkTransaction[0].ticketId;
                 console.log("ticketId", ticketId)
-                const tariffType = ticketId.substring(6, 7);
-                console.log("tariffType", tariffType)
-                const carwashType = ticketId.substring(5, 6)
+                // const tariffType = ticketId.substring(6, 7);
+                // console.log("tariffType", tariffType)
+                // const carwashType = ticketId.substring(5, 6)
                 entryTime = checkTransaction[0].ticketId.slice(7, 17);
+                console.log("entryTime", entryTime)
                 var entryTimeISO = moment
                     .unix(entryTime)
                     .tz("Asia/Calcutta")
                     .format("DD-MM-YYYY HH:mm:ss");
+                console.log("entryTimeISO", entryTimeISO)
                 var exitTimeISO = moment
                     .unix(Math.floor(Date.now() / 1000))
                     .tz("Asia/Calcutta")
                     .format("DD-MM-YYYY HH:mm:ss");
+                console.log("exitTimeISO", exitTimeISO)
                 var duration = Math.ceil(
                     moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(
                         moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss")
                     ) / 60000
                 );
+                console.log("duration", duration)
                 console.log("sjbjgb")
                 // calculate_tariff(entryTimeISO, exitTimeISO,checkTransaction[0], tariffData,carwashType,true ,res,);
-                calculate_tariff(entryTime, Math.floor(Date.now() / 1000), checkTransaction[0], tariffData, carwashType, tariffType, true, res,);
+                calculate_tariff(entryTime, Math.floor(Date.now() / 1000), checkTransaction[0], tariffData, true, res,);
 
 
                 // utils.commonResponce(res, 201, "vehicle data found", vehicleNo);
@@ -826,10 +830,12 @@ exports.checkLostTicket = async (req, res) => {
 
     }
 }
-function calculate_tariff(entryTime, exitTime, ticket, tariffData, carwashType, tariffType, lostTicket, res) {
+function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, res) {
     // entryTime = 1686950503;
     // exitTime = 1686993028;
     // console.log("tariffData", tariffData)
+    console.log("lostTicket", lostTicket)
+    // console.log("carwashType", carwashType)
     // console.log("xbj", entryTime, exitTime, ticket, tariffData, carwashType, tariffType, lostTicket, res)
     var entryTimeISO = moment
         .unix(entryTime)
@@ -847,28 +853,30 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, carwashType, 
     //   dailyRate =  findKey(tariffData, "dailyRate");
     //   lostTicket =  findKey(tariffData, "lostTicket");
 
-    lostTicketFine = lostTicket ? tariffData?.lostTicket?.amount : 0;
+    lostTicketFine = lostTicket ? tariffData.lostTicket?.amount : 0;
+
+
     console.log("lostTicketFine", lostTicketFine)
     amount = 0;
     console.log("amount01", amount)
-    carwashAmount = 0;
-    console.log("carwashAmount", carwashAmount)
-    CarwashType = '';
-    if (carwashType == 1) {
-        carwashAmount = 300;
-        carwashType = 'Hatchback/Sedan - (Exteriror Only)';
+    // carwashAmount = 0;
+    // console.log("carwashAmount", carwashAmount)
+    // CarwashType = '';
+    // if (carwashType == 1) {
+    //     carwashAmount = 300;
+    //     carwashType = 'Hatchback/Sedan - (Exteriror Only)';
 
-    }
-    if (carwashType == 2) {
-        carwashAmount = 400;
-        carwashType = 'SUV - (Exterior Only)';
-    }
-    if (carwashType == 3) {
-        carwashAmount = 500;
-        carwashType = 'Exterior & Interior Cleaning';
-    }
+    // }
+    // if (carwashType == 2) {
+    //     carwashAmount = 400;
+    //     carwashType = 'SUV - (Exterior Only)';
+    // }
+    // if (carwashType == 3) {
+    //     carwashAmount = 500;
+    //     carwashType = 'Exterior & Interior Cleaning';
+    // }
 
-    amount = calculate_parking_fee(tariffType, duration, tariffData);
+    amount = calculate_parking_fee(duration, tariffData);
     console.log("amount", amount)
 
     if (amount != null) {
@@ -882,9 +890,9 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, carwashType, 
             vehicleType: ticket.vehicleType,
             vehicleNo: ticket.vehicleNo,
             amount: amount,
-            carwashAmount: carwashAmount,
+            // carwashAmount: carwashAmount,
             lostTicketFine: lostTicketFine,
-            carwashType: carwashType,
+            // carwashType: carwashType,
 
         });
     } else {
@@ -900,124 +908,124 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, carwashType, 
     // console.log("exitTime", exitTime);
     // console.log("totalMin", totalMin)
 }
-function calculate_parking_fee(tariffType, duration, tariffData) {
+function calculate_parking_fee(duration, tariffData) {
     let amount = 0;
-    console.log("tariffData", tariffData)
+    // console.log("tariffData", tariffData)
     dailyRate = tariffData.dailyRate != null ? tariffData.dailyRate.amount : 0;
-    console.log("dailyRate", dailyRate)
+    // console.log("dailyRate", dailyRate)
     weeklyRate = tariffData.weeklyRate != null ? tariffData.weeklyRate.amount : 0;
-    console.log("weeklyRate", weeklyRate)
+    // console.log("weeklyRate", weeklyRate)
     monthlyRate =
         tariffData.monthlyRate != null ? tariffData.monthlyRate.amount : 0;
-    console.log("monthlyRate01", monthlyRate)
-    console.log("tariffType", tariffType)
-    if (tariffType == '2') {
-        if (
-            duration <= 1440 &&
-            (dailyRate != 0 || weeklyRate != 0 || monthlyRate != 0)
-        ) {
-            // parking duration less than or equal to 24 hours
-            tariffData?.hourlyRate?.map((hourlyRate) => {
-                if (duration > hourlyRate.starting) {
-                    if (hourlyRate.isInfinite == true) {
-                        if (hourlyRate.isIterate == true) {
-                            iterateFunction(
-                                duration,
-                                hourlyRate.starting,
-                                duration,
-                                hourlyRate.iterateEvery,
-                                hourlyRate.price
-                            );
-                        } else {
-                            amount += hourlyRate.price;
-                        }
-                    } else {
-                        if (hourlyRate.isIterate == true) {
-                            iterateFunction(
-                                duration,
-                                hourlyRate.starting,
-                                hourlyRate.ending,
-                                hourlyRate.iterateEvery,
-                                hourlyRate.price
-                            );
-                        } else {
-                            amount += hourlyRate.price;
-                        }
-                    }
-                }
-            });
-        } else {
-            totaldays = Math.floor(duration / 1440);
-            if (monthlyRate > 0 && totaldays >= 30) {
-                // if(monthlyRate>0){
-                totalMonths = Math.floor(totaldays / 30);
-                amount += monthlyRate * totalMonths;
-                totaldays = totaldays - totalMonths * 30;
-                // }
-            }
-            if (
-                totaldays >= 7 &&
-                totaldays < (monthlyRate != 0 ? 30 : totaldays + 1) &&
-                weeklyRate > 0
-            ) {
-                // if(weeklyRate>0){
-                totalWeeks = Math.floor(totaldays / 7);
-                amount += weeklyRate * totalWeeks;
-                totaldays = totaldays - totalWeeks * 7;
-                // }
-            }
-            if (
-                totaldays >= 1 && totaldays < (monthlyRate != 0 || weeklyRate != 0)
-                    ? 7
-                    : totaldays + 1
-            ) {
-                if (dailyRate > 0) {
-                    amount += dailyRate * totaldays;
-                }
-            }
+    // console.log("monthlyRate01", monthlyRate)
 
-            remainingMin = duration - (dailyRate > 0 ? totaldays * 1440 : 0);
-            tariffData?.hourlyRate?.map((hourlyRate) => {
-                if (remainingMin > hourlyRate.starting) {
-                    if (hourlyRate.isInfinite == true) {
-                        if (hourlyRate.isIterate == true) {
-                            iterateFunction(
-                                remainingMin,
-                                hourlyRate.starting,
-                                remainingMin,
-                                hourlyRate.iterateEvery,
-                                hourlyRate.price
-                            );
-                        } else {
-                            amount += hourlyRate.price;
-                        }
+    // if (tariffType == '2') {
+    if (
+        duration <= 1440 &&
+        (dailyRate != 0 || weeklyRate != 0 || monthlyRate != 0)
+    ) {
+        // parking duration less than or equal to 24 hours
+        tariffData?.hourlyRate?.map((hourlyRate) => {
+            if (duration > hourlyRate.starting) {
+                if (hourlyRate.isInfinite == true) {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            duration,
+                            hourlyRate.starting,
+                            duration,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
                     } else {
-                        if (hourlyRate.isIterate == true) {
-                            iterateFunction(
-                                remainingMin,
-                                hourlyRate.starting,
-                                hourlyRate.ending,
-                                hourlyRate.iterateEvery,
-                                hourlyRate.price
-                            );
-                        } else {
-                            amount += hourlyRate.price;
-                        }
+                        amount += hourlyRate.price;
+                    }
+                } else {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            duration,
+                            hourlyRate.starting,
+                            hourlyRate.ending,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
                     }
                 }
-            });
+            }
+        });
+    } else {
+        totaldays = Math.floor(duration / 1440);
+        if (monthlyRate > 0 && totaldays >= 30) {
+            // if(monthlyRate>0){
+            totalMonths = Math.floor(totaldays / 30);
+            amount += monthlyRate * totalMonths;
+            totaldays = totaldays - totalMonths * 30;
+            // }
         }
-        return amount
+        if (
+            totaldays >= 7 &&
+            totaldays < (monthlyRate != 0 ? 30 : totaldays + 1) &&
+            weeklyRate > 0
+        ) {
+            // if(weeklyRate>0){
+            totalWeeks = Math.floor(totaldays / 7);
+            amount += weeklyRate * totalWeeks;
+            totaldays = totaldays - totalWeeks * 7;
+            // }
+        }
+        if (
+            totaldays >= 1 && totaldays < (monthlyRate != 0 || weeklyRate != 0)
+                ? 7
+                : totaldays + 1
+        ) {
+            if (dailyRate > 0) {
+                amount += dailyRate * totaldays;
+            }
+        }
+
+        remainingMin = duration - (dailyRate > 0 ? totaldays * 1440 : 0);
+        tariffData?.hourlyRate?.map((hourlyRate) => {
+            if (remainingMin > hourlyRate.starting) {
+                if (hourlyRate.isInfinite == true) {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            remainingMin,
+                            hourlyRate.starting,
+                            remainingMin,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
+                    }
+                } else {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            remainingMin,
+                            hourlyRate.starting,
+                            hourlyRate.ending,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
+                    }
+                }
+            }
+        });
     }
-    if (tariffType == '1') {
-        totalDays = Math.ceil(duration / 1440);
-        amount = totalDays * dailyRate;
+    return amount
+    // }
+    // if (tariffType == '1') {
+    //     totalDays = Math.ceil(duration / 1440);
+    //     amount = totalDays * dailyRate;
 
 
-        return amount;
-    }
+    //     return amount;
+    // }
 
-    return null;
+    // return null;
 
 }
 
