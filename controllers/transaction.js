@@ -29,7 +29,7 @@ exports.createTransaction = async (req, res) => {
 
         // web socket 
         dashboardController.getDashboardDataFunction()
-
+        console.log(faildTransactions)
         utils.commonResponce(
             res,
             transactions.length == faildTransactions.length ? 201 : 200,
@@ -82,7 +82,7 @@ async function createTransactionfunction(transactionData) {
                 vehicleType: vehicleType,
                 vehicleNo: vehicleNo,
                 lostTicket: lostTicket,
-                supervisorId: supervisorId._id
+                supervisorId: supervisorId
             }).then(async (createdParking) => {
 
                 // update shift and opretor here
@@ -158,7 +158,7 @@ async function createTransactionfunction(transactionData) {
 
     } catch (error) {
         statusCode = 201
-        message = err.toString()
+        message = error.toString()
     }
 
     return {

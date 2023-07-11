@@ -8,7 +8,7 @@ const shiftController = require("../controllers/shift");
 // const tafiffController = require("../controllers/tafiff");
 const transactionController = require("../controllers/transaction");
 const posHeartbeatController = require("../controllers/posHeartbeat");
-
+const ticketController = require("../controllers/ticket")
 router.post("/appLogin", appLoginController.appLogin);
 
 // router.post("/registerVehicle", vehicleController.registerVehicle);
@@ -32,7 +32,8 @@ router.post("/startShift", shiftController.startShift);
 
 router.post("/closeShift", shiftController.closeShift);
 
-router.post("/createTransaction", transactionController.createTransaction);
+// router.post("/createTransaction", transactionController.createTransaction);
+router.post("/createTransaction", ticketController.createTransaction);
 router.post("/cancelTicket", transactionController.cancelTicket);
 router.post("/calculateCharge", transactionController.calculateCharge);
 router.post("/getReceipts", transactionController.getReceipts);
