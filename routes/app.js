@@ -9,6 +9,8 @@ const shiftController = require("../controllers/shift");
 const transactionController = require("../controllers/transaction");
 const posHeartbeatController = require("../controllers/posHeartbeat");
 const ticketController = require("../controllers/ticket")
+const opretorController = require("../controllers/opretor");
+
 router.post("/appLogin", appLoginController.appLogin);
 
 // router.post("/registerVehicle", vehicleController.registerVehicle);
@@ -40,7 +42,8 @@ router.post("/getReceipts", transactionController.getReceipts);
 
 router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 
-
+router.post("/getSupervisorPin", opretorController.getSupervisorPin);
+router.post("/checkLostTicket", transactionController.checkLostTicket)
 
 
 

@@ -7,11 +7,30 @@ const mongoose = require("mongoose");
 exports.createTariff = async (req, res) => {
     try {
 
-        const tariffData = req.body.tariffData
+        const hourlyRate = req.body.hourlyRate
         const isActive = req.body.isActive
         const lostTicket = req.body.lostTicket
+        console.log("lostTicket", lostTicket)
         const tariffName = req.body.tariffName
         const isTariffInHour = req.body.isTariffInHour
+        const dailyRate = req.body.dailyRate
+        console.log("dailyRate", dailyRate)
+        const weeklyRate = req.body.weeklyRate
+        console.log("weeklyRate", weeklyRate)
+        const monthlyRate = req.body.monthlyRate
+        console.log("monthlyRate", monthlyRate)
+        // if (dailyRate !== undefined) {
+        //     dailyRate = req.body.dailyRate
+        // }
+        // let weeklyRate;
+        // if (weeklyRate !== undefined) {
+        //     weeklyRate = req.body.weeklyRate
+        // }
+        // let monthlyRate;
+        // if (monthlyRate !== undefined) {
+        //     monthlyRate = req.body.monthlyRate
+
+        // }
 
         // let dailyData = []
         // const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -24,43 +43,65 @@ exports.createTariff = async (req, res) => {
         //     })
         // })
 
-        await Tariff.create({
+        const createdTariffObj = {
             tariffName: tariffName,
-            tariffData: tariffData,
+            hourlyRate: hourlyRate,
             lostTicket: lostTicket,
             isTariffInHour: isTariffInHour,
             isActive: isActive,
-        }).then(async (createdTariff) => {
+            // dailyRate: dailyRate,
+            // weeklyRate: weeklyRate,
+            // monthlyRate: monthlyRate
 
-            await Tariff.find().then(async (TariffData) => {
+
+        }
+        if (lostTicket.amount !== "") {
+            createdTariffObj.lostTicket = lostTicket
+        }
+        if (dailyRate.amount != "") {
+            createdTariffObj.dailyRate = dailyRate
+        }
+        if (weeklyRate.amount != "") {
+            createdTariffObj.weeklyRate = weeklyRate
+        }
+        if (monthlyRate.amount != "") {
+            createdTariffObj.monthlyRate = monthlyRate
+        }
+        await Tariff.create(createdTariffObj)
+            .then(async (createdTariff) => {
+
+                await Tariff.find().then(async (TariffData) => {
 
 
-                utils.commonResponce(
-                    res,
-                    200,
-                    "Successfully fetched tariff",
-                    TariffData
-                );
+                    utils.commonResponce(
+                        res,
+                        200,
+                        "Successfully fetched tariff",
+                        TariffData
+                    );
+
+                }).catch((err) => {
+                    console.log("err", err)
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Error Occured While fetching tariff",
+                        err.toString()
+                    );
+                });
 
             }).catch((err) => {
+                console.log("err", err)
                 utils.commonResponce(
                     res,
                     201,
-                    "Error Occured While fetching tariff",
+                    "Error Occured While creating tariff",
                     err.toString()
                 );
             });
 
-        }).catch((err) => {
-            utils.commonResponce(
-                res,
-                201,
-                "Error Occured While creating tariff",
-                err.toString()
-            );
-        });
-
-    } catch {
+    } catch (error) {
+        console.log("error", error)
         return res.status(500).json({
             status: 500,
             message: "Unexpected server error while creating tariff",
@@ -107,7 +148,7 @@ exports.getTariffForParking = async (req, res) => {
 
     try {
 
-        await Tariff.aggregate([{$project:{tariffName:1}}]).then(async (TariffData) => {
+        await Tariff.aggregate([{ $project: { tariffName: 1 } }]).then(async (TariffData) => {
 
 
             utils.commonResponce(
@@ -134,3 +175,29 @@ exports.getTariffForParking = async (req, res) => {
     }
 }
 
+// {
+//     "hourlyRate": [
+//       {
+//         "starting": 0,
+//         "ending": 120,
+//         "price": 200,
+//         "isIterate": false,
+//         "iterateEvery": 0,
+//         "isInfinite": false
+//       },
+//       {
+//         "starting": 121,
+//         "ending": 121,
+//         "price": 80,
+//         "isIterate": true,
+//         "iterateEvery": 60,
+//         "isInfinite": true
+//       }
+//     ],
+//     "dailyRate": {
+//       "amount": 1000
+//     },
+//     "lostTicket": {
+//       "amount": 200
+//     }
+//   }

@@ -526,7 +526,7 @@ exports.calculateCharge = async (req, res) => {
                                         {
                                             stayDuration: totalMin,
                                             charge: charge,
-                                            supervisorId: findSupervisor._id
+                                            supervisorId: lostTicket ? findSupervisor._id : null
                                         }
                                     );
 
@@ -666,5 +666,373 @@ exports.getReceipts = async (req, res) => {
             status: 500,
             message: "Unexpected server error while creating Transaction",
         });
+    }
+}
+exports.checkLostTicket = async (req, res) => {
+    try {
+
+        const vehicleNo = req.body.vehicleNo;
+        console.log("vehicleNo", vehicleNo)
+        const parkingId = req.body.parkingId;
+        console.log("parkingId", parkingId)
+
+
+        const checkTransaction = await Transaction.aggregate([
+            {
+                '$match': {
+                    'vehicleNo': vehicleNo
+                }
+            }, {
+                '$lookup': {
+                    'from': 'shifts',
+                    'localField': 'shiftId',
+                    'foreignField': '_id',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'parkingId': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'as': 'shiftData'
+                }
+            }, {
+                '$addFields': {
+                    'shiftData': {
+                        '$first': '$shiftData'
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'parkingId': '$shiftData.parkingId'
+                }
+            }, {
+                '$match': {
+                    'parkingId': new mongoose.Types.ObjectId(parkingId)
+                }
+            }, {
+                '$sort': {
+                    'createdAt': -1
+                }
+            }, {
+                '$limit': 1
+            }
+        ])
+        console.log("checkTransaction", checkTransaction)
+        const tariffData = await Parking.aggregate([
+            {
+                '$match': {
+                    '_id': mongoose.Types.ObjectId(parkingId)
+                }
+            }, {
+                '$unwind': {
+                    'path': '$connectedTariff'
+                }
+            }, {
+                '$unwind': {
+                    'path': '$connectedTariff.tariffData'
+                }
+            }, {
+                '$lookup': {
+                    'from': 'tariffs',
+                    'localField': 'connectedTariff.tariffData.tariffId',
+                    'foreignField': '_id',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'tariffName': 0,
+                                '_id': 0,
+                                'isTariffInHour': 0,
+                                'isActive': 0,
+                                'createdAt': 0,
+                                'updatedAt': 0,
+                                '__v': 0
+                            }
+                        }
+                    ],
+                    'as': 'tariffData'
+                }
+            }, {
+                '$addFields': {
+                    'tariffData': {
+                        '$first': '$tariffData'
+                    }
+                }
+            }, {
+                '$project': {
+                    'parkingName': 0,
+                    '_id': 0,
+                    'parkingNo': 0,
+                    'totalSpaces': 0,
+                    'currentOccupiedSpaces': 0,
+                    'totalEntries': 0,
+                    'address': 0,
+                    'totalExits': 0,
+                    'connectedTariff': 0,
+                    'isActive': 0,
+                    'isAutoCloseBarrier': 0,
+                    'closeBarrierAfter': 0,
+                    'createdAt': 0,
+                    'updatedAt': 0,
+                    '__v': 0
+                }
+            }
+        ])
+
+        // console.log("tariffData", tariffData)
+        // tariffData.map(ele => console.log("ele", ele.hourlyRate))
+        if (checkTransaction.length > 0) {
+
+            if (checkTransaction[0].transactionType == "exit") {
+                utils.commonResponce(res, 201, "Vehicle already exit the carpark", vehicleNo);
+            }
+            if (checkTransaction[0].transactionType == "entry") {
+                ticketId = checkTransaction[0].ticketId;
+                console.log("ticketId", ticketId)
+                // const tariffType = ticketId.substring(6, 7);
+                // console.log("tariffType", tariffType)
+                // const carwashType = ticketId.substring(5, 6)
+                entryTime = checkTransaction[0].ticketId.slice(7, 17);
+                console.log("entryTime", entryTime)
+                var entryTimeISO = moment
+                    .unix(entryTime)
+                    .tz("Asia/Calcutta")
+                    .format("DD-MM-YYYY HH:mm:ss");
+                console.log("entryTimeISO", entryTimeISO)
+                var exitTimeISO = moment
+                    .unix(Math.floor(Date.now() / 1000))
+                    .tz("Asia/Calcutta")
+                    .format("DD-MM-YYYY HH:mm:ss");
+                console.log("exitTimeISO", exitTimeISO)
+                var duration = Math.ceil(
+                    moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(
+                        moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss")
+                    ) / 60000
+                );
+                console.log("duration", duration)
+                console.log("sjbjgb")
+                // calculate_tariff(entryTimeISO, exitTimeISO,checkTransaction[0], tariffData,carwashType,true ,res,);
+                calculate_tariff(entryTime, Math.floor(Date.now() / 1000), checkTransaction[0], tariffData, true, res,);
+
+
+                // utils.commonResponce(res, 201, "vehicle data found", vehicleNo);
+            }
+
+        } else {
+
+            utils.commonResponce(res, 201, "Vehicle data not found. Please check vehicle no!!", vehicleNo);
+        }
+
+    } catch (error) {
+        console.log(error.toString())
+        utils.commonResponce(res, 500, "Unexpected server error while creating Lost Ticket", error.toString());
+
+    }
+}
+function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, res) {
+    // entryTime = 1686950503;
+    // exitTime = 1686993028;
+    // console.log("tariffData", tariffData)
+    console.log("lostTicket", lostTicket)
+    // console.log("carwashType", carwashType)
+    // console.log("xbj", entryTime, exitTime, ticket, tariffData, carwashType, tariffType, lostTicket, res)
+    var entryTimeISO = moment
+        .unix(entryTime)
+        .tz("Asia/Calcutta")
+        .format("DD-MM-YYYY HH:mm:ss");
+    var exitTimeISO = moment
+        .unix(exitTime)
+        .tz("Asia/Calcutta")
+        .format("DD-MM-YYYY HH:mm:ss");
+    var duration = Math.ceil(
+        moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(
+            moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss")
+        ) / 60000
+    );
+    //   dailyRate =  findKey(tariffData, "dailyRate");
+    //   lostTicket =  findKey(tariffData, "lostTicket");
+
+    lostTicketFine = lostTicket ? tariffData.lostTicket?.amount : 0;
+
+
+    console.log("lostTicketFine", lostTicketFine)
+    amount = 0;
+    console.log("amount01", amount)
+    // carwashAmount = 0;
+    // console.log("carwashAmount", carwashAmount)
+    // CarwashType = '';
+    // if (carwashType == 1) {
+    //     carwashAmount = 300;
+    //     carwashType = 'Hatchback/Sedan - (Exteriror Only)';
+
+    // }
+    // if (carwashType == 2) {
+    //     carwashAmount = 400;
+    //     carwashType = 'SUV - (Exterior Only)';
+    // }
+    // if (carwashType == 3) {
+    //     carwashAmount = 500;
+    //     carwashType = 'Exterior & Interior Cleaning';
+    // }
+
+    amount = calculate_parking_fee(duration, tariffData);
+    console.log("amount", amount)
+
+    if (amount != null) {
+        utils.commonResponce(res, 200, "Successfully calculated Tariff", {
+            entryTimeISO: entryTimeISO,
+            exitTimeISO: exitTimeISO,
+            duration: duration,
+            // dailyRate: dailyRate,
+            // lostTicket: lostTicket,
+            ticketId: ticket.ticketId,
+            vehicleType: ticket.vehicleType,
+            vehicleNo: ticket.vehicleNo,
+            amount: amount,
+            // carwashAmount: carwashAmount,
+            lostTicketFine: lostTicketFine,
+            // carwashType: carwashType,
+
+        });
+    } else {
+
+        utils.commonResponce(res, 500, "Something went wrong", {});
+    }
+
+
+
+
+
+    // console.log("entryTimeISO", entryTimeISO);
+    // console.log("exitTime", exitTime);
+    // console.log("totalMin", totalMin)
+}
+function calculate_parking_fee(duration, tariffData) {
+    let amount = 0;
+    // console.log("tariffData", tariffData)
+    dailyRate = tariffData.dailyRate != null ? tariffData.dailyRate.amount : 0;
+    // console.log("dailyRate", dailyRate)
+    weeklyRate = tariffData.weeklyRate != null ? tariffData.weeklyRate.amount : 0;
+    // console.log("weeklyRate", weeklyRate)
+    monthlyRate =
+        tariffData.monthlyRate != null ? tariffData.monthlyRate.amount : 0;
+    // console.log("monthlyRate01", monthlyRate)
+
+    // if (tariffType == '2') {
+    if (
+        duration <= 1440 &&
+        (dailyRate != 0 || weeklyRate != 0 || monthlyRate != 0)
+    ) {
+        // parking duration less than or equal to 24 hours
+        tariffData?.hourlyRate?.map((hourlyRate) => {
+            if (duration > hourlyRate.starting) {
+                if (hourlyRate.isInfinite == true) {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            duration,
+                            hourlyRate.starting,
+                            duration,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
+                    }
+                } else {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            duration,
+                            hourlyRate.starting,
+                            hourlyRate.ending,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
+                    }
+                }
+            }
+        });
+    } else {
+        totaldays = Math.floor(duration / 1440);
+        if (monthlyRate > 0 && totaldays >= 30) {
+            // if(monthlyRate>0){
+            totalMonths = Math.floor(totaldays / 30);
+            amount += monthlyRate * totalMonths;
+            totaldays = totaldays - totalMonths * 30;
+            // }
+        }
+        if (
+            totaldays >= 7 &&
+            totaldays < (monthlyRate != 0 ? 30 : totaldays + 1) &&
+            weeklyRate > 0
+        ) {
+            // if(weeklyRate>0){
+            totalWeeks = Math.floor(totaldays / 7);
+            amount += weeklyRate * totalWeeks;
+            totaldays = totaldays - totalWeeks * 7;
+            // }
+        }
+        if (
+            totaldays >= 1 && totaldays < (monthlyRate != 0 || weeklyRate != 0)
+                ? 7
+                : totaldays + 1
+        ) {
+            if (dailyRate > 0) {
+                amount += dailyRate * totaldays;
+            }
+        }
+
+        remainingMin = duration - (dailyRate > 0 ? totaldays * 1440 : 0);
+        tariffData?.hourlyRate?.map((hourlyRate) => {
+            if (remainingMin > hourlyRate.starting) {
+                if (hourlyRate.isInfinite == true) {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            remainingMin,
+                            hourlyRate.starting,
+                            remainingMin,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
+                    }
+                } else {
+                    if (hourlyRate.isIterate == true) {
+                        iterateFunction(
+                            remainingMin,
+                            hourlyRate.starting,
+                            hourlyRate.ending,
+                            hourlyRate.iterateEvery,
+                            hourlyRate.price
+                        );
+                    } else {
+                        amount += hourlyRate.price;
+                    }
+                }
+            }
+        });
+    }
+    return amount
+    // }
+    // if (tariffType == '1') {
+    //     totalDays = Math.ceil(duration / 1440);
+    //     amount = totalDays * dailyRate;
+
+
+    //     return amount;
+    // }
+
+    // return null;
+
+}
+
+function iterateFunction(duration, starting, ending, iterateEvery, price) {
+    for (let i = starting; i <= ending; i += iterateEvery) {
+        if (duration >= i) {
+            amount += price;
+        }
     }
 }

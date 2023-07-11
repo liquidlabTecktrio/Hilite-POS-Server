@@ -208,7 +208,8 @@ exports.getParkingDataForGraph = async (req, res) => {
                 totalExits += shift.totalTicketCollected
 
                 shift.totalCollection.map(c => {
-                    activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
+                    if (c.paymentType != '' && c.paymentType)
+                        activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
                 })
             })
 
@@ -363,8 +364,8 @@ exports.getParkingDataForGraph = async (req, res) => {
                 entryExitTotalEntries,
                 entryExitTotalExits,
                 // parkingData,
-                totalSpaces:parkingData.totalSpaces,
-                currentOccupiedSpaces:parkingData.currentOccupiedSpaces,
+                totalSpaces: parkingData.totalSpaces,
+                currentOccupiedSpaces: parkingData.currentOccupiedSpaces,
                 posHeartbeats
 
             }
@@ -483,7 +484,8 @@ async function getParkingDataForGraphFunction(requestData) {
                     totalExits += shift.totalTicketCollected
 
                     shift.totalCollection.map(c => {
-                        activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
+                        if (c.paymentType != '' && c.paymentType)
+                            activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
                     })
                 })
 

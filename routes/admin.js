@@ -12,6 +12,9 @@ const parkingController = require("../controllers/parking");
 const opretorController = require("../controllers/opretor");
 const deviceController = require("../controllers/device");
 const dashboardController = require("../controllers/dashboard");
+const reportsController = require("../controllers/reports")
+const monthlyPassController = require("../controllers/monthlyPass")
+
 
 const posHeartbeatController = require("../controllers/posHeartbeat");
 
@@ -23,7 +26,7 @@ router.post("/createTariff",
     // verifyTokenMiddleware,
     tafiffController.createTariff);
 
-router.post("/getDashboardData", verifyTokenMiddleware, dashboardController.getDashboardData);
+router.post("/getDashboardData", dashboardController.getDashboardData);
 
 router.post("/getTariffs", verifyTokenMiddleware, tafiffController.getTariffs);
 
@@ -63,6 +66,10 @@ router.post("/createVehicle",
     vehicleController.createVehicle);
 
 router.post("/getVehicles", verifyTokenMiddleware, vehicleController.getVehicles);
+router.post("/getParkingRevenue", verifyTokenMiddleware, reportsController.getParkingRevenue)
+router.post("/createMonthlyPass", verifyTokenMiddleware, monthlyPassController.createMonthlyPass)
+router.get("/getMonthlyPass", verifyTokenMiddleware, monthlyPassController.getMonthlyPass)
+router.post("/updateMonthlyPass", verifyTokenMiddleware, monthlyPassController.updateMonthlyPass)
 
 
 module.exports = router;

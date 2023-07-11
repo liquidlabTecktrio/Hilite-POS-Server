@@ -43,13 +43,26 @@ const tariffObj = new Schema({
     },
 
 })
+const dailyRateSchema = new mongoose.Schema({
+    amount: { type: Number },
+});
+const weeklyRateSchema = new mongoose.Schema({
+    amount: { type: Number },
+})
+const monthlyRateSchema = new mongoose.Schema({
+    amount: { type: Number }
+})
+const lostTicketSchema = new mongoose.Schema({
+    amount: { type: Number }
+})
+
 
 const Tariff = new Schema(
     {
         tariffName: {
             type: String
         },
-        tariffData: {
+        hourlyRate: {
             type: [tariffObj]
         },
         isTariffInHour: {
@@ -57,13 +70,25 @@ const Tariff = new Schema(
         },
         // dailyData:[dailyObj],
         lostTicket: {
-            type: Number,
-            required: true,
+            type: lostTicketSchema,
+
         },
         isActive: {
             type: Boolean,
             required: true,
         },
+        dailyRate: {
+            type: dailyRateSchema,
+
+        },
+        weeklyRate: {
+            type: weeklyRateSchema,
+        },
+        monthlyRate: {
+            type: monthlyRateSchema,
+        },
+
+
     },
     {
         timestamps: true,
