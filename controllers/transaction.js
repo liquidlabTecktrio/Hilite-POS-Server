@@ -24,7 +24,7 @@ exports.createTransaction = async (req, res) => {
             }
         })
 
-        let shiftData = await Shift.findById(transactions[0]?.shiftId)
+        let shiftData = await Shift.findById(transactions[0].shiftId)
 
 
         // web socket 
@@ -106,7 +106,7 @@ async function createTransactionfunction(transactionData) {
 
                 if (transactionType == 'exit') {
 
-                    if (findShift?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
+                    if (findShift.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
                         obj['$push']['totalCollection'] = [{
                             paymentType: paymentType,
                             amount: amount,
@@ -192,7 +192,7 @@ exports.cancelTicket = async (req, res) => {
             }
         })
 
-        let shiftData = await Shift.findById(transactions[0]?.shiftId)
+        let shiftData = await Shift.findById(transactions[0].shiftId)
 
         // web socket 
         dashboardController.getDashboardDataFunction()
@@ -853,7 +853,7 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     //   dailyRate =  findKey(tariffData, "dailyRate");
     //   lostTicket =  findKey(tariffData, "lostTicket");
 
-    lostTicketFine = lostTicket ? tariffData.lostTicket?.amount : 0;
+    lostTicketFine = lostTicket ? tariffData.lostTicket.amount : 0;
 
 
     console.log("lostTicketFine", lostTicketFine)

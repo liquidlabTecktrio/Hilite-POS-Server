@@ -35,15 +35,19 @@ router.post("/startShift", shiftController.startShift);
 router.post("/closeShift", shiftController.closeShift);
 
 // router.post("/createTransaction", transactionController.createTransaction);
+// router.post("/cancelTicket", transactionController.cancelTicket);
+// router.post("/calculateCharge", transactionController.calculateCharge);
+// router.post("/getReceipts", transactionController.getReceipts);
+// router.post("/checkLostTicket", transactionController.checkLostTicket)
 router.post("/createTransaction", ticketController.createTransaction);
-router.post("/cancelTicket", transactionController.cancelTicket);
-router.post("/calculateCharge", transactionController.calculateCharge);
-router.post("/getReceipts", transactionController.getReceipts);
+router.post("/cancelTicket", ticketController.cancelTicket);
+router.post("/calculateCharge", ticketController.calculateCharge);
+router.post("/getReceipts", ticketController.getReceipts);
+router.post("/checkLostTicket", ticketController.checkLostTicket)
 
 router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 
 router.post("/getSupervisorPin", opretorController.getSupervisorPin);
-router.post("/checkLostTicket", transactionController.checkLostTicket)
 
 
 

@@ -58,6 +58,8 @@ app.use("/*", express.static(__dirname + "/build"));
 app.use("/v1/api", apiRoutes);
 app.use("/v1/admin", adminRoutes);
 
+console.log("Database Connection started !!!");
+
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
