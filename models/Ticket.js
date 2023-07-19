@@ -38,9 +38,9 @@ const Ticket = new Schema(
             type: Boolean,
             default:false
         },
-        // lostTicket: {
-        //     type: Boolean,
-        // },
+        lostTicket: {
+            type: Boolean,
+        },
         parkingId: {
             type: mongoose.Types.ObjectId,
         },

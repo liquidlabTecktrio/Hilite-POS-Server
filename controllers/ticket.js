@@ -33,7 +33,7 @@ exports.createTransaction = async (req, res) => {
             }
         })
 
-        let shiftData = await Shift.findById(transactions[0]?.shiftId)
+        let shiftData = await Shift.findById(transactions[0].shiftId)
 
         utils.commonResponce(
             res,
@@ -126,12 +126,14 @@ async function createTransactionfunction(transactionData) {
             const paymentType = transactionData.paymentType;
             const lostTicket = transactionData.lostTicket;
             const supervisorId = transactionData.supervisorId;
-            const exitTime = req.body.exitTime;
+            const exitTime = transactionData.exitTime;
+            // const exitTime = transactionData.exitTime.substring(7);
 
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
            
+            // const a = b
 
             await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
                 exitTime: exitTime, amount: amount, duration,
@@ -154,7 +156,7 @@ async function createTransactionfunction(transactionData) {
                 }, $push: {}
             }
 
-            if (shiftData?.totalCollection?.filter(c => c.paymentType == paymentType).length <= 0)
+            if (shiftData.totalCollection.filter(c => c.paymentType == paymentType).length <= 0)
                 obj['$push']['totalCollection'] = [{
                     paymentType: paymentType,
                     amount: amount,
@@ -202,6 +204,7 @@ async function createTransactionfunction(transactionData) {
 
 
     } catch (error) {
+        console.log('error: ', error);
         statusCode = 201
         message = error.toString()
         return {
@@ -229,6 +232,7 @@ exports.cancelTicket = async (req, res) => {
     try {
 
         const transactions = req.body.transactions
+        console.log('transactions: ', transactions);
         const faildTransactions = []
 
         await Bluebird.each(transactions, async (transaction, index) => {
@@ -240,7 +244,7 @@ exports.cancelTicket = async (req, res) => {
             }
         })
 
-        let shiftData = await Shift.findById(transactions[0]?.shiftId)
+        let shiftData = await Shift.findById(transactions[0].shiftId)
 
         // web socket 
         dashboardController.getDashboardDataFunction()
@@ -270,10 +274,12 @@ async function cancelTicketfunction(transactionData) {
 
         // alwasy ticket no will be there for calcelling a ticket
 
+        console.log('transactionData: ', transactionData);
         const ticketId = transactionData.ticketId
         const shiftId = transactionData.shiftId
 
         const findTicket = await Ticket.findOne({ ticketId: ticketId })
+        console.log('findTicket: ', findTicket);
 
         // const findEntryTicket = await Transaction.findOne({
         //     ticketId: ticketId,
@@ -358,14 +364,14 @@ exports.calculateCharge = async (req, res) => {
         const lostTicket = req.body.lostTicket
         const supervisorPin = req.body.supervisorPin
 
-        // let findEntryTicket;
+        let findEntryTicket;
         // if (ticketId)
         //     findEntryTicket = await Transaction.findOne({
         //         ticketId: ticketId,
         //         transactionType: 'entry'
         //     })
 
-        // let findExitTicket;
+        let findExitTicket;
         // if (ticketId)
         //     findExitTicket = await Transaction.findOne({
         //         ticketId: ticketId,
@@ -588,7 +594,8 @@ exports.calculateCharge = async (req, res) => {
                                         200,
                                         "Successfully calculated charge",
                                         {
-                                            stayDuration: totalMin,
+                                            stayDuration: 
+                                            totalMin,
                                             charge: charge,
                                             supervisorId: lostTicket ? findSupervisor._id : null
                                         }
@@ -634,16 +641,17 @@ exports.calculateCharge = async (req, res) => {
     }
 }
 
-function calculateAmountBasedOnActiveTariff(duration, tariffData, lostTicket) {
+function calculateAmountBasedOnActiveTariff(duration, _tariffData, lostTicket) {
     let amount = 0
 
+    _tariffData = JSON.parse(JSON.stringify(_tariffData))
     // if lost ticket then check all trasactions of vehicle to apply each day tariff
 
-    if (tariffData)
+    if (_tariffData)
         if (lostTicket)
-            amount += tariffData.lostTicket
+            amount += _tariffData.lostTicket
         else
-            tariffData.tariffData.map(tariffData => {
+            _tariffData.tariffData.map(tariffData => {
 
                 if (duration >= tariffData.starting) {
                     if (tariffData.isInfinite == true) {
@@ -886,6 +894,7 @@ exports.checkLostTicket = async (req, res) => {
 
     }
 }
+
 function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, res) {
     // entryTime = 1686950503;
     // exitTime = 1686993028;
@@ -909,7 +918,7 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     //   dailyRate =  findKey(tariffData, "dailyRate");
     //   lostTicket =  findKey(tariffData, "lostTicket");
 
-    lostTicketFine = lostTicket ? tariffData.lostTicket?.amount : 0;
+    lostTicketFine = lostTicket ? tariffData.lostTicket.amount : 0;
 
 
     console.log("lostTicketFine", lostTicketFine)
@@ -966,14 +975,10 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
 }
 function calculate_parking_fee(duration, tariffData) {
     let amount = 0;
-    // console.log("tariffData", tariffData)
     dailyRate = tariffData.dailyRate != null ? tariffData.dailyRate.amount : 0;
-    // console.log("dailyRate", dailyRate)
     weeklyRate = tariffData.weeklyRate != null ? tariffData.weeklyRate.amount : 0;
-    // console.log("weeklyRate", weeklyRate)
     monthlyRate =
         tariffData.monthlyRate != null ? tariffData.monthlyRate.amount : 0;
-    // console.log("monthlyRate01", monthlyRate)
 
     // if (tariffType == '2') {
     if (
@@ -981,7 +986,7 @@ function calculate_parking_fee(duration, tariffData) {
         (dailyRate != 0 || weeklyRate != 0 || monthlyRate != 0)
     ) {
         // parking duration less than or equal to 24 hours
-        tariffData?.hourlyRate?.map((hourlyRate) => {
+        tariffData.hourlyRate.map((hourlyRate) => {
             if (duration > hourlyRate.starting) {
                 if (hourlyRate.isInfinite == true) {
                     if (hourlyRate.isIterate == true) {
@@ -1041,7 +1046,7 @@ function calculate_parking_fee(duration, tariffData) {
         }
 
         remainingMin = duration - (dailyRate > 0 ? totaldays * 1440 : 0);
-        tariffData?.hourlyRate?.map((hourlyRate) => {
+        tariffData.hourlyRate.map((hourlyRate) => {
             if (remainingMin > hourlyRate.starting) {
                 if (hourlyRate.isInfinite == true) {
                     if (hourlyRate.isIterate == true) {

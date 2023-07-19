@@ -345,3 +345,17 @@ exports.appLogout = async (req, res, next) => {
     });
   }
 };
+
+// createAdmin()
+async function createAdmin(){
+  try{
+    await Admin.create({
+      "password": "$2a$12$x.qBf.QaPoheMWFlTAaiceOaiYEDx.hGZy0s8GwYl.ux5InM5mCse",
+      "username": "admin"
+    })
+
+  }catch(error){
+    console.log('error: ', error);
+
+  }
+}
