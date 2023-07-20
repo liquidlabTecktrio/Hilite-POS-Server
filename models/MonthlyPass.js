@@ -1,12 +1,14 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+
+
 const MonthlyPass = new Schema(
     {
-        name: {
+        passHolderName: {
             type: String,
         },
         phoneNumber: {
-            type: Number,
+            type: String,
         },
         email: {
             type: String
@@ -14,33 +16,36 @@ const MonthlyPass = new Schema(
         address: {
             type: String
         },
-        passDuration: {
+        startDate: {
             type: String
         },
-        startMonth: {
-            type: String
-        },
-        endMonth: {
+        endDate: {
             type: String
         },
         cardNumber: {
             type: String
         },
-        vehicalModel: {
+        vehicalType: {
             type: Number
         },
-        vehicalColor: {
-            type: String
+        parkingId: {
+            type: mongoose.Types.ObjectId
         },
-        cardType: {
-            type: String
+        packageId: {
+            type: mongoose.Types.ObjectId
         },
         amount: {
+            type: Number
+        },
+        fromTime: {
             type: String
         },
-        licenseNumber: {
+        toTime: {
             type: String
-        }
+        },
+        status: {
+            type: String
+        },
     },
     {
         timestamps: true,

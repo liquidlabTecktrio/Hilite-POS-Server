@@ -47,6 +47,12 @@ const Ticket = new Schema(
         supervisorId: {
             type: mongoose.Types.ObjectId,
         },
+        monthlyPassUsed: {
+            type: Boolean,
+        },
+        monthlyPassId: {
+            type: mongoose.Types.ObjectId,
+        },
     },
     {
         timestamps: true,

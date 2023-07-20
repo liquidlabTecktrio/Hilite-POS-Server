@@ -44,6 +44,9 @@ router.post("/cancelTicket", ticketController.cancelTicket);
 router.post("/calculateCharge", ticketController.calculateCharge);
 router.post("/getReceipts", ticketController.getReceipts);
 router.post("/checkLostTicket", ticketController.checkLostTicket)
+router.post("/registerFraudTicket", ticketController.registerFraudTicket);
+router.post("/checkMonthlyPass", ticketController.checkMonthlyPass);
+router.post("/updateMonthlyPassEntry", ticketController.updateMonthlyPassEntry);
 
 router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 

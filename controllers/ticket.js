@@ -8,6 +8,8 @@ const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const dashboardController = require("../controllers/dashboard");
+const MonthlyPass = require("../models/MonthlyPass")
+
 
 exports.createTransaction = async (req, res) => {
     try {
@@ -53,7 +55,6 @@ exports.createTransaction = async (req, res) => {
     }
 }
 
-
 async function createTransactionfunction(transactionData) {
     let statusCode = 200;
     let message = '';
@@ -64,10 +65,10 @@ async function createTransactionfunction(transactionData) {
         const shiftId = transactionData.shiftId
         const vehicleType = transactionData.vehicleType
         const vehicleNo = transactionData.vehicleNo
-        if (transactionType == "exit") {
-
-        }
-
+        const cancelledTicket = transactionData.cancelledTicket
+        const fraudTicket = transactionData.fraudTicket
+        const monthlyPassUsed = transactionData.monthlyPassUsed
+        const monthlyPassId = transactionData.monthlyPassId
 
         let shiftData = await Shift.findById(shiftId)
 
@@ -85,7 +86,9 @@ async function createTransactionfunction(transactionData) {
         // var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
         // var currentTime = Math.floor(Date.now() / 1000)
         entryTime = ticketId.slice(-10);
+
         if (transactionType == 'entry') {
+
             await Ticket.create({
                 ticketId: ticketId,
 
@@ -98,6 +101,8 @@ async function createTransactionfunction(transactionData) {
                 vehicleNo: vehicleNo,
                 // lostTicket: lostTicket,
                 // supervisorId: supervisorId
+                monthlyPassUsed: monthlyPassUsed,
+                monthlyPassId: monthlyPassId,
             })
             //increment parking ocuupancy
             await Parking.findByIdAndUpdate(shiftData.parkingId, {
@@ -110,18 +115,38 @@ async function createTransactionfunction(transactionData) {
                 $inc: {
                     totalTicketIssued: 1
                 }
-            },
+            })
 
-            )
-            statusCode = 200
-            message = 'Successfully created transaction'
-            return {
-                statusCode, message
+
+            let isChecked = true
+            if (cancelledTicket == 1)
+                isChecked = await cancelTicketfunction(transactionData)
+
+            if (fraudTicket == 1)
+                isChecked = await fraudTicketfunction(transactionData)
+
+
+
+            if (isChecked) {
+
+                statusCode = 200
+                message = 'Successfully created transaction'
+                return {
+                    statusCode, message
+                }
+            } else {
+                statusCode = 201
+                message = 'Server issue while updating cancel or fraud ticket'
+                return {
+                    statusCode, message
+                }
             }
+
 
         }
 
         if (transactionType == 'exit') {
+
             const amount = transactionData.amount;
             const paymentType = transactionData.paymentType;
             const lostTicket = transactionData.lostTicket;
@@ -132,8 +157,7 @@ async function createTransactionfunction(transactionData) {
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-           
-            // const a = b
+
 
             await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
                 exitTime: exitTime, amount: amount, duration,
@@ -195,6 +219,19 @@ async function createTransactionfunction(transactionData) {
                     await Opretor.findByIdAndUpdate(supervisorId, { supervisorPin })
             }
 
+
+
+            // update nfc card
+            if (monthlyPassUsed) {
+                const passData = await MonthlyPass.findOne({ cardNumber, parkingId })
+
+                if (passData) {
+
+                    await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: 'in' })
+                }
+            }
+
+
             statusCode = 200
             message = 'Successfully created transaction'
             return {
@@ -215,7 +252,6 @@ async function createTransactionfunction(transactionData) {
 
 }
 
-
 function getRandomNumber(excludedNumbers) {
     var randomNumber;
 
@@ -225,8 +261,6 @@ function getRandomNumber(excludedNumbers) {
 
     return randomNumber;
 }
-
-
 
 exports.cancelTicket = async (req, res) => {
     try {
@@ -274,12 +308,10 @@ async function cancelTicketfunction(transactionData) {
 
         // alwasy ticket no will be there for calcelling a ticket
 
-        console.log('transactionData: ', transactionData);
         const ticketId = transactionData.ticketId
         const shiftId = transactionData.shiftId
 
         const findTicket = await Ticket.findOne({ ticketId: ticketId })
-        console.log('findTicket: ', findTicket);
 
         // const findEntryTicket = await Transaction.findOne({
         //     ticketId: ticketId,
@@ -324,6 +356,107 @@ async function cancelTicketfunction(transactionData) {
 
                     statusCode = 200
                     message = 'Successfully created transaction'
+
+
+                }).catch((err) => {
+
+                    statusCode = 201
+                    message = err.toString()
+                });
+
+            }
+        }
+        else {
+            statusCode = 201
+            message = "Ticket ID not found"
+        }
+
+    } catch (error) {
+        console.log('error: ', error);
+
+        statusCode = 500
+        message = error.toString()
+    }
+
+    return {
+        statusCode, message
+    }
+}
+
+exports.registerFraudTicket = async (req, res) => {
+    try {
+
+        const transactions = req.body.transactions
+        const faildTransactions = []
+
+        await Bluebird.each(transactions, async (transaction, index) => {
+
+            const createTrasactionData = await cancelTicketfunction(transaction)
+            if (createTrasactionData.statusCode != 200) {
+                transaction.message = createTrasactionData.message
+                faildTransactions.push(transaction)
+            }
+        })
+
+        let shiftData = await Shift.findById(transactions[0].shiftId)
+
+        // web socket 
+        dashboardController.getDashboardDataFunction()
+
+        utils.commonResponce(
+            res,
+            200,
+            "Successfully updated tickets",
+            {
+                shiftData, faildTransactions
+            }
+        );
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Transaction",
+        });
+    }
+}
+
+async function fraudTicketfunction(transactionData) {
+    let statusCode = 200;
+    let message = '';
+    try {
+
+        // alwasy ticket no will be there for calcelling a ticket
+
+        const ticketId = transactionData.ticketId
+        const shiftId = transactionData.shiftId
+
+        const findTicket = await Ticket.findOne({ ticketId: ticketId })
+
+        if (findTicket) {
+            if (findTicket.exitTime) {
+
+                statusCode = 201
+                message = "Payment already received for Ticket ID"
+            } else {
+
+                await Ticket.findByIdAndUpdate(findTicket._id, {
+                    cancelledTicket: true
+                }).then(async (createdParking) => {
+
+                    // update shift and opretor here
+
+                    const findShift = await Shift.findById(shiftId)
+
+                    await Parking.findByIdAndUpdate(findShift.parkingId, {
+                        $inc: {
+                            currentOccupiedSpaces: -1,
+                        },
+                    })
+
+
+                    statusCode = 200
+                    message = 'Successfully updated'
 
 
                 }).catch((err) => {
@@ -399,7 +532,7 @@ exports.calculateCharge = async (req, res) => {
                         '$match': {
                             vehicleNo
                         }
-                    }, 
+                    },
                     // {
                     //     '$sort': {
                     //         time: -1
@@ -410,7 +543,7 @@ exports.calculateCharge = async (req, res) => {
                             'createdAt': -1
                         }
                     },
-                     {
+                    {
                         '$limit': 1
                     }
                 ])
@@ -420,7 +553,7 @@ exports.calculateCharge = async (req, res) => {
                     // if (lastTransactionByVehicleNo[0].transactionType == 'entry') {
                     //     findEntryTicket = lastTransactionByVehicleNo[0]
                     // }
-                    if(!lastTransactionByVehicleNo[0].exitTime)
+                    if (!lastTransactionByVehicleNo[0].exitTime)
                         findEntryTicket = lastTransactionByVehicleNo[0]
                 }
             }
@@ -594,8 +727,8 @@ exports.calculateCharge = async (req, res) => {
                                         200,
                                         "Successfully calculated charge",
                                         {
-                                            stayDuration: 
-                                            totalMin,
+                                            stayDuration:
+                                                totalMin,
                                             charge: charge,
                                             supervisorId: lostTicket ? findSupervisor._id : null
                                         }
@@ -695,13 +828,13 @@ exports.getReceipts = async (req, res) => {
                     //     {
                     //         'transactionType': 'exit'
                     //     }, {
-                            '$or': [
-                                {
-                                    ticketId: ticketId,
-                                }, {
-                                    vehicleNo: vehicleNo,
-                                }
-                            ]
+                    '$or': [
+                        {
+                            ticketId: ticketId,
+                        }, {
+                            vehicleNo: vehicleNo,
+                        }
+                    ]
                     //     }
                     // ]
                 }
@@ -855,8 +988,8 @@ exports.checkLostTicket = async (req, res) => {
             if (checkTransaction[0].exitTime) {
                 utils.commonResponce(res, 201, "Vehicle already exit the carpark or no entry found", vehicleNo);
             }
-            else{
-            // if (checkTransaction[0].transactionType == "entry") {
+            else {
+                // if (checkTransaction[0].transactionType == "entry") {
                 ticketId = checkTransaction[0].ticketId;
                 // const tariffType = ticketId.substring(6, 7);
                 // console.log("tariffType", tariffType)
@@ -1094,5 +1227,78 @@ function iterateFunction(duration, starting, ending, iterateEvery, price) {
         if (duration >= i) {
             amount += price;
         }
+    }
+}
+
+exports.checkMonthlyPass = async (req, res) => {
+    try {
+        const parkingId = req.body.parkingId
+        const cardNumber = req.body.cardNumber
+
+        const passData = await MonthlyPass.findOne({ cardNumber, parkingId, status: 'out' })
+
+        if (passData) {
+
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully fetched card",
+                passData
+            );
+
+        } else {
+
+            utils.commonResponce(
+                res,
+                201,
+                "Card already inside or card details not found",
+            );
+
+        }
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while fetching card",
+        });
+
+    }
+}
+
+exports.updateMonthlyPassEntry = async (req, res) => {
+    try {
+        const parkingId = req.body.parkingId
+        const cardNumber = req.body.cardNumber
+
+        const passData = await MonthlyPass.findOne({ cardNumber, parkingId })
+
+        if (passData) {
+
+            await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: 'in' })
+
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully updated card"
+            );
+
+        } else {
+
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While updating card",
+            );
+
+        }
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Transaction",
+        });
+
     }
 }
