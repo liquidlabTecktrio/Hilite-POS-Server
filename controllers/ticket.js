@@ -119,9 +119,11 @@ async function createTransactionfunction(transactionData) {
 
 
             let isChecked = true
+            console.log('cancelledTicket: ', cancelledTicket);
             if (cancelledTicket == 1)
                 isChecked = await cancelTicketfunction(transactionData)
 
+                console.log('fraudTicket: ', fraudTicket);
             if (fraudTicket == 1)
                 isChecked = await fraudTicketfunction(transactionData)
 
@@ -387,11 +389,12 @@ exports.registerFraudTicket = async (req, res) => {
     try {
 
         const transactions = req.body.transactions
+        console.log('transactions: ', transactions);
         const faildTransactions = []
 
         await Bluebird.each(transactions, async (transaction, index) => {
 
-            const createTrasactionData = await cancelTicketfunction(transaction)
+            const createTrasactionData = await fraudTicketfunction(transaction)
             if (createTrasactionData.statusCode != 200) {
                 transaction.message = createTrasactionData.message
                 faildTransactions.push(transaction)
@@ -429,7 +432,9 @@ async function fraudTicketfunction(transactionData) {
         // alwasy ticket no will be there for calcelling a ticket
 
         const ticketId = transactionData.ticketId
+        console.log('ticketId: ', ticketId);
         const shiftId = transactionData.shiftId
+        console.log('shiftId: ', shiftId);
 
         const findTicket = await Ticket.findOne({ ticketId: ticketId })
 
@@ -441,7 +446,7 @@ async function fraudTicketfunction(transactionData) {
             } else {
 
                 await Ticket.findByIdAndUpdate(findTicket._id, {
-                    cancelledTicket: true
+                    fraudTicket: true
                 }).then(async (createdParking) => {
 
                     // update shift and opretor here
