@@ -35,7 +35,8 @@ exports.createMonthlyPass = async (req, res) => {
                 amount: packageData.amount,
                 fromTime: packageData.fromTime,
                 toTime: packageData.toTime,
-                status:'out'
+                status:false,
+                isActive:true
             }).then(createMonthlyPass => {
     
                 utils.commonResponce(

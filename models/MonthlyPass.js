@@ -44,7 +44,10 @@ const MonthlyPass = new Schema(
             type: String
         },
         status: {
-            type: String
+            type: Boolean
+        },
+        isActive: {
+            type: Boolean
         },
     },
     {

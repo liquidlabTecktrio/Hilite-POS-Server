@@ -56,6 +56,7 @@ exports.createTransaction = async (req, res) => {
 }
 
 async function createTransactionfunction(transactionData) {
+    console.log('createTransactionfunction: ', transactionData);
     let statusCode = 200;
     let message = '';
     try {
@@ -1239,10 +1240,17 @@ exports.checkMonthlyPass = async (req, res) => {
     try {
         const parkingId = req.body.parkingId
         const cardNumber = req.body.cardNumber
+        const type = req.body.type
+        console.log('checkMonthlyPass ', req.body);
 
-        const passData = await MonthlyPass.findOne({ cardNumber, parkingId, status: 'out' })
-
+        let passData = await MonthlyPass.findOne({ cardNumber, parkingId, status: type != 'entry' })
+        
         if (passData) {
+
+            passData = JSON.parse(JSON.stringify(passData))
+            passData.isActive = (new Date(passData.endDate.split('-').reverse().join(''))  >= new Date())
+            // if(passData.isActive)
+            // passData.isActive = (new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.fromTime)  >= new Date() &&   new Date() <= new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.toTime))
 
             utils.commonResponce(
                 res,
@@ -1256,7 +1264,7 @@ exports.checkMonthlyPass = async (req, res) => {
             utils.commonResponce(
                 res,
                 201,
-                "Card already inside or card details not found",
+                type == 'entry' ?  "Card already inside or card details not found" : "Card details not found",
             );
 
         }
@@ -1269,7 +1277,9 @@ exports.checkMonthlyPass = async (req, res) => {
         });
 
     }
+
 }
+
 
 exports.updateMonthlyPassEntry = async (req, res) => {
     try {
@@ -1280,7 +1290,7 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 
         if (passData) {
 
-            await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: 'in' })
+            await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status:  true })
 
             utils.commonResponce(
                 res,
