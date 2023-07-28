@@ -23,7 +23,7 @@ exports.startShift = async (req, res) => {
     })
 
     if (!findSerialNumbers)
-      await SerialNumbers.create({ parkingId, shiftNo: 1001 }).then(created => {
+      await SerialNumbers.create({ parkingId, shiftNo: 1001, receiptNo: 1001 }).then(created => {
         findSerialNumbers = created
       })
 
