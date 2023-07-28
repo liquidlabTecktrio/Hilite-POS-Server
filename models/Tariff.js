@@ -62,13 +62,14 @@ const Tariff = new Schema(
         tariffName: {
             type: String
         },
-        hourlyRate: {
-            type: [tariffObj]
-        },
-        isTariffInHour: {
-            type: Boolean
-        },
-        // dailyData:[dailyObj],
+        // hourlyRate: {
+        //     type: [tariffObj]
+        // },
+        // isTariffInHour: {
+        //     type: Boolean
+        // },
+        // dailyData: [dailyObj],
+        tariffData: [tariffObj],
         lostTicket: {
             type: lostTicketSchema,
 
@@ -77,16 +78,19 @@ const Tariff = new Schema(
             type: Boolean,
             required: true,
         },
-        dailyRate: {
-            type: dailyRateSchema,
+        lostTicket: {
+            type: Number
+        }
+        // dailyRate: {
+        //     type: dailyRateSchema,
 
-        },
-        weeklyRate: {
-            type: weeklyRateSchema,
-        },
-        monthlyRate: {
-            type: monthlyRateSchema,
-        },
+        // },
+        // weeklyRate: {
+        //     type: weeklyRateSchema,
+        // },
+        // monthlyRate: {
+        //     type: monthlyRateSchema,
+        // },
 
 
     },
