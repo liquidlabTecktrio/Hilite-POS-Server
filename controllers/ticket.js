@@ -741,7 +741,8 @@ exports.calculateCharge = async (req, res) => {
                                             stayDuration:
                                                 totalMin,
                                             charge: charge,
-                                            supervisorId: lostTicket ? findSupervisor._id : null
+                                            supervisorId: lostTicket ? findSupervisor._id : null,
+                                            entryTicket: findEntryTicket
                                         }
                                     );
 
