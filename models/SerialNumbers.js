@@ -10,6 +10,9 @@ const SerialNumber = new Schema({
         type: Number,
         required: true,
     },
+    receiptNo: {
+        type: Number,
+    },
 },
     {
         timestamps: true

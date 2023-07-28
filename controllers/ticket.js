@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const dashboardController = require("../controllers/dashboard");
 const MonthlyPass = require("../models/MonthlyPass")
+const SerialNumbers = require("../models/SerialNumbers")
 
 
 exports.createTransaction = async (req, res) => {
@@ -124,7 +125,7 @@ async function createTransactionfunction(transactionData) {
             if (cancelledTicket == 1)
                 isChecked = await cancelTicketfunction(transactionData)
 
-                console.log('fraudTicket: ', fraudTicket);
+            console.log('fraudTicket: ', fraudTicket);
             if (fraudTicket == 1)
                 isChecked = await fraudTicketfunction(transactionData)
 
@@ -161,14 +162,19 @@ async function createTransactionfunction(transactionData) {
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
 
+            const findSerialNumbers = await SerialNumbers.findOne({ parkingId: shiftData.parkingId })
 
             await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
-                exitTime: exitTime, amount: amount, duration,
+                exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket
             })
 
-
-
             // started from here // mustaqeem
+
+            await SerialNumbers.findOneAndUpdate({ parkingId: shiftData.parkingId }, {
+                $inc: { receiptNo: 1 }
+            }, { returnNewDocument: true })
+
+
 
             await Parking.findByIdAndUpdate(shiftData.parkingId, {
                 $inc: {
@@ -490,7 +496,6 @@ async function fraudTicketfunction(transactionData) {
     }
 }
 
-
 exports.calculateCharge = async (req, res) => {
     try {
 
@@ -779,6 +784,7 @@ exports.calculateCharge = async (req, res) => {
         });
     }
 }
+
 
 function calculateAmountBasedOnActiveTariff(duration, _tariffData, lostTicket) {
     let amount = 0
@@ -1112,6 +1118,7 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     // console.log("exitTime", exitTime);
     // console.log("totalMin", totalMin)
 }
+
 function calculate_parking_fee(duration, tariffData) {
     let amount = 0;
     dailyRate = tariffData.dailyRate != null ? tariffData.dailyRate.amount : 0;
@@ -1228,6 +1235,7 @@ function calculate_parking_fee(duration, tariffData) {
     // return null;
 
 }
+
 function iterateFunction(duration, starting, ending, iterateEvery, price) {
     for (let i = starting; i <= ending; i += iterateEvery) {
         if (duration >= i) {
@@ -1241,14 +1249,13 @@ exports.checkMonthlyPass = async (req, res) => {
         const parkingId = req.body.parkingId
         const cardNumber = req.body.cardNumber
         const type = req.body.type
-        console.log('checkMonthlyPass ', req.body);
 
         let passData = await MonthlyPass.findOne({ cardNumber, parkingId, status: type != 'entry' })
-        
+
         if (passData) {
 
             passData = JSON.parse(JSON.stringify(passData))
-            passData.isActive = (new Date(passData.endDate.split('-').reverse().join(''))  >= new Date())
+            passData.isActive = (new Date(passData.endDate.split('-').reverse().join('')) >= new Date())
             // if(passData.isActive)
             // passData.isActive = (new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.fromTime)  >= new Date() &&   new Date() <= new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.toTime))
 
@@ -1264,7 +1271,7 @@ exports.checkMonthlyPass = async (req, res) => {
             utils.commonResponce(
                 res,
                 201,
-                type == 'entry' ?  "Card already inside or card details not found" : "Card details not found",
+                type == 'entry' ? "Card already inside or card details not found" : "Card details not found",
             );
 
         }
@@ -1280,7 +1287,6 @@ exports.checkMonthlyPass = async (req, res) => {
 
 }
 
-
 exports.updateMonthlyPassEntry = async (req, res) => {
     try {
         const parkingId = req.body.parkingId
@@ -1290,7 +1296,7 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 
         if (passData) {
 
-            await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status:  true })
+            await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: true })
 
             utils.commonResponce(
                 res,

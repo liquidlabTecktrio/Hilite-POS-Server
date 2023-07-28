@@ -21,8 +21,8 @@ const Ticket = new Schema(
         shiftId: {
             type: mongoose.Types.ObjectId,
         },
-        duration:{
-            type:Number
+        duration: {
+            type: Number
         },
         amount: {
             type: Number,
@@ -32,11 +32,11 @@ const Ticket = new Schema(
         },
         cancelledTicket: {
             type: Boolean,
-            default:false
+            default: false
         },
         fraudTicket: {
             type: Boolean,
-            default:false
+            default: false
         },
         lostTicket: {
             type: Boolean,
@@ -52,6 +52,13 @@ const Ticket = new Schema(
         },
         monthlyPassId: {
             type: mongoose.Types.ObjectId,
+        },
+        paymentsType: {
+            type: String,
+        },
+        receiptNo: {
+            type: Number,
+            // required: true,
         },
     },
     {
