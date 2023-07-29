@@ -935,67 +935,117 @@ exports.checkLostTicket = async (req, res) => {
             }
         ])
 
-        const tariffData = await Parking.aggregate([
-            {
-                '$match': {
-                    '_id': mongoose.Types.ObjectId(parkingId)
-                }
-            }, {
-                '$unwind': {
-                    'path': '$connectedTariff'
-                }
-            }, {
-                '$unwind': {
-                    'path': '$connectedTariff.tariffData'
-                }
-            }, {
-                '$lookup': {
-                    'from': 'tariffs',
-                    'localField': 'connectedTariff.tariffData.tariffId',
-                    'foreignField': '_id',
-                    'pipeline': [
-                        {
-                            '$project': {
-                                'tariffName': 0,
-                                '_id': 0,
-                                'isTariffInHour': 0,
-                                'isActive': 0,
-                                'createdAt': 0,
-                                'updatedAt': 0,
-                                '__v': 0
-                            }
-                        }
-                    ],
-                    'as': 'tariffData'
-                }
-            }, {
-                '$addFields': {
-                    'tariffData': {
-                        '$first': '$tariffData'
+        // Old tariff data was array of all tariff breaking lost ticket amount so mustaqeem updated get tariff old methode
+
+        // const tariffData = await Parking.aggregate([
+        //     {
+        //         '$match': {
+        //             '_id': mongoose.Types.ObjectId(parkingId)
+        //         }
+        //     }, {
+        //         '$unwind': {
+        //             'path': '$connectedTariff'
+        //         }
+        //     }, {
+        //         '$unwind': {
+        //             'path': '$connectedTariff.tariffData'
+        //         }
+        //     }, {
+        //         '$lookup': {
+        //             'from': 'tariffs',
+        //             'localField': 'connectedTariff.tariffData.tariffId',
+        //             'foreignField': '_id',
+        //             'pipeline': [
+        //                 {
+        //                     '$project': {
+        //                         'tariffName': 0,
+        //                         '_id': 0,
+        //                         'isTariffInHour': 0,
+        //                         'isActive': 0,
+        //                         'createdAt': 0,
+        //                         'updatedAt': 0,
+        //                         '__v': 0
+        //                     }
+        //                 }
+        //             ],
+        //             'as': 'tariffData'
+        //         }
+        //     }, {
+        //         '$addFields': {
+        //             'tariffData': {
+        //                 '$first': '$tariffData'
+        //             }
+        //         }
+        //     }, {
+        //         '$project': {
+        //             'parkingName': 0,
+        //             '_id': 0,
+        //             'parkingNo': 0,
+        //             'totalSpaces': 0,
+        //             'currentOccupiedSpaces': 0,
+        //             'totalEntries': 0,
+        //             'address': 0,
+        //             'totalExits': 0,
+        //             'connectedTariff': 0,
+        //             'isActive': 0,
+        //             'isAutoCloseBarrier': 0,
+        //             'closeBarrierAfter': 0,
+        //             'createdAt': 0,
+        //             'updatedAt': 0,
+        //             '__v': 0
+        //         }
+        //     }
+        // ])
+
+        const findParking = await Parking.findById(parkingId)
+        
+        let tariffData = []
+
+        const data1 = returnTariffID(2)
+        if (data1.tariffId) {
+            const data_1 = await Tariff.findById(data1.tariffId)
+            tariffData.push({
+                tariffType: data1.tariffType,
+                tariffData: data_1
+            })
+        }
+
+        const data2 = returnTariffID(3)
+        if (data2.tariffId) {
+            const data_2 = await Tariff.findById(data2.tariffId)
+            tariffData.push({
+                tariffType: data2.tariffType,
+                tariffData: data_2
+            })
+        }
+
+        const data3 = returnTariffID(4)
+        if (data3.tariffId) {
+            const data_3 = await Tariff.findById(data3.tariffId)
+            tariffData.push({
+                tariffType: data3.tariffType,
+                tariffData: data_3
+            })
+        }
+
+        function returnTariffID(tariffType) {
+            let obj = {}
+            const dayIndex = new Date().getDay()
+            const data = findParking.connectedTariff.filter(t => t.tariffType == tariffType)
+            if (data.length == 1) {
+
+                const data2 = data[0].tariffData.filter(t => t.dayIndex == dayIndex)
+                if (data2.length > 0)
+                    obj = {
+                        tariffId: data2[0].tariffId,
+                        tariffType: tariffType
                     }
-                }
-            }, {
-                '$project': {
-                    'parkingName': 0,
-                    '_id': 0,
-                    'parkingNo': 0,
-                    'totalSpaces': 0,
-                    'currentOccupiedSpaces': 0,
-                    'totalEntries': 0,
-                    'address': 0,
-                    'totalExits': 0,
-                    'connectedTariff': 0,
-                    'isActive': 0,
-                    'isAutoCloseBarrier': 0,
-                    'closeBarrierAfter': 0,
-                    'createdAt': 0,
-                    'updatedAt': 0,
-                    '__v': 0
-                }
             }
-        ])
+            return obj
+        }
 
         // tariffData.map(ele => console.log("ele", ele.hourlyRate))
+        // console.log('tariffData: ', tariffData);
         if (checkTransaction.length > 0) {
 
             if (checkTransaction[0].exitTime) {
@@ -1045,7 +1095,6 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     // entryTime = 1686950503;
     // exitTime = 1686993028;
     // console.log("tariffData", tariffData)
-    console.log("lostTicket", lostTicket)
     // console.log("carwashType", carwashType)
     // console.log("xbj", entryTime, exitTime, ticket, tariffData, carwashType, tariffType, lostTicket, res)
     var entryTimeISO = moment
@@ -1065,9 +1114,12 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     //   lostTicket =  findKey(tariffData, "lostTicket");
 
     // lostTicketFine = lostTicket ? tariffData.lostTicket.amount : 0;
-    lostTicketFine = lostTicket ? tariffData.lostTicket : 0;
-
-
+    // lostTicketFine = lostTicket ? tariffData.lostTicket : 0; //commented by mustaqeem
+    lostTicketFine = lostTicket ? tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData.lostTicket : 0;
+    
+    
+    console.log('lostTicket: ', lostTicket);
+    // console.log('tariffData: ', tariffData);
     console.log("lostTicketFine", lostTicketFine)
     amount = 0;
     console.log("amount01", amount)
@@ -1088,7 +1140,9 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     //     carwashType = 'Exterior & Interior Cleaning';
     // }
 
-    amount = calculate_parking_fee(duration, tariffData);
+    // amount = calculate_parking_fee(duration, tariffData); // commented by mustaqeem
+    amount = calculate_parking_fee(duration,  tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData);
+
     console.log("amount", amount)
 
     if (amount != null) {
