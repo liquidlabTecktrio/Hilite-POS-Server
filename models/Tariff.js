@@ -68,7 +68,7 @@ const Tariff = new Schema(
         isTariffInHour: {
             type: Boolean
         },
-        dailyData: [dailyObj],
+        // dailyData: [dailyObj],
         // tariffData: [tariffObj],
         lostTicket: {
             type: lostTicketSchema,
