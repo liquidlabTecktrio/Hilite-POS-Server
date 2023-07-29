@@ -156,6 +156,7 @@ async function createTransactionfunction(transactionData) {
             const lostTicket = transactionData.lostTicket;
             const supervisorId = transactionData.supervisorId;
             const exitTime = transactionData.exitTime;
+            const supervisorPin = transactionData.supervisorPin;
             // const exitTime = transactionData.exitTime.substring(7);
 
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -164,88 +165,108 @@ async function createTransactionfunction(transactionData) {
 
             const findSerialNumbers = await SerialNumbers.findOne({ parkingId: shiftData.parkingId })
 
-            await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
-                exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket
+            let findSupervisor = await Opretor.findOne({
+                parkingId: shiftData.parkingId,
+                supervisorPin: supervisorPin
             })
 
-            // started from here // mustaqeem
 
-            await SerialNumbers.findOneAndUpdate({ parkingId: shiftData.parkingId }, {
-                $inc: { receiptNo: 1 }
-            }, { returnNewDocument: true })
+            if (lostTicket && !findSupervisor) {
 
+                statusCode = 201;
+                message = "Incorrect Supervisor Pin";
 
-
-            await Parking.findByIdAndUpdate(shiftData.parkingId, {
-                $inc: {
-                    currentOccupiedSpaces: -1
-                },
-            })
-
-            let obj = {
-                $inc: {
-                    totalTicketCollected: 1,
-                    totalLostTicketCollected: lostTicket ? 1 : 0,
-                }, $push: {}
-            }
-
-            if (shiftData.totalCollection.filter(c => c.paymentType == paymentType).length <= 0)
-                obj['$push']['totalCollection'] = [{
-                    paymentType: paymentType,
-                    amount: amount,
-                }]
-            else
-                obj['$inc']['totalCollection.$[a].amount'] = amount
-
-            await Shift.findByIdAndUpdate(shiftId, obj,
-                {
-                    arrayFilters: [
-                        { "a.paymentType": paymentType },
-                    ],
+                return {
+                    statusCode, message
                 }
-            )
+
+            } else {
 
 
-            // update supervisor pin because lost ticket transaction is valid online
-            if (lostTicket && !supervisorId) {
-                // get All pincode
-                const existingSupervisorPinParkiongWise = await Opretor.aggregate([
+                await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
+                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket
+                })
+
+                // started from here // mustaqeem
+
+                await SerialNumbers.findOneAndUpdate({ parkingId: shiftData.parkingId }, {
+                    $inc: { receiptNo: 1 }
+                }, { returnNewDocument: true })
+
+
+
+                await Parking.findByIdAndUpdate(shiftData.parkingId, {
+                    $inc: {
+                        currentOccupiedSpaces: -1
+                    },
+                })
+
+                let obj = {
+                    $inc: {
+                        totalTicketCollected: 1,
+                        totalLostTicketCollected: lostTicket ? 1 : 0,
+                    }, $push: {}
+                }
+
+                if (shiftData.totalCollection.filter(c => c.paymentType == paymentType).length <= 0)
+                    obj['$push']['totalCollection'] = [{
+                        paymentType: paymentType,
+                        amount: amount,
+                    }]
+                else
+                    obj['$inc']['totalCollection.$[a].amount'] = amount
+
+                await Shift.findByIdAndUpdate(shiftId, obj,
                     {
-                        '$match': {
-                            parkingId: mongoose.Types.ObjectId(shiftData.parkingId),
-                            isSupervisor: true
-                        }
-                    }, {
-                        '$project': {
-                            supervisorPin: 1,
-                            _id: 0
-                        }
+                        arrayFilters: [
+                            { "a.paymentType": paymentType },
+                        ],
                     }
-                ])
-
-                let supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
-                if (supervisorPin)
-                    await Opretor.findByIdAndUpdate(supervisorId, { supervisorPin })
-            }
+                )
 
 
+                // update supervisor pin because lost ticket transaction is valid online
+                if (lostTicket && !supervisorId) {
+                    // get All pincode
+                    const existingSupervisorPinParkiongWise = await Opretor.aggregate([
+                        {
+                            '$match': {
+                                parkingId: mongoose.Types.ObjectId(shiftData.parkingId),
+                                isSupervisor: true
+                            }
+                        }, {
+                            '$project': {
+                                supervisorPin: 1,
+                                _id: 0
+                            }
+                        }
+                    ])
 
-            // update nfc card
-            if (monthlyPassUsed) {
-                const passData = await MonthlyPass.findOne({ cardNumber, parkingId })
+                    let supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
+                    if (supervisorPin)
+                        await Opretor.findByIdAndUpdate(findSupervisor._id, { supervisorPin })
+                }
 
-                if (passData) {
 
-                    await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: 'in' })
+
+                // update nfc card
+                if (monthlyPassUsed) {
+                    const passData = await MonthlyPass.findOne({ cardNumber, parkingId })
+
+                    if (passData) {
+
+                        await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: 'in' })
+                    }
+                }
+
+
+                statusCode = 200
+                message = 'Successfully created transaction'
+                return {
+                    statusCode, message
                 }
             }
 
-
-            statusCode = 200
-            message = 'Successfully created transaction'
-            return {
-                statusCode, message
-            }
         }
 
 
@@ -998,7 +1019,7 @@ exports.checkLostTicket = async (req, res) => {
         // ])
 
         const findParking = await Parking.findById(parkingId)
-        
+
         let tariffData = []
 
         const data1 = returnTariffID(2)
@@ -1116,8 +1137,8 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     // lostTicketFine = lostTicket ? tariffData.lostTicket.amount : 0;
     // lostTicketFine = lostTicket ? tariffData.lostTicket : 0; //commented by mustaqeem
     lostTicketFine = lostTicket ? tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData.lostTicket : 0;
-    
-    
+
+
     console.log('lostTicket: ', lostTicket);
     // console.log('tariffData: ', tariffData);
     console.log("lostTicketFine", lostTicketFine)
@@ -1141,7 +1162,7 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     // }
 
     // amount = calculate_parking_fee(duration, tariffData); // commented by mustaqeem
-    amount = calculate_parking_fee(duration,  tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData);
+    amount = calculate_parking_fee(duration, tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData);
 
     console.log("amount", amount)
 
