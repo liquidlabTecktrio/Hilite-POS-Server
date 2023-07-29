@@ -212,7 +212,7 @@ async function createTransactionfunction(transactionData) {
                 const existingSupervisorPinParkiongWise = await Opretor.aggregate([
                     {
                         '$match': {
-                            parkingId: mongoose.Types.ObjectId(findShift.parkingId),
+                            parkingId: mongoose.Types.ObjectId(shiftData.parkingId),
                             isSupervisor: true
                         }
                     }, {
