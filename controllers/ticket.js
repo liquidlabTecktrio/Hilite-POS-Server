@@ -1064,7 +1064,8 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     //   dailyRate =  findKey(tariffData, "dailyRate");
     //   lostTicket =  findKey(tariffData, "lostTicket");
 
-    lostTicketFine = lostTicket ? tariffData.lostTicket.amount : 0;
+    // lostTicketFine = lostTicket ? tariffData.lostTicket.amount : 0;
+    lostTicketFine = lostTicket ? tariffData.lostTicket : 0;
 
 
     console.log("lostTicketFine", lostTicketFine)

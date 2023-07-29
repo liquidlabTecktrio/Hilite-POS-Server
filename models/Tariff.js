@@ -70,17 +70,16 @@ const Tariff = new Schema(
         },
         // dailyData: [dailyObj],
         // tariffData: [tariffObj],
-        lostTicket: {
-            type: lostTicketSchema,
-
-        },
+        // lostTicket: {
+        //     type: lostTicketSchema,
+        // },
         isActive: {
             type: Boolean,
             required: true,
         },
-        // lostTicket: {
-        //     type: Number
-        // }
+        lostTicket: {
+            type: Number
+        },
         dailyRate: {
             type: dailyRateSchema,
 
