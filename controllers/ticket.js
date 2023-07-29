@@ -223,7 +223,7 @@ async function createTransactionfunction(transactionData) {
                     }
                 ])
 
-                supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
+                let supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
                 if (supervisorPin)
                     await Opretor.findByIdAndUpdate(supervisorId, { supervisorPin })
             }
