@@ -1162,9 +1162,24 @@ function calculate_tariff(entryTime, exitTime, ticket, tariffData, lostTicket, r
     // }
 
     // amount = calculate_parking_fee(duration, tariffData); // commented by mustaqeem
-    amount = calculate_parking_fee(duration, tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData);
+    // amount = calculate_parking_fee(duration, tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData);
+    amount = calculateAmountBasedOnActiveTariff(duration, tariffData.filter(t => t.tariffType == ticket.vehicleType)[0].tariffData, false);
 
-    console.log("amount", amount)
+    console.log("amount", amount, {
+        entryTimeISO: entryTimeISO,
+        exitTimeISO: exitTimeISO,
+        duration: duration,
+        // dailyRate: dailyRate,
+        // lostTicket: lostTicket,
+        ticketId: ticket.ticketId,
+        vehicleType: ticket.vehicleType,
+        vehicleNo: ticket.vehicleNo,
+        amount: amount,
+        // carwashAmount: carwashAmount,
+        lostTicketFine: lostTicketFine,
+        // carwashType: carwashType,
+
+    })
 
     if (amount != null) {
         utils.commonResponce(res, 200, "Successfully calculated Tariff", {
@@ -1312,6 +1327,7 @@ function calculate_parking_fee(duration, tariffData) {
     // return null;
 
 }
+
 
 function iterateFunction(duration, starting, ending, iterateEvery, price) {
     for (let i = starting; i <= ending; i += iterateEvery) {
