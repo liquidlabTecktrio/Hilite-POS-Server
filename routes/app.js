@@ -40,11 +40,13 @@ router.post("/closeShift", shiftController.closeShift);
 // router.post("/getReceipts", transactionController.getReceipts);
 // router.post("/checkLostTicket", transactionController.checkLostTicket)
 router.post("/createTransaction", ticketController.createTransaction);
+router.post("/createTransactionNFC", ticketController.createTransactionNFC);
 router.post("/cancelTicket", ticketController.cancelTicket);
 router.post("/calculateCharge", ticketController.calculateCharge);
 router.post("/getReceipts", ticketController.getReceipts);
 router.post("/checkLostTicket", ticketController.checkLostTicket)
 router.post("/registerFraudTicket", ticketController.registerFraudTicket);
+router.post("/registerFraudTicketNFC", ticketController.registerFraudTicketNFC);
 router.post("/checkMonthlyPass", ticketController.checkMonthlyPass);
 router.post("/updateMonthlyPassEntry", ticketController.updateMonthlyPassEntry);
 

@@ -265,6 +265,7 @@ exports.appLogin = async (req, res, next) => {
             isActive: true
           })
 
+          console.log('opretor login successfull":');
           return res.status(200).json({
             status: 200,
             message: "opretor login successfull",

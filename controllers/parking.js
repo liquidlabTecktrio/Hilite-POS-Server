@@ -484,7 +484,7 @@ async function getParkingDataForGraphFunction(requestData) {
                     totalExits += shift.totalTicketCollected
 
                     shift.totalCollection.map(c => {
-                        if (c.paymentType != '' && c.paymentType)
+                        if (c.paymentType != '' && c.paymentType != 'nfc' && c.paymentType)
                             activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
                     })
                 })

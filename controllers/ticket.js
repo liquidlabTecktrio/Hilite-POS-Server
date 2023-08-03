@@ -10,6 +10,7 @@ const moment = require("moment-timezone");
 const dashboardController = require("../controllers/dashboard");
 const MonthlyPass = require("../models/MonthlyPass")
 const SerialNumbers = require("../models/SerialNumbers")
+const NFCTransaction = require("../models/NFCTransaction");
 
 
 exports.createTransaction = async (req, res) => {
@@ -316,7 +317,7 @@ exports.cancelTicket = async (req, res) => {
         utils.commonResponce(
             res,
             200,
-            "Successfully cancelled tickets",
+            "cancelled ticket",
             {
                 shiftData, faildTransactions
             }
@@ -437,7 +438,7 @@ exports.registerFraudTicket = async (req, res) => {
         utils.commonResponce(
             res,
             200,
-            "Successfully updated tickets",
+            "fraurd ticket updated",
             {
                 shiftData, faildTransactions
             }
@@ -489,7 +490,7 @@ async function fraudTicketfunction(transactionData) {
 
 
                     statusCode = 200
-                    message = 'Successfully updated'
+                    message = 'fraurd ticket updated'
 
 
                 }).catch((err) => {
@@ -1338,26 +1339,72 @@ function iterateFunction(duration, starting, ending, iterateEvery, price) {
 }
 
 exports.checkMonthlyPass = async (req, res) => {
+    console.log('checkMonthlyPass: ');
     try {
         const parkingId = req.body.parkingId
+        console.log('req.body: ', req.body);
         const cardNumber = req.body.cardNumber
         const type = req.body.type
 
         let passData = await MonthlyPass.findOne({ cardNumber, parkingId, status: type != 'entry' })
+        console.log('type != ', type != 'entry');
+        console.log('passData: ', passData);
 
         if (passData) {
 
             passData = JSON.parse(JSON.stringify(passData))
-            passData.isActive = (new Date(passData.endDate.split('-').reverse().join('')) >= new Date())
+            passData.isActive = (new Date(passData.endDate.split('-').reverse().join('-')) >= new Date())
+            // console.log('new Date(passData.en ', new Date(passData.endDate.split('-').reverse().join('-')));
+            // console.log('new Date(passData.en ', new Date());
             // if(passData.isActive)
             // passData.isActive = (new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.fromTime)  >= new Date() &&   new Date() <= new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.toTime))
 
-            utils.commonResponce(
-                res,
-                200,
-                "Successfully fetched card",
-                passData
-            );
+            // const nfcTransaction = await NFCTransaction.findOne({ monthlyPassId: passData._id })
+            const nfcTransaction = await NFCTransaction.aggregate([
+                {
+                    '$match':{
+                        'monthlyPassId': mongoose.Types.ObjectId(passData._id)
+                    }
+                },{
+                    '$sort':{
+                        'updatedAt':-1
+                    }
+                },{
+                    '$limit':1
+                }
+            ])
+
+            console.log('nfcTransaction: ', nfcTransaction);
+            if (type != 'entry')
+                if (nfcTransaction.length ==1 && nfcTransaction[0].exitTime)
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "No entry found for this NFC",
+                    );
+                else {
+
+                    passData.ticketId = nfcTransaction[0].ticketId
+                    passData.entryTime = nfcTransaction[0].entryTime
+
+                    utils.commonResponce(
+                        res,
+                        200,
+                        "Successfully fetched card",
+                        passData
+                    );
+                }
+                else{
+                    utils.commonResponce(
+                        res,
+                        200,
+                        "Successfully fetched card",
+                        passData
+                    );
+                }
+                
+                // console.log('passData: ', passData);
+          
 
         } else {
 
@@ -1380,8 +1427,297 @@ exports.checkMonthlyPass = async (req, res) => {
 
 }
 
+exports.createTransactionNFC = async (req, res) => {
+    console.log('createTransactionNFC: ');
+    // try {
+    //     // "ticketId": "01010521687461962",
+    //     // "transactionType": "exit",
+    //     // "shiftId": "6496cc1d2c8f63e5a40756dc",
+    //     // "vehicleType": 2,
+    //     // "vehicleNo":"87654321",
+    //     // "paymentType":"upi",
+    //     // "amount":200,
+    //     // "lostTicket":false,
+    //     // "supervisorId":"6493f7f6dd2c362985776664"
+
+    //     const transactions = req.body.transactions
+    //     const faildTransactions = [];
+
+    //     await Bluebird.each(transactions, async (transaction, index) => {
+
+    //         const createTrasactionData = await createTransactionNFCfunction(transaction)
+    //         if (createTrasactionData.statusCode != 200) {
+    //             transaction.message = createTrasactionData.message
+    //             faildTransactions.push(transaction)
+    //         }
+    //     })
+
+    //     let shiftData = await Shift.findById(transactions[0].shiftId)
+
+    //     utils.commonResponce(
+    //         res,
+    //         transactions.length == faildTransactions.length ? 201 : 200,
+    //         transactions.length == faildTransactions.length ? "Some transaction could'nt create" : "Successfully created Transactions",
+    //         {
+    //             shiftData, faildTransactions
+    //         }
+    //     );
+
+    // } catch (error) {
+    //     return res.status(500).json({
+    //         status: 500,
+    //         message: "Unexpected server error while creating Transaction",
+    //     });
+
+    // }
+
+    try {
+
+        const ticketId = req.body.ticketId
+        console.log('req.body: ', req.body);
+        const transactionType = req.body.transactionType
+        const shiftId = req.body.shiftId
+        const vehicleType = req.body.vehicleType
+        const vehicleNo = req.body.vehicleNo
+        const cancelledTicket = req.body.cancelledTicket
+        const fraudTicket = req.body.fraudTicket
+        const monthlyPassUsed = req.body.monthlyPassUsed
+        const monthlyPassId = req.body.monthlyPassId
+
+        let shiftData = await Shift.findById(shiftId)
+
+
+        entryTime = ticketId.slice(-10);
+
+        if (transactionType == 'entry') {
+
+            await NFCTransaction.create({
+                ticketId: ticketId,
+
+                entryTime: entryTime,
+                shiftId: shiftId,
+                parkingId: shiftData.parkingId,
+                // amount: amount,
+                // paymentType: paymentType,
+                vehicleType: vehicleType,
+                vehicleNo: vehicleNo,
+                // lostTicket: lostTicket,
+                // supervisorId: supervisorId
+                monthlyPassUsed: monthlyPassUsed,
+                monthlyPassId: monthlyPassId,
+            })
+            //increment parking ocuupancy
+            await Parking.findByIdAndUpdate(shiftData.parkingId, {
+                $inc: {
+                    currentOccupiedSpaces: 1
+                },
+            })
+            //increement issued tickets count in  the shift data
+            await Shift.findByIdAndUpdate(shiftId, {
+                $inc: {
+                    totalTicketIssued: 1
+                }
+            })
+
+
+            let isChecked = true
+            if (cancelledTicket == 1)
+                isChecked = await cancelTicketfunction(req.body)
+
+            if (fraudTicket == 1)
+                isChecked = await fraudTicketfunction(req.body)
+
+
+
+            if (isChecked) {
+                utils.commonResponce(
+                    res,
+                    200,
+                    'Successfully created transaction',
+                    {
+                        shiftData, ticketId
+                    }
+                );
+            } else {
+                utils.commonResponce(
+                    res,
+                    201,
+                    'Server issue while updating cancel or fraud ticket'
+                );
+            }
+
+
+        }
+
+        if (transactionType == 'exit') {
+
+            const amount = req.body.amount;
+            const paymentType = req.body.paymentType;
+            const lostTicket = req.body.lostTicket;
+            const supervisorId = req.body.supervisorId;
+            const exitTime = req.body.exitTime;
+            const supervisorPin = req.body.supervisorPin;
+            // const exitTime = req.body.exitTime.substring(7);
+
+            var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+            // const findSerialNumbers = await SerialNumbers.findOne({ parkingId: shiftData.parkingId })
+
+            await NFCTransaction.findOneAndUpdate({ ticketId: ticketId }, {
+                exitTime, amount, duration,
+                // receiptNo: findSerialNumbers.receiptNo,
+                paymentType, lostTicket
+            })
+
+            // started from here // mustaqeem
+
+            // await SerialNumbers.findOneAndUpdate({ parkingId: shiftData.parkingId }, {
+            //     $inc: { receiptNo: 1 }
+            // }, { returnNewDocument: true })
+
+
+
+            await Parking.findByIdAndUpdate(shiftData.parkingId, {
+                $inc: {
+                    currentOccupiedSpaces: -1
+                },
+            })
+
+            let obj = {
+                $inc: {
+                    totalTicketCollected: 1,
+                    totalLostTicketCollected: lostTicket ? 1 : 0,
+                }, $push: {}
+            }
+
+            if (shiftData.totalCollection.filter(c => c.paymentType == paymentType).length <= 0)
+                obj['$push']['totalCollection'] = [{
+                    paymentType: paymentType,
+                    amount: amount,
+                }]
+            else
+                obj['$inc']['totalCollection.$[a].amount'] = amount
+
+            await Shift.findByIdAndUpdate(shiftId, obj,
+                {
+                    arrayFilters: [
+                        { "a.paymentType": paymentType },
+                    ],
+                }
+            )
+
+            // update nfc card
+            if (monthlyPassUsed) {
+                const passData = await MonthlyPass.findById(req.body.monthlyPassId)
+
+                if (passData) {
+
+                    await MonthlyPass.findByIdAndUpdate(req.body.monthlyPassId, { status: false })
+                }
+            }
+
+            utils.commonResponce(
+                res,
+                200,
+                'Successfully created transaction',
+                {
+                    shiftData
+                }
+            );
+
+        }
+
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Transaction",
+        });
+    }
+}
+
+exports.registerFraudTicketNFC = async (req, res) => {
+    try {
+        console.log('registerFraudTicket NFC: ');
+        console.log('req.body: ', req.body);
+
+        const ticketId = req.body.ticketId
+        const shiftId = req.body.shiftId
+
+        const findTicket = await NFCTransaction.findOne({ ticketId: ticketId })
+
+        if (findTicket) {
+            if (findTicket.exitTime) {
+
+                utils.commonResponce(
+                    res,
+                    201,
+                    "Payment already received for Ticket ID"
+                );
+            } else {
+
+                await NFCTransaction.findByIdAndUpdate(findTicket._id, {
+                    fraudTicket: true
+                }).then(async (createdParking) => {
+
+                    // update shift and opretor here
+
+                    const findShift = await Shift.findById(shiftId)
+
+
+                    await Parking.findByIdAndUpdate(findShift.parkingId, {
+                        $inc: {
+                            currentOccupiedSpaces: -1,
+                        },
+                    })
+
+
+                    utils.commonResponce(
+                        res,
+                        200,
+                        "fraurd ticket NFC updated",
+                        {
+                            shiftData:findShift
+                        }
+                    );
+
+
+                }).catch((err) => {
+
+                utils.commonResponce(
+                    res,
+                    201,
+                    err.toString()
+                );
+                });
+
+            }
+        }
+        else {
+           
+            utils.commonResponce(
+                res,
+                201,
+                "Ticket ID not found"
+            );
+        }
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Transaction",
+        });
+    }
+}
+
 exports.updateMonthlyPassEntry = async (req, res) => {
     try {
+        console.log('updateMonthlyPassEntry: ');
+        console.log(' req.body: ',  req.body);
         const parkingId = req.body.parkingId
         const cardNumber = req.body.cardNumber
 
