@@ -20,6 +20,12 @@ const packageController = require("../controllers/package")
 const posHeartbeatController = require("../controllers/posHeartbeat");
 
 const vehicleController = require("../controllers/vehicle");
+const reportController = require("../controllers/reports");
+
+
+
+
+
 
 router.post("/adminLogin", appLoginController.adminLogin);
 
@@ -67,14 +73,20 @@ router.post("/createVehicle",
     vehicleController.createVehicle);
 
 router.post("/getVehicles", verifyTokenMiddleware, vehicleController.getVehicles);
-router.post("/getParkingRevenue", verifyTokenMiddleware, reportsController.getParkingRevenue)
+// router.post("/getParkingRevenue", verifyTokenMiddleware, reportsController.getParkingRevenue)
 
 router.post("/createPackage", packageController.createPackage)
 router.post("/getPackages", packageController.getPackages)
 
 router.post("/createMonthlyPass", monthlyPassController.createMonthlyPass)
 router.post("/getMonthlyPass", monthlyPassController.getMonthlyPass)
-// router.post("/updateMonthlyPass", verifyTokenMiddleware, monthlyPassController.updateMonthlyPass)
+router.post("/updateMonthlyPass", monthlyPassController.updateMonthlyPass)
 
+
+
+router.post("/getParkingRevenue", reportController.getParkingRevenue)
+router.post("/shiftReport", reportController.shiftReport)
+router.post("/seasonParkerReport", reportController.seasonParkerReport)
+router.post("/seasonParkerDetailReport", reportController.seasonParkerDetailReport)
 
 module.exports = router;

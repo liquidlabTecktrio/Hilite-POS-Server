@@ -19,7 +19,7 @@ exports.createMonthlyPass = async (req, res) => {
 
         const packageData = await Package.findById(packageId)
 
-        if(packageData && packageData.vehicalType == vehicalType){
+        if (packageData && packageData.vehicalType == vehicalType) {
 
             await MonthlyPass.create({
                 passHolderName: passHolderName,
@@ -35,10 +35,10 @@ exports.createMonthlyPass = async (req, res) => {
                 amount: packageData.amount,
                 fromTime: packageData.fromTime,
                 toTime: packageData.toTime,
-                status:false,
-                isActive:true
+                status: false,
+                isActive: true
             }).then(createMonthlyPass => {
-    
+
                 utils.commonResponce(
                     res,
                     200,
@@ -55,7 +55,7 @@ exports.createMonthlyPass = async (req, res) => {
                 );
             });
 
-        }else{
+        } else {
 
             utils.commonResponce(
                 res,
@@ -104,64 +104,66 @@ exports.getMonthlyPass = async (req, res) => {
     }
 }
 
-// exports.updateMonthlyPass = async (req, res) => {
-//     try {
-//         const monthlyPassId = req.body.updateMonthlyPassData.monthlyPassId
+exports.updateMonthlyPass = async (req, res) => {
+    try {
+        const monthlyPassId = req.body.monthlyPassId
+        const isActive = req.body.isActive
 
-//         const name = req.body.updateMonthlyPassData.updateName
+        // const name = req.body.updateMonthlyPassData.updateName
 
-//         const phoneNumber = req.body.updateMonthlyPassData.updatePhoneNumber;
-//         const email = req.body.updateMonthlyPassData.updateEmail;
-//         const address = req.body.updateMonthlyPassData.updateAdress;
-//         const passDuration = req.body.updateMonthlyPassData.updatePassDuration;
-//         const startMonth = req.body.updateMonthlyPassData.updateStartMonth
-//         const endMonth = req.body.updateMonthlyPassData.updateEndMonth;
-//         const cardNumber = req.body.updateMonthlyPassData.updateCardNumber;
-//         const vehicalModel = req.body.updateMonthlyPassData.updateVehicalModel;
-//         const vehicalColor = req.body.updateMonthlyPassData.updateVehicalColor;
-//         const cardType = req.body.updateMonthlyPassData.updateCardType;
-//         const licenseNumber = req.body.updateMonthlyPassData.updateLicenseNumber
-//         // const designation = req.body.designation;
-//         const amount = req.body.updateMonthlyPassData.updateAmount;
+        // const phoneNumber = req.body.updateMonthlyPassData.updatePhoneNumber;
+        // const email = req.body.updateMonthlyPassData.updateEmail;
+        // const address = req.body.updateMonthlyPassData.updateAdress;
+        // const passDuration = req.body.updateMonthlyPassData.updatePassDuration;
+        // const startMonth = req.body.updateMonthlyPassData.updateStartMonth
+        // const endMonth = req.body.updateMonthlyPassData.updateEndMonth;
+        // const cardNumber = req.body.updateMonthlyPassData.updateCardNumber;
+        // const vehicalModel = req.body.updateMonthlyPassData.updateVehicalModel;
+        // const vehicalColor = req.body.updateMonthlyPassData.updateVehicalColor;
+        // const cardType = req.body.updateMonthlyPassData.updateCardType;
+        // const licenseNumber = req.body.updateMonthlyPassData.updateLicenseNumber
+        // // const designation = req.body.designation;
+        // const amount = req.body.updateMonthlyPassData.updateAmount;
 
-//         const monthlyPassExist = await MonthlyPass.findById(monthlyPassId);
-//         if (monthlyPassExist) {
+        const monthlyPassExist = await MonthlyPass.findById(monthlyPassId);
+        if (monthlyPassExist) {
 
-//             const options = { useFindAndModify: false, new: true };
-//             await MonthlyPass.findByIdAndUpdate(
-//                 { _id: monthlyPassId },
-//                 {
-//                     name: name,
-//                     phoneNumber: phoneNumber,
-//                     email: email,
-//                     address: address,
-//                     passDuration: passDuration,
-//                     startMonth: startMonth,
-//                     endMonth: endMonth,
-//                     cardNumber: cardNumber,
-//                     vehicalModel: vehicalModel,
-//                     vehicalColor: vehicalColor,
-//                     cardType: cardType,
-//                     amount: amount,
-//                     licenseNumber: licenseNumber,
+            const options = { useFindAndModify: false, new: true };
+            await MonthlyPass.findByIdAndUpdate(
+                { _id: monthlyPassId },
+                {
+                    // name: name,
+                    // phoneNumber: phoneNumber,
+                    // email: email,
+                    // address: address,
+                    // passDuration: passDuration,
+                    // startMonth: startMonth,
+                    // endMonth: endMonth,
+                    // cardNumber: cardNumber,
+                    // vehicalModel: vehicalModel,
+                    // vehicalColor: vehicalColor,
+                    // cardType: cardType,
+                    // amount: amount,
+                    // licenseNumber: licenseNumber,
+                    isActive: isActive,
 
-//                 },
-//                 options
-//             )
-//                 .then(updateMonthlyPass => {
+                },
+                options
+            )
+                .then(updateMonthlyPass => {
 
 
-//                     utils.commonResponce(res, 200, "Monthly Pass Updated Sucessfully", updateMonthlyPass)
-//                 }).catch(function (error) {
-//                     console.log(error);
-//                     utils.commonResponce(res, 201, "Error while update Monthly Pass ", error.toString())
+                    utils.commonResponce(res, 200, "Monthly Pass Updated Sucessfully", updateMonthlyPass)
+                }).catch(function (error) {
+                    console.log(error);
+                    utils.commonResponce(res, 201, "Error while update Monthly Pass ", error.toString())
 
-//                 });
-//         } else {
-//             utils.commonResponce(res, 404, "Monthly Pass is not found ")
-//         }
+                });
+        } else {
+            utils.commonResponce(res, 404, "Monthly Pass is not found ")
+        }
 
-//     } catch (error) {
-//         console.log(error)
-//     }
-// }
+    } catch (error) {
+        console.log(error)
+    }
+}

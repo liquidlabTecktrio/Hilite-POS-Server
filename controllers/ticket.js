@@ -252,11 +252,11 @@ async function createTransactionfunction(transactionData) {
 
                 // update nfc card
                 if (monthlyPassUsed) {
-                    const passData = await MonthlyPass.findOne({ cardNumber, parkingId })
+                    const passData = await MonthlyPass.findOne({ cardNumber, isActive: true, parkingId })
 
                     if (passData) {
 
-                        await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: 'in' })
+                        await MonthlyPass.findOneAndUpdate({ cardNumber, isActive: true, parkingId }, { status: 'in' })
                     }
                 }
 
@@ -1346,7 +1346,7 @@ exports.checkMonthlyPass = async (req, res) => {
         const cardNumber = req.body.cardNumber
         const type = req.body.type
 
-        let passData = await MonthlyPass.findOne({ cardNumber, parkingId, status: type != 'entry' })
+        let passData = await MonthlyPass.findOne({ cardNumber, isActive: true, parkingId, status: type != 'entry' })
         console.log('type != ', type != 'entry');
         console.log('passData: ', passData);
 
@@ -1362,21 +1362,21 @@ exports.checkMonthlyPass = async (req, res) => {
             // const nfcTransaction = await NFCTransaction.findOne({ monthlyPassId: passData._id })
             const nfcTransaction = await NFCTransaction.aggregate([
                 {
-                    '$match':{
+                    '$match': {
                         'monthlyPassId': mongoose.Types.ObjectId(passData._id)
                     }
-                },{
-                    '$sort':{
-                        'updatedAt':-1
+                }, {
+                    '$sort': {
+                        'updatedAt': -1
                     }
-                },{
-                    '$limit':1
+                }, {
+                    '$limit': 1
                 }
             ])
 
             console.log('nfcTransaction: ', nfcTransaction);
             if (type != 'entry')
-                if (nfcTransaction.length ==1 && nfcTransaction[0].exitTime)
+                if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime)
                     utils.commonResponce(
                         res,
                         201,
@@ -1394,17 +1394,17 @@ exports.checkMonthlyPass = async (req, res) => {
                         passData
                     );
                 }
-                else{
-                    utils.commonResponce(
-                        res,
-                        200,
-                        "Successfully fetched card",
-                        passData
-                    );
-                }
-                
-                // console.log('passData: ', passData);
-          
+            else {
+                utils.commonResponce(
+                    res,
+                    200,
+                    "Successfully fetched card",
+                    passData
+                );
+            }
+
+            // console.log('passData: ', passData);
+
 
         } else {
 
@@ -1680,24 +1680,24 @@ exports.registerFraudTicketNFC = async (req, res) => {
                         200,
                         "fraurd ticket NFC updated",
                         {
-                            shiftData:findShift
+                            shiftData: findShift
                         }
                     );
 
 
                 }).catch((err) => {
 
-                utils.commonResponce(
-                    res,
-                    201,
-                    err.toString()
-                );
+                    utils.commonResponce(
+                        res,
+                        201,
+                        err.toString()
+                    );
                 });
 
             }
         }
         else {
-           
+
             utils.commonResponce(
                 res,
                 201,
@@ -1717,15 +1717,15 @@ exports.registerFraudTicketNFC = async (req, res) => {
 exports.updateMonthlyPassEntry = async (req, res) => {
     try {
         console.log('updateMonthlyPassEntry: ');
-        console.log(' req.body: ',  req.body);
+        console.log(' req.body: ', req.body);
         const parkingId = req.body.parkingId
         const cardNumber = req.body.cardNumber
 
-        const passData = await MonthlyPass.findOne({ cardNumber, parkingId })
+        const passData = await MonthlyPass.findOne({ cardNumber, isActive: true, parkingId })
 
         if (passData) {
 
-            await MonthlyPass.findOneAndUpdate({ cardNumber, parkingId }, { status: true })
+            await MonthlyPass.findOneAndUpdate({ cardNumber, isActive: true, parkingId }, { status: true })
 
             utils.commonResponce(
                 res,
