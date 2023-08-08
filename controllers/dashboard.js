@@ -8,6 +8,7 @@ const PosHeartbeat = require("../models/PosHeartbeat");
 const parkingController = require("../controllers/parking");
 const { WebSocket, WebSocketServer } = require('ws');
 const designaPOS = require("../designaPOS");
+const MonthlyPass = require("../models/MonthlyPass");
 
 exports.getDashboardData = async (req, res) => {
     try {
@@ -28,8 +29,32 @@ exports.getDashboardData = async (req, res) => {
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
 
+        const fromDate = new Date(new Date().setDate(1));
+        console.log("fromDate", fromDate)
+        
+        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)));
+        console.log("toDate", toDate)
+
         let totalIncome = await Shift.aggregate(
             [
+                {
+                    '$addFields': {
+                        'shiftEndDateISO': {
+                            '$dateFromString': {
+                                'dateString': '$shiftStopTime',
+                                'format': "%d-%m-%Y %H:%M:%S"
+                            }
+                        }
+                    }
+                }, {
+                    '$match': {
+                        'shiftEndDateISO': {
+                            '$gte': fromDate,
+                            '$lte': toDate,
+    
+                        }
+                    }
+                },
                 {
                     '$addFields': {
                         'totalIncome': {
@@ -67,10 +92,44 @@ exports.getDashboardData = async (req, res) => {
             ]
         )
 
+        const monthlyPassRevenueData = await MonthlyPass.aggregate([
+            {
+                '$match': {
+                    'parkingId': mongoose.Types.ObjectId(parkingId),
+                }
+            }, {
+                '$match': {
+                    'createdAt': {
+                        '$gte': fromDate,
+                        '$lte': toDate,
+
+                    }
+                }
+            },
+            {
+                '$group': {
+                    "_id": null,
+                    "totalSeasonParkerRevenue": {
+                        "$sum": "$amount"
+                    }
+                }
+            },
+            {
+                '$project': {
+                    "_id": 0
+                }
+            }
+        ])
+
         if (totalIncome.length > 0)
             totalIncome = totalIncome[0].totalAmount
         else
             totalIncome = 0
+
+        if (monthlyPassRevenueData.length > 0)
+            if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
+                totalIncome = monthlyPassRevenueData[0].totalSeasonParkerRevenue
+            }
 
         let pastTwoWeeksIncomeDetails = []
         const twoWeekDates = getDates('twoWeeks')
@@ -173,8 +232,32 @@ async function getDashboardDataFunction(requestData) {
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
 
+        const fromDate = new Date(new Date().setDate(1));
+        console.log("fromDate", fromDate)
+        
+        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)));
+        console.log("toDate", toDate)
+
         let totalIncome = await Shift.aggregate(
             [
+                {
+                    '$addFields': {
+                        'shiftEndDateISO': {
+                            '$dateFromString': {
+                                'dateString': '$shiftStopTime',
+                                'format': "%d-%m-%Y %H:%M:%S"
+                            }
+                        }
+                    }
+                }, {
+                    '$match': {
+                        'shiftEndDateISO': {
+                            '$gte': fromDate,
+                            '$lte': toDate,
+    
+                        }
+                    }
+                },
                 {
                     '$addFields': {
                         'totalIncome': {
@@ -212,10 +295,45 @@ async function getDashboardDataFunction(requestData) {
             ]
         )
 
+        const monthlyPassRevenueData = await MonthlyPass.aggregate([
+            {
+                '$match': {
+                    'parkingId': mongoose.Types.ObjectId(parkingId),
+                }
+            }, {
+                '$match': {
+                    'createdAt': {
+                        '$gte': fromDate,
+                        '$lte': toDate,
+
+                    }
+                }
+            },
+            {
+                '$group': {
+                    "_id": null,
+                    "totalSeasonParkerRevenue": {
+                        "$sum": "$amount"
+                    }
+                }
+            },
+            {
+                '$project': {
+                    "_id": 0
+                }
+            }
+        ])
+
         if (totalIncome.length > 0)
             totalIncome = totalIncome[0].totalAmount
         else
             totalIncome = 0
+
+        if (monthlyPassRevenueData.length > 0)
+            if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
+                totalIncome = monthlyPassRevenueData[0].totalSeasonParkerRevenue
+            }
+
 
         let pastTwoWeeksIncomeDetails = []
         const twoWeekDates = getDates('twoWeeks')
