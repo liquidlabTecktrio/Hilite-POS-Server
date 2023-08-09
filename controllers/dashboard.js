@@ -30,11 +30,8 @@ exports.getDashboardData = async (req, res) => {
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
 
-        const fromDate = new Date(new Date().setDate(1));
-        console.log("fromDate", fromDate)
-        
-        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate()));
-        console.log("toDate", toDate)
+        const fromDate = new Date(new Date(new Date().setDate(1)).setHours(0));
+        let toDate = new Date(new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())).setHours(24));
 
         let totalIncome = await Shift.aggregate(
             [
@@ -229,10 +226,9 @@ async function getDashboardDataFunction(requestData) {
 
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
-
-        const fromDate = new Date(new Date().setDate(1));
-        
-        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate()));
+       
+        const fromDate = new Date(new Date(new Date().setDate(1)).setHours(0));
+        let toDate = new Date(new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())).setHours(24));
 
         let totalIncome = await Shift.aggregate(
             [
