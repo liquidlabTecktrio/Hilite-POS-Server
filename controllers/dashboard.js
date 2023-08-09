@@ -22,7 +22,8 @@ exports.getDashboardData = async (req, res) => {
             parking.graphData = await parkingController.getParkingDataForGraphFunction({ parkingId: parking._id, period: 'week', cancelIncomeGraph })
             else
             parking.graphData = {}
-            // console.log('parking.graphData: ', parking.graphData);
+
+            parking.monthlyAndDailyRevenueData = await parkingController.getParkingMonthlyAndDailyRevenueDataForGraphFunction({ parkingId: parking._id})
 
         })
 
@@ -32,7 +33,7 @@ exports.getDashboardData = async (req, res) => {
         const fromDate = new Date(new Date().setDate(1));
         console.log("fromDate", fromDate)
         
-        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)));
+        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate()));
         console.log("toDate", toDate)
 
         let totalIncome = await Shift.aggregate(
@@ -93,11 +94,7 @@ exports.getDashboardData = async (req, res) => {
         )
 
         const monthlyPassRevenueData = await MonthlyPass.aggregate([
-            {
-                '$match': {
-                    'parkingId': mongoose.Types.ObjectId(parkingId),
-                }
-            }, {
+           {
                 '$match': {
                     'createdAt': {
                         '$gte': fromDate,
@@ -225,7 +222,8 @@ async function getDashboardDataFunction(requestData) {
         await Bluebird.each(parkings, async (parking, index) => {
 
             parking.graphData = await parkingController.getParkingDataForGraphFunction({ parkingId: parking._id, period: 'week' })
-            // console.log('parking.graphData: ', parking.graphData);
+
+            parking.monthlyAndDailyRevenueData = await parkingController.getParkingMonthlyAndDailyRevenueDataForGraphFunction({ parkingId: parking._id})
 
         })
 
@@ -233,10 +231,8 @@ async function getDashboardDataFunction(requestData) {
         // const totalIncome = await Opretor.find()
 
         const fromDate = new Date(new Date().setDate(1));
-        console.log("fromDate", fromDate)
         
-        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)));
-        console.log("toDate", toDate)
+        let toDate = new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate()));
 
         let totalIncome = await Shift.aggregate(
             [
@@ -296,11 +292,7 @@ async function getDashboardDataFunction(requestData) {
         )
 
         const monthlyPassRevenueData = await MonthlyPass.aggregate([
-            {
-                '$match': {
-                    'parkingId': mongoose.Types.ObjectId(parkingId),
-                }
-            }, {
+             {
                 '$match': {
                     'createdAt': {
                         '$gte': fromDate,

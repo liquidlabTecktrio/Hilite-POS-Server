@@ -387,49 +387,6 @@ async function getParkingDataForGraphFunction(requestData) {
         const period = requestData.period
         const cancelIncomeGraphData = requestData.cancelIncomeGraph
 
-        let totalIncome = await Shift.aggregate(
-            [
-                {
-                    '$addFields': {
-                        'totalIncome': {
-                            '$sum': {
-                                '$map': {
-                                    'input': {
-                                        '$filter': {
-                                            'input': '$totalCollection',
-                                            'as': 'ms',
-                                            'cond': {
-                                                '$ne': [
-                                                    '$$ms.paymentType', 'waved off'
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    'as': 'payment',
-                                    'in': {
-                                        '$sum': [
-                                            '$$payment.amount'
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, {
-                    '$group': {
-                        '_id': null,
-                        'totalAmount': {
-                            '$sum': '$totalIncome'
-                        }
-                    }
-                }
-            ]
-        )
-
-        if (totalIncome.length > 0)
-            totalIncome = totalIncome[0].totalAmount
-        else
-            totalIncome = 0
 
         let shiftsDetails = []
         let entryExitDetails = []
@@ -484,7 +441,7 @@ async function getParkingDataForGraphFunction(requestData) {
                     totalExits += shift.totalTicketCollected
 
                     shift.totalCollection.map(c => {
-                        if (c.paymentType != '' && c.paymentType != 'nfc' && c.paymentType)
+                        if (c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType)
                             activeShiftData[paymentTypes.indexOf(c.paymentType)].data[index] += c.amount
                     })
                 })
@@ -662,6 +619,50 @@ async function getParkingDataForGraphFunction(requestData) {
             entryExitTotalExits: 0,
             parkingData: [],
             PosHeartbeat: []
+        }
+    }
+}
+
+async function getParkingMonthlyAndDailyRevenueDataForGraphFunction(requestData) {
+    try {
+
+        const parkingId = requestData.parkingId
+
+
+        let monthly_shiftsDetails = []
+        let daily_shiftsDetails = []
+
+        const monthsDates = getDates('month')
+        const dailyDates = getDates('day')
+
+            for (j = 0; j <= monthsDates.length - 1; j++) {
+
+                monthly_shiftsDetails.push(
+                    await this.parkingAggregateForGraph(parkingId, monthsDates[j])
+                );
+            }
+
+            for (j = 0; j <= dailyDates.length - 1; j++) {
+
+                daily_shiftsDetails.push(
+                    await this.parkingAggregateForGraph(parkingId, dailyDates[j])
+                );
+            }
+
+            totalMonthlyRevenue = monthly_shiftsDetails.map(d => d.shiftData.map(shift=> shift.totalCollection.filter(c=> c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected)=>  acc + collected.amount, 0)).reduce((a,b)=> a+b, 0)).reduce((a,b)=> a+b, 0)
+            totalDailyRevenue = daily_shiftsDetails.map(d => d.shiftData.map(shift=> shift.totalCollection.filter(c=> c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected)=>  acc + collected.amount, 0)).reduce((a,b)=> a+b, 0)).reduce((a,b)=> a+b, 0)
+
+
+        return {
+            totalMonthlyRevenue, totalDailyRevenue
+        }
+        // );
+
+    } catch (error) {
+        console.log('error: ', error);
+        return {
+            totalMonthlyRevenue:0,
+            totalDailyRevenue:0
         }
     }
 }
@@ -906,3 +907,4 @@ function getDates(period) {
 
 
 exports.getParkingDataForGraphFunction = getParkingDataForGraphFunction
+exports.getParkingMonthlyAndDailyRevenueDataForGraphFunction = getParkingMonthlyAndDailyRevenueDataForGraphFunction
