@@ -1752,3 +1752,273 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 
     }
 }
+
+
+// calculateCharge_V2()
+
+function calculateCharge_V2() {
+    var tariff = {
+        name: "test tariff",
+        tariffData: [
+            {
+                starting: 0,
+                ending: 10,
+                price: 0,
+                isIterate: false,
+                iterateEvery: 0,
+                iterrateType: '',
+                isInfinite: false,
+            },
+            {
+                starting: 10,
+                ending: 360,
+                price: 25,
+                isIterate: false,
+                iterateEvery: 0,
+                iterrateType: '',
+                isInfinite: false,
+            },
+            {
+                starting: 360,
+                ending: 720,
+                price: 50,
+                isIterate: false,
+                iterateEvery: 0,
+                iterrateType: '',
+                isInfinite: false,
+            },
+            {
+                starting: 720,
+                ending: 720,
+                price: 100,
+                isIterate: false,
+                iterateEvery: 0,
+                iterrateType: '',
+                isInfinite: true,
+            }
+        ],
+        tariffEnableForNonOperationalHours: true,
+        tariffDataNonOperationalHours: [
+            {
+                starting: 0,
+                ending: 0,
+                price: 200,
+                isIterate: false,
+                iterateEvery: 0,
+                iterrateType: '',
+                isInfinite: true,
+            }
+        ]
+    }
+
+    let entryTime = '1691429277'
+    let exitTime = '1691540877'
+    let lostTicket = false
+    let startingOperationalHours = '06:00:00'
+    let endingOperationalHours = '23:59:59'
+    let startingNonOperationalHours = '00:00:00'
+    let endingNonOperationalHours = '05:59:59'
+    // let startingOperationalHours = '00:00:00'
+    // let endingOperationalHours = '11:59:59'
+    // let startingNonOperationalHours = '12:00:00'
+    // let endingNonOperationalHours = '23:59:59'
+    let tariffEnableForNonOperationalHours = true
+
+    var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+    var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+    var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+    var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+    let charge = 0
+    let fine = lostTicket ?  tariff.lostTicket : 0
+    var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
+
+    let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
+    let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+    var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
+
+
+    if (tariffEnableForNonOperationalHours) {
+
+        let entry_Time = new Date(_entrytime.format("MM-DD-YYYY HH:mm:ss"))
+        let exit_Time = new Date(_exitTime.format("MM-DD-YYYY HH:mm:ss"))
+
+        // calculation by days
+        for (i = 0; i <= (daysdiff * 2) + 2; i++) {
+
+            // this stucture works good with 0 to 24 daily start and end but when day start at 6 and end at 5:59 then it does not work
+
+            // if (moment(_entrytime).isBefore(_exitTime, 'day')) {
+            //     console.log('before days -----');
+
+            //     var prev_mins = Math.ceil((moment(_entryDateEndingTime, "DD-MM-YYYY HH:mm:ss").diff(moment(_entrytime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+            //     calculateChargeBaseOnOperationalAndNonOperationalHours(prev_mins, false, _entrytime, _exitTime)
+            //     _entrytime.add(1, 'days')
+            //     _entrytime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00')
+            //     _entryDateEndingTime.add(1, 'days')
+
+            // }
+            // else if (moment(_entrytime).isSame(_exitTime, 'day')) {
+            //     console.log('end day -----');
+
+            //     var prev_mins = Math.ceil((moment(_entryDateEndingTime, "DD-MM-YYYY HH:mm:ss").diff(moment(_entrytime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            //     calculateChargeBaseOnOperationalAndNonOperationalHours(prev_mins, lostTicket, _entrytime, _exitTime)
+
+            //     const _exitDateStaringTime = moment(_exitTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00').format("DD-MM-YYYY HH:mm:ss");
+            //     mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(_exitDateStaringTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            //     break
+            // }
+
+
+
+            entry_Time.setMinutes(entry_Time.getMinutes()+1)
+            const startingOperationalHoursDate = new Date(entry_Time.toISOString().split('T')[0] + ' ' + startingOperationalHours)
+
+            if (entry_Time < exit_Time) 
+                if (entry_Time < startingOperationalHoursDate) {
+
+                let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
+
+                if(tillNonOprEndTime > exit_Time)
+                tillNonOprEndTime = exit_Time
+
+                let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
+                charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, false)
+
+                entry_Time = tillNonOprEndTime
+
+            } else {
+
+                let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
+
+                if(tillOprEndTime > exit_Time)
+                tillOprEndTime = exit_Time
+
+                let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
+                charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, true)
+
+                entry_Time = tillOprEndTime
+            }
+
+        }
+    } else {
+        charge += calculateAmountBasedOnActiveTariff_v2(totalMin, tariff,  true)
+    }
+
+    function getDifferenceInMinutes(date1, date2) {
+        const diffInMs = Math.abs(date2 - date1);
+        return parseInt((diffInMs / (1000 * 60)))
+    }
+
+    // calculation charge by hours daily
+    function calculateChargeBaseOnOperationalAndNonOperationalHours(mins, lostTicket, entryTime, exitTime) {
+
+        var entryTimeISO = entryTime;
+        var exitTimeISO = exitTime;
+
+        // let startingOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 00:00:00')
+        // let endingOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 11:59:59')
+        // let startingNonOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 12:00:00')
+        // let endingNonOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+        let startingOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' ' + startingOperationalHours)
+        let endingOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' ' + endingOperationalHours)
+        let startingNonOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' ' + startingNonOperationalHours)
+        let endingNonOperationalTime = moment(entryTime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' ' + endingNonOperationalHours)
+
+        if (tariffEnableForNonOperationalHours) {
+            var minsInOperationalHours = 0;
+            var minsInNonOperationalHours = 0;
+
+            console.log('entryTimeISO: ', entryTimeISO);
+            console.log('startingNonOperationalTime: ', startingNonOperationalTime);
+            if (moment(entryTimeISO).isBefore(startingNonOperationalTime, 'minute')) {
+
+                if (moment(exitTimeISO).isBefore(endingOperationalTime, 'minute'))
+                    minsInOperationalHours = Math.ceil((moment(exitTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                else
+                    minsInOperationalHours = Math.ceil((moment(endingOperationalTime.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+                if (!moment(exitTimeISO).isBefore(startingNonOperationalTime, 'minute'))
+                    if (moment(startingNonOperationalTime).isSame(exitTimeISO, 'day'))
+                        minsInNonOperationalHours = Math.ceil((moment(exitTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss").diff(moment(startingNonOperationalTime.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                    else
+                        minsInNonOperationalHours = Math.ceil((moment(endingNonOperationalTime.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss").diff(moment(startingNonOperationalTime.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            } else {
+
+                console.log('exit time is before 12', moment(exitTimeISO).isBefore(startingNonOperationalTime, 'minute'));
+
+                if (!moment(exitTimeISO).isBefore(startingNonOperationalTime, 'minute'))
+                    if (moment(startingNonOperationalTime).isSame(exitTimeISO, 'day'))
+                        minsInNonOperationalHours = Math.ceil((moment(exitTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                    else
+                        minsInNonOperationalHours = Math.ceil((moment(endingNonOperationalTime.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO.format("DD-MM-YYYY HH:mm:ss"), "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            }
+
+            charge += calculateAmountBasedOnActiveTariff_v2(minsInOperationalHours, tariff, lostTicket, true)
+            charge += calculateAmountBasedOnActiveTariff_v2(minsInNonOperationalHours, tariff, lostTicket, true)
+
+        } else {
+            charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, lostTicket, true)
+            console.log('mins', mins);
+            console.log('operational', true);
+        }
+
+        // charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, lostTicket, isOperationalHours)
+    }
+
+
+    function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperationalHours) {
+        console.log('isOperationalHours: ', isOperationalHours);
+        console.log('duration: ', duration);
+        let amount = 0
+
+        _tariffData = JSON.parse(JSON.stringify(_tariffData))
+        // if lost ticket then check all trasactions of vehicle to apply each day tariff
+
+        if (_tariffData) {
+
+            if (isOperationalHours)
+                _tariffData.tariffData.map(tariffData => {
+                    if (duration >= tariffData.starting)
+                        if (tariffData.isInfinite == true)
+                            if (tariffData.isIterate == true)
+                                iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
+                            else
+                                amount += tariffData.price
+                        else
+                            if (tariffData.isIterate == true)
+                                iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
+                            else
+                                amount += tariffData.price
+                })
+            else
+                _tariffData.tariffDataNonOperationalHours.map(tariffData => {
+                    if (duration >= tariffData.starting)
+                        if (tariffData.isInfinite == true)
+                            if (tariffData.isIterate == true)
+                                iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
+                            else
+                                amount += tariffData.price
+                        else
+                            if (tariffData.isIterate == true)
+                                iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
+                            else
+                                amount += tariffData.price
+                })
+
+
+        }
+
+        function iterateFunction(starting, ending, iterateEvery, price) {
+            for (let i = starting; i <= ending; i += iterateEvery) {
+                if (duration >= i) {
+                    amount += price
+                }
+            }
+        }
+        console.log('amount: ', amount);
+        return amount
+    }
+
+    console.log('charge', charge);
+}
