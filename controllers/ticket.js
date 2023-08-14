@@ -518,7 +518,7 @@ async function fraudTicketfunction(transactionData) {
     }
 }
 
-exports.calculateCharge = async (req, res) => {
+exports.calculateChargeOldTariff = async (req, res) => {
     try {
 
         const ticketId = req.body.ticketId
@@ -808,6 +808,302 @@ exports.calculateCharge = async (req, res) => {
     }
 }
 
+// new tariff
+exports.calculateCharge = async (req, res) => {
+    try {
+
+        const ticketId = req.body.ticketId
+        const entryTime = req.body.entryTime
+        const exitTime = req.body.exitTime
+        const shiftId = req.body.shiftId
+        const vehicleType = req.body.vehicleType
+        const vehicleNo = req.body.vehicleNo
+        const lostTicket = req.body.lostTicket
+        const supervisorPin = req.body.supervisorPin
+
+        let findEntryTicket;
+
+        let findExitTicket;
+
+        const findTicket = await Ticket.findOne({ ticketId: ticketId })
+        if (findTicket)
+            findEntryTicket = findTicket
+        if (findTicket && findTicket.exitTime)
+            findExitTicket = findTicket
+
+
+        if (!ticketId && lostTicket && !vehicleNo) {
+            return res.status(201).json({
+                status: 201,
+                message: "Ticket ID / vehicle No is must for lost ticket",
+            });
+
+        } else {
+
+            if (lostTicket) {
+                const lastTransactionByVehicleNo = await Ticket.aggregate([
+                    {
+                        '$match': {
+                            vehicleNo
+                        }
+                    },
+                    // {
+                    //     '$sort': {
+                    //         time: -1
+                    //     }
+                    // },
+                    {
+                        '$sort': {
+                            'createdAt': -1
+                        }
+                    },
+                    {
+                        '$limit': 1
+                    }
+                ])
+
+                if (lastTransactionByVehicleNo.length > 0) {
+
+                    // if (lastTransactionByVehicleNo[0].transactionType == 'entry') {
+                    //     findEntryTicket = lastTransactionByVehicleNo[0]
+                    // }
+                    if (!lastTransactionByVehicleNo[0].exitTime)
+                        findEntryTicket = lastTransactionByVehicleNo[0]
+                }
+            }
+
+
+            if (findEntryTicket) {
+
+                if (findEntryTicket.cancelledTicket) {
+                    return res.status(201).json({
+                        status: 201,
+                        message: "Ticket has been cancelled",
+                    });
+                } else if (findEntryTicket.fraudTicket) {
+                    return res.status(201).json({
+                        status: 201,
+                        message: "Fraud ticket found",
+                    });
+                } else {
+
+                    if (findExitTicket) {
+                        return res.status(201).json({
+                            status: 201,
+                            message: "Payment already received for Ticket ID",
+                        });
+                    } else {
+
+                        // var currentTime = moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                        // var mins = Math.ceil((moment(currentTime, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTime, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+                        const findShift = await Shift.findById(shiftId)
+
+                        if (findShift) {
+
+                            const findParking = await Parking.findById(findShift.parkingId)
+
+                            let findSupervisor = await Opretor.findOne({
+                                parkingId: findShift.parkingId,
+                                supervisorPin: supervisorPin
+                            })
+
+
+                            if (lostTicket && !findSupervisor) {
+
+                                return res.status(201).json({
+                                    status: 201,
+                                    message: "Incorrect Supervisor Pin",
+                                });
+
+                            } else {
+
+                                if (findParking) {
+                                    let tariffData = []
+
+                                    const data1 = returnTariffID(2)
+                                    if (data1.tariffId) {
+                                        const data_1 = await Tariff.findById(data1.tariffId)
+                                        tariffData.push({
+                                            tariffType: data1.tariffType,
+                                            tariffData: data_1
+                                        })
+                                    }
+
+                                    const data2 = returnTariffID(3)
+                                    if (data2.tariffId) {
+                                        const data_2 = await Tariff.findById(data2.tariffId)
+                                        tariffData.push({
+                                            tariffType: data2.tariffType,
+                                            tariffData: data_2
+                                        })
+                                    }
+
+                                    const data3 = returnTariffID(4)
+                                    if (data3.tariffId) {
+                                        const data_3 = await Tariff.findById(data3.tariffId)
+                                        tariffData.push({
+                                            tariffType: data3.tariffType,
+                                            tariffData: data_3
+                                        })
+                                    }
+
+                                    function returnTariffID(tariffType) {
+                                        let obj = {}
+                                        const dayIndex = new Date().getDay()
+                                        const data = findParking.connectedTariff.filter(t => t.tariffType == tariffType)
+                                        if (data.length == 1) {
+
+                                            const data2 = data[0].tariffData.filter(t => t.dayIndex == dayIndex)
+                                            if (data2.length > 0)
+                                                obj = {
+                                                    tariffId: data2[0].tariffId,
+                                                    tariffType: tariffType
+                                                }
+                                        }
+                                        return obj
+                                    }
+
+                                    let startingOperationalHours = '06:00:00'
+                                    let endingOperationalHours = '23:59:59'
+                                    let startingNonOperationalHours = '00:00:00'
+                                    let endingNonOperationalHours = '05:59:59'
+
+                                    let _tariffData = tariffData.filter(t => t.tariffType == vehicleType)[0].tariffData
+
+
+                                    var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                                    var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                                    var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                                    var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                                    let charge = 0
+                                    let fine = lostTicket ? _tariffData.lostTicket : 0
+                                    var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
+
+                                    let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
+                                    let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+                                    var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
+
+
+                                    if (_tariffData.tariffEnableForNonOperationalHours) {
+
+                                        let entry_Time = new Date(_entrytime.format("MM-DD-YYYY HH:mm:ss"))
+                                        let exit_Time = new Date(_exitTime.format("MM-DD-YYYY HH:mm:ss"))
+
+                                        // calculation by days
+                                        for (i = 0; i <= (daysdiff * 2) + 2; i++) {
+                                            entry_Time.setMinutes(entry_Time.getMinutes() + 1)
+                                            const startingOperationalHoursDate = new Date(entry_Time.toISOString().split('T')[0] + ' ' + startingOperationalHours)
+
+                                            if (entry_Time < exit_Time)
+                                                if (entry_Time < startingOperationalHoursDate) {
+
+                                                    let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
+
+                                                    if (tillNonOprEndTime > exit_Time)
+                                                        tillNonOprEndTime = exit_Time
+
+                                                    let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
+                                                    charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, false)
+
+                                                    entry_Time = tillNonOprEndTime
+
+                                                } else {
+
+                                                    let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
+
+                                                    if (tillOprEndTime > exit_Time)
+                                                        tillOprEndTime = exit_Time
+
+                                                    let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
+                                                    charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, true)
+
+                                                    entry_Time = tillOprEndTime
+                                                }
+
+                                        }
+                                    } else {
+                                        charge += calculateAmountBasedOnActiveTariff_v2(totalMin, _tariffData, true)
+                                    }
+
+
+
+                                    // update supervisor pin because lost ticket transaction is valid online
+                                    if (lostTicket && supervisorPin) {
+                                        // get All pincode
+                                        const existingSupervisorPinParkiongWise = await Opretor.aggregate([
+                                            {
+                                                '$match': {
+                                                    parkingId: mongoose.Types.ObjectId(findShift.parkingId),
+                                                    isSupervisor: true
+                                                }
+                                            }, {
+                                                '$project': {
+                                                    supervisorPin: 1,
+                                                    _id: 0
+                                                }
+                                            }
+                                        ])
+
+                                        const supervisorPin = getRandomNumber(existingSupervisorPinParkiongWise.map(o => o.supervisorPin))
+                                        if (supervisorPin)
+                                            await Opretor.findByIdAndUpdate(findSupervisor._id, { supervisorPin })
+                                    }
+
+                                    utils.commonResponce(
+                                        res,
+                                        200,
+                                        "Successfully calculated charge",
+                                        {
+                                            stayDuration:
+                                            totalMin,
+                                            charge,
+                                            fine,
+                                            supervisorId: lostTicket ? findSupervisor._id : null,
+                                            entryTicket: findEntryTicket,
+                                            exitTime
+                                        }
+                                    );
+
+
+
+                                } else {
+                                    return res.status(201).json({
+                                        status: 201,
+                                        message: "parking not found",
+                                    });
+                                }
+                            }
+
+
+                        } else {
+                            return res.status(201).json({
+                                status: 201,
+                                message: "shift not found",
+                            });
+                        }
+
+                    }
+                }
+
+            } else {
+                return res.status(201).json({
+                    status: 201,
+                    message: "Ticket ID not found",
+                });
+            }
+
+        }
+
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while calculating charge",
+        });
+    }
+}
 
 function calculateAmountBasedOnActiveTariff(duration, _tariffData, lostTicket) {
     let amount = 0
@@ -849,6 +1145,7 @@ function calculateAmountBasedOnActiveTariff(duration, _tariffData, lostTicket) {
     console.log('amount: ', amount);
     return amount
 }
+
 
 exports.getReceipts = async (req, res) => {
     try {
@@ -1074,31 +1371,110 @@ exports.checkLostTicket = async (req, res) => {
                 utils.commonResponce(res, 201, "Vehicle already exit the carpark or no entry found", vehicleNo);
             }
             else {
-                // if (checkTransaction[0].transactionType == "entry") {
-                ticketId = checkTransaction[0].ticketId;
-                // const tariffType = ticketId.substring(6, 7);
-                // console.log("tariffType", tariffType)
-                // const carwashType = ticketId.substring(5, 6)
-                // entryTime = checkTransaction[0].ticketId.slice(7, 17); //old
-                entryTime = ticketId.slice(-10);
-                var entryTimeISO = moment
-                    .unix(entryTime)
-                    .tz("Asia/Calcutta")
-                    .format("DD-MM-YYYY HH:mm:ss");
-                var exitTimeISO = moment
-                    .unix(Math.floor(Date.now() / 1000))
-                    .tz("Asia/Calcutta")
-                    .format("DD-MM-YYYY HH:mm:ss");
-                var duration = Math.ceil(
-                    moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(
-                        moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss")
-                    ) / 60000
-                );
-                // calculate_tariff(entryTimeISO, exitTimeISO,checkTransaction[0], tariffData,carwashType,true ,res,);
-                calculate_tariff(entryTime, Math.floor(Date.now() / 1000), checkTransaction[0], tariffData, true, res,);
+                // // if (checkTransaction[0].transactionType == "entry") {
+                // ticketId = checkTransaction[0].ticketId;
+                // // const tariffType = ticketId.substring(6, 7);
+                // // console.log("tariffType", tariffType)
+                // // const carwashType = ticketId.substring(5, 6)
+                // // entryTime = checkTransaction[0].ticketId.slice(7, 17); //old
+                // entryTime = ticketId.slice(-10);
+                // var entryTimeISO = moment
+                //     .unix(entryTime)
+                //     .tz("Asia/Calcutta")
+                //     .format("DD-MM-YYYY HH:mm:ss");
+                // var exitTimeISO = moment
+                //     .unix(Math.floor(Date.now() / 1000))
+                //     .tz("Asia/Calcutta")
+                //     .format("DD-MM-YYYY HH:mm:ss");
+                // var duration = Math.ceil(
+                //     moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(
+                //         moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss")
+                //     ) / 60000
+                // );
+                // // calculate_tariff(entryTimeISO, exitTimeISO,checkTransaction[0], tariffData,carwashType,true ,res,);
+                // calculate_tariff(entryTime, Math.floor(Date.now() / 1000), checkTransaction[0], tariffData, true, res,);
+
+                // // utils.commonResponce(res, 201, "vehicle data found", vehicleNo);
 
 
-                // utils.commonResponce(res, 201, "vehicle data found", vehicleNo);
+                // added new code from here for new tariff by mustaqeem
+
+                let startingOperationalHours = '06:00:00'
+                let endingOperationalHours = '23:59:59'
+                let startingNonOperationalHours = '00:00:00'
+                let endingNonOperationalHours = '05:59:59'
+
+                let _tariffData = tariffData.filter(t => t.tariffType == vehicleType)[0].tariffData
+
+
+                var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+                var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+                let charge = 0
+                let fine = lostTicket ? _tariffData.lostTicket : 0
+                var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
+
+                let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
+                let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+                var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
+
+
+                if (_tariffData.tariffEnableForNonOperationalHours) {
+
+                    let entry_Time = new Date(_entrytime.format("MM-DD-YYYY HH:mm:ss"))
+                    let exit_Time = new Date(_exitTime.format("MM-DD-YYYY HH:mm:ss"))
+
+                    // calculation by days
+                    for (i = 0; i <= (daysdiff * 2) + 2; i++) {
+                        entry_Time.setMinutes(entry_Time.getMinutes() + 1)
+                        const startingOperationalHoursDate = new Date(entry_Time.toISOString().split('T')[0] + ' ' + startingOperationalHours)
+
+                        if (entry_Time < exit_Time)
+                            if (entry_Time < startingOperationalHoursDate) {
+
+                                let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
+
+                                if (tillNonOprEndTime > exit_Time)
+                                    tillNonOprEndTime = exit_Time
+
+                                let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
+                                charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, false)
+
+                                entry_Time = tillNonOprEndTime
+
+                            } else {
+
+                                let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
+
+                                if (tillOprEndTime > exit_Time)
+                                    tillOprEndTime = exit_Time
+
+                                let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
+                                charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, true)
+
+                                entry_Time = tillOprEndTime
+                            }
+
+                    }
+                } else {
+                    charge += calculateAmountBasedOnActiveTariff_v2(totalMin, _tariffData, true)
+                }
+
+
+
+                utils.commonResponce(res, 200, "Successfully calculated Tariff", {
+                    entryTimeISO: entryTimeISO,
+                    exitTimeISO: exitTimeISO,
+                    duration: duration,
+                    ticketId: ticket.ticketId,
+                    vehicleType: ticket.vehicleType,
+                    vehicleNo: ticket.vehicleNo,
+                    amount: charge,
+                    lostTicketFine: fine,
+                    // carwashType: carwashType,
+        
+                });
             }
 
         } else {
@@ -1750,7 +2126,9 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 
     }
 }
-// calculateCharge_V2()
+
+
+// new tariff testing calculateCharge_V2()
 
 function calculateCharge_V2() {
     var tariff = {
@@ -1825,7 +2203,7 @@ function calculateCharge_V2() {
     var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
     var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
     let charge = 0
-    let fine = lostTicket ?  tariff.lostTicket : 0
+    let fine = lostTicket ? tariff.lostTicket : 0
     var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
 
     let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
@@ -1867,43 +2245,38 @@ function calculateCharge_V2() {
 
 
 
-            entry_Time.setMinutes(entry_Time.getMinutes()+1)
+            entry_Time.setMinutes(entry_Time.getMinutes() + 1)
             const startingOperationalHoursDate = new Date(entry_Time.toISOString().split('T')[0] + ' ' + startingOperationalHours)
 
-            if (entry_Time < exit_Time) 
+            if (entry_Time < exit_Time)
                 if (entry_Time < startingOperationalHoursDate) {
 
-                let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
+                    let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
 
-                if(tillNonOprEndTime > exit_Time)
-                tillNonOprEndTime = exit_Time
+                    if (tillNonOprEndTime > exit_Time)
+                        tillNonOprEndTime = exit_Time
 
-                let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
-                charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, false)
+                    let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
+                    charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, false)
 
-                entry_Time = tillNonOprEndTime
+                    entry_Time = tillNonOprEndTime
 
-            } else {
+                } else {
 
-                let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
+                    let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
 
-                if(tillOprEndTime > exit_Time)
-                tillOprEndTime = exit_Time
+                    if (tillOprEndTime > exit_Time)
+                        tillOprEndTime = exit_Time
 
-                let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
-                charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, true)
+                    let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
+                    charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, true)
 
-                entry_Time = tillOprEndTime
-            }
+                    entry_Time = tillOprEndTime
+                }
 
         }
     } else {
-        charge += calculateAmountBasedOnActiveTariff_v2(totalMin, tariff,  true)
-    }
-
-    function getDifferenceInMinutes(date1, date2) {
-        const diffInMs = Math.abs(date2 - date1);
-        return parseInt((diffInMs / (1000 * 60)))
+        charge += calculateAmountBasedOnActiveTariff_v2(totalMin, tariff, true)
     }
 
     // calculation charge by hours daily
@@ -1962,59 +2335,61 @@ function calculateCharge_V2() {
         // charge += calculateAmountBasedOnActiveTariff_v2(mins, tariff, lostTicket, isOperationalHours)
     }
 
+    console.log('charge', charge);
+}
 
-    function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperationalHours) {
-        console.log('isOperationalHours: ', isOperationalHours);
-        console.log('duration: ', duration);
-        let amount = 0
+function getDifferenceInMinutes(date1, date2) {
+    const diffInMs = Math.abs(date2 - date1);
+    return parseInt((diffInMs / (1000 * 60)))
+}
 
-        _tariffData = JSON.parse(JSON.stringify(_tariffData))
-        // if lost ticket then check all trasactions of vehicle to apply each day tariff
+function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperationalHours) {
+    let amount = 0
 
-        if (_tariffData) {
+    _tariffData = JSON.parse(JSON.stringify(_tariffData))
+    // if lost ticket then check all trasactions of vehicle to apply each day tariff
 
-            if (isOperationalHours)
-                _tariffData.tariffData.map(tariffData => {
-                    if (duration >= tariffData.starting)
-                        if (tariffData.isInfinite == true)
-                            if (tariffData.isIterate == true)
-                                iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
-                            else
-                                amount += tariffData.price
+    if (_tariffData) {
+
+        if (isOperationalHours)
+            _tariffData.tariffData.map(tariffData => {
+                if (duration >= tariffData.starting)
+                    if (tariffData.isInfinite == true)
+                        if (tariffData.isIterate == true)
+                            iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
                         else
-                            if (tariffData.isIterate == true)
-                                iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
-                            else
-                                amount += tariffData.price
-                })
-            else
-                _tariffData.tariffDataNonOperationalHours.map(tariffData => {
-                    if (duration >= tariffData.starting)
-                        if (tariffData.isInfinite == true)
-                            if (tariffData.isIterate == true)
-                                iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
-                            else
-                                amount += tariffData.price
+                            amount += tariffData.price
+                    else
+                        if (tariffData.isIterate == true)
+                            iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
                         else
-                            if (tariffData.isIterate == true)
-                                iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
-                            else
-                                amount += tariffData.price
-                })
+                            amount += tariffData.price
+            })
+        else
+            _tariffData.tariffDataNonOperationalHours.map(tariffData => {
+                if (duration >= tariffData.starting)
+                    if (tariffData.isInfinite == true)
+                        if (tariffData.isIterate == true)
+                            iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
+                        else
+                            amount += tariffData.price
+                    else
+                        if (tariffData.isIterate == true)
+                            iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
+                        else
+                            amount += tariffData.price
+            })
 
 
-        }
-
-        function iterateFunction(starting, ending, iterateEvery, price) {
-            for (let i = starting; i <= ending; i += iterateEvery) {
-                if (duration >= i) {
-                    amount += price
-                }
-            }
-        }
-        console.log('amount: ', amount);
-        return amount
     }
 
-    console.log('charge', charge);
+    function iterateFunction(starting, ending, iterateEvery, price) {
+        for (let i = starting; i <= ending; i += iterateEvery) {
+            if (duration >= i) {
+                amount += price
+            }
+        }
+    }
+    console.log('amount: ', amount);
+    return amount
 }

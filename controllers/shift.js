@@ -47,6 +47,11 @@ exports.startShift = async (req, res) => {
           isShiftIn: true
         })
 
+
+        await SerialNumbers.findOneAndUpdate({ parkingId }, {
+          $inc: { shiftNo: 1 }
+      }, { returnNewDocument: true })
+
         utils.commonResponce(
           res,
           200,
