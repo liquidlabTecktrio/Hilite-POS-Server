@@ -99,6 +99,68 @@ exports.createOpretor = async (req, res) => {
         });
     }
 }
+exports.updateOperator = async (req,res)=>{
+    try{
+
+    const operatorId = req.body.operatorId
+    const opretorName = req.body.opretorName
+    const opretorNo = req.body.opretorNo
+    const parkingId = req.body.parkingId
+    const mobileNo = req.body.mobileNo
+    const opretorEmail = req.body.opretorEmail
+    const username = req.body.username
+    const password = req.body.password
+    const isSupervisor = req.body.isSupervisor
+  
+    const hashedPassword = await bcrypt.hash(
+        password,
+        12
+    );
+    const operatorExist =  await Opretor.findById({ _id: operatorId });
+    if(operatorExist){
+        const options = { useFindAndModify: false, new: true };
+        await Opretor.findByIdAndUpdate(
+           { _id:operatorId},
+            {
+                opretorName: opretorName,
+                opretorNo: opretorNo,
+                mobileNo: mobileNo,
+                opretorEmail: opretorEmail,
+                username: username,
+                password: hashedPassword,
+                isSupervisor: isSupervisor,
+                parkingId:parkingId
+        },
+        options
+        
+        ) .then( updatedOperator => {
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully Update Operator",
+                updatedOperator
+            );
+        })
+        .catch((err) => {
+            console.log("err",err)
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While Updated Operator",
+                err.toString()
+            );
+        });
+
+
+    }
+    }catch(error){
+       console.log("error",error)
+       return res.status(500).json({
+        status: 500,
+        message: "Unexpected server error while updating Opertor",
+      });
+    }
+}
 
 function getRandomNumber(excludedNumbers) {
     var randomNumber;

@@ -78,6 +78,68 @@ exports.createParking = async (req, res) => {
     }
 }
 
+exports.updateParking = async (req,res)=>{
+    try{
+     const parkingId = req.body.parkingId;
+     const parkingName = req.body.parkingName
+     const parkingNo = req.body.parkingNo
+     const totalSpaces = req.body.totalSpaces
+     const totalEntries = req.body.totalEntries
+     const totalExits = req.body.totalExits
+     const connectedTariff = req.body.connectedTariff
+     const address = req.body.address
+     const isAutoCloseBarrier = req.body.isAutoCloseBarrier
+     const closeBarrierAfter = req.body.closeBarrierAfter
+
+
+    const parkingExist =  await Parking.findById({ _id: parkingId });
+    if(parkingExist){
+        const options = { useFindAndModify: false, new: true };
+        
+        await Parking.findByIdAndUpdate(
+           { _id:parkingId},
+            {
+            parkingName: parkingName,
+            parkingNo: parkingNo,
+            totalSpaces: totalSpaces,
+            totalEntries: totalEntries,
+            totalExits: totalExits,
+            connectedTariff: connectedTariff,
+            address: address,
+            isAutoCloseBarrier:isAutoCloseBarrier,
+            closeBarrierAfter: closeBarrierAfter,
+        },
+        options
+        
+        ) .then( updatedParking => {
+            utils.commonResponce(
+                res,
+                200,
+                "Successfully Update Parking",
+                updatedParking
+            );
+        })
+        .catch((err) => {
+            console.log("err",err)
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While Updated Parking",
+                err.toString()
+            );
+        });
+
+
+    }
+    }catch(error){
+       console.log("error",error)
+       return res.status(500).json({
+        status: 500,
+        message: "Unexpected server error while updating Parking",
+      });
+    }
+}
+
 exports.getParkings = async (req, res) => {
     try {
 

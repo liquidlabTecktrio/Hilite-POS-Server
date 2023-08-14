@@ -51,6 +51,8 @@ router.post("/getTariffForParking", verifyTokenMiddleware, tafiffController.getT
 router.post("/createParking",
     verifyTokenMiddleware,
     parkingController.createParking);
+    
+    router.post("/updateParking",verifyTokenMiddleware,parkingController.updateParking)
 
 router.post("/getParkings", verifyTokenMiddleware, parkingController.getParkings);
 router.post("/getParkingDataForGraph", verifyTokenMiddleware, parkingController.getParkingDataForGraph);
@@ -60,12 +62,14 @@ router.post("/createOpretor",
     opretorController.createOpretor);
 
 router.post("/getOpretors", verifyTokenMiddleware, opretorController.getOpretors);
+router.post("/updateOperator",verifyTokenMiddleware,opretorController.updateOperator)
 
 router.post("/createDevice",
     // verifyTokenMiddleware,
     deviceController.createDevice);
 
 router.post("/getDevices", verifyTokenMiddleware, deviceController.getDevices);
+router.post("/updateDevice", verifyTokenMiddleware, deviceController.updateDevice);
 
 
 router.post("/createVehicle",
@@ -76,6 +80,7 @@ router.post("/getVehicles", verifyTokenMiddleware, vehicleController.getVehicles
 // router.post("/getParkingRevenue", verifyTokenMiddleware, reportsController.getParkingRevenue)
 
 router.post("/createPackage", packageController.createPackage)
+router.post("/updatePackage", packageController.updatePackage)
 router.post("/getPackages", packageController.getPackages)
 
 router.post("/createMonthlyPass", monthlyPassController.createMonthlyPass)
