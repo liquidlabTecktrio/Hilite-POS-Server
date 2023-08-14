@@ -1339,10 +1339,8 @@ function iterateFunction(duration, starting, ending, iterateEvery, price) {
 }
 
 exports.checkMonthlyPass = async (req, res) => {
-    console.log('checkMonthlyPass: ');
     try {
         const parkingId = req.body.parkingId
-        console.log('req.body: ', req.body);
         const cardNumber = req.body.cardNumber
         const type = req.body.type
 
@@ -1752,61 +1750,59 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 
     }
 }
-
-
 // calculateCharge_V2()
 
 function calculateCharge_V2() {
     var tariff = {
-        name: "test tariff",
-        tariffData: [
+        "name": "test tariff",
+        "tariffData": [
             {
-                starting: 0,
-                ending: 10,
-                price: 0,
-                isIterate: false,
-                iterateEvery: 0,
-                iterrateType: '',
-                isInfinite: false,
+                "starting": 0,
+                "ending": 10,
+                "price": 0,
+                "isIterate": false,
+                "iterateEvery": 0,
+                "iterrateType": '',
+                "isInfinite": false,
             },
             {
-                starting: 10,
-                ending: 360,
-                price: 25,
-                isIterate: false,
-                iterateEvery: 0,
-                iterrateType: '',
-                isInfinite: false,
+                "starting": 10,
+                "ending": 360,
+                "price": 25,
+                "isIterate": false,
+                "iterateEvery": 0,
+                "iterrateType": '',
+                "isInfinite": false,
             },
             {
-                starting: 360,
-                ending: 720,
-                price: 50,
-                isIterate: false,
-                iterateEvery: 0,
-                iterrateType: '',
-                isInfinite: false,
+                "starting": 360,
+                "ending": 720,
+                "price": 50,
+                "isIterate": false,
+                "iterateEvery": 0,
+                "iterrateType": '',
+                "isInfinite": false,
             },
             {
-                starting: 720,
-                ending: 720,
-                price: 100,
-                isIterate: false,
-                iterateEvery: 0,
-                iterrateType: '',
-                isInfinite: true,
+                "starting": 720,
+                "ending": 720,
+                "price": 100,
+                "isIterate": false,
+                "iterateEvery": 0,
+                "iterrateType": '',
+                "isInfinite": true,
             }
         ],
-        tariffEnableForNonOperationalHours: true,
-        tariffDataNonOperationalHours: [
+        "tariffEnableForNonOperationalHours": true,
+        "tariffDataNonOperationalHours": [
             {
-                starting: 0,
-                ending: 0,
-                price: 200,
-                isIterate: false,
-                iterateEvery: 0,
-                iterrateType: '',
-                isInfinite: true,
+                "starting": 0,
+                "ending": 0,
+                "price": 200,
+                "isIterate": false,
+                "iterateEvery": 0,
+                "iterrateType": '',
+                "isInfinite": true,
             }
         ]
     }

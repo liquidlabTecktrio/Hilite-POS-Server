@@ -90,6 +90,11 @@ const Tariff = new Schema(
         //     type: lostTicketSchema,
         // },
 
+        tariffEnableForNonOperationalHours:{
+            type: Boolean,
+        },
+        tariffDataNonOperationalHours: [tariffObj],
+
 
     },
     {

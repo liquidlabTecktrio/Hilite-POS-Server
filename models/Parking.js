@@ -60,6 +60,20 @@ const Parking = new Schema(
         closeBarrierAfter: {
             type: Number,
         },
+
+        // for tariff
+        startingOperationalHours: {
+            type: String
+        },
+        endingOperationalHours: {
+            type: String
+        },
+        startingNonOperationalHours: {
+            type: String
+        },
+        endingNonOperationalHours: {
+            type: String
+        },
     },
     {
         timestamps: true,
