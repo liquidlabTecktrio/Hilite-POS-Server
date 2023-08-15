@@ -78,65 +78,67 @@ exports.createParking = async (req, res) => {
     }
 }
 
-exports.updateParking = async (req,res)=>{
-    try{
-     const parkingId = req.body.parkingId;
-     const parkingName = req.body.parkingName
-     const parkingNo = req.body.parkingNo
-     const totalSpaces = req.body.totalSpaces
-     const totalEntries = req.body.totalEntries
-     const totalExits = req.body.totalExits
-     const connectedTariff = req.body.connectedTariff
-     const address = req.body.address
-     const isAutoCloseBarrier = req.body.isAutoCloseBarrier
-     const closeBarrierAfter = req.body.closeBarrierAfter
+exports.updateParking = async (req, res) => {
+    try {
+        const parkingId = req.body.updateParkingData.parkingId;
+        console.log("parkingId", parkingId)
+        const parkingName = req.body.updateParkingData.updateParkingName;
+        const parkingNo = req.body.updateParkingData.updateParkingNumber;
+        const totalSpaces = req.body.updateParkingData.updateTotalSpaces;
+        const totalEntries = req.body.updateParkingData.updateTotalEntries;
+        const totalExits = req.body.updateParkingData.updateTotalExits;
+        const connectedTariff = req.body.connectedTariff;
+        const address = req.body.updateParkingData.updateAddress;
+        //    const GST = req.body.updateParkingData.updateGSTNumber;
+        const isAutoCloseBarrier = req.body.isAutoCloseBarrier
+        const closeBarrierAfter = req.body.closeBarrierAfter
 
 
-    const parkingExist =  await Parking.findById({ _id: parkingId });
-    if(parkingExist){
-        const options = { useFindAndModify: false, new: true };
-        
-        await Parking.findByIdAndUpdate(
-           { _id:parkingId},
-            {
-            parkingName: parkingName,
-            parkingNo: parkingNo,
-            totalSpaces: totalSpaces,
-            totalEntries: totalEntries,
-            totalExits: totalExits,
-            connectedTariff: connectedTariff,
-            address: address,
-            isAutoCloseBarrier:isAutoCloseBarrier,
-            closeBarrierAfter: closeBarrierAfter,
-        },
-        options
-        
-        ) .then( updatedParking => {
-            utils.commonResponce(
-                res,
-                200,
-                "Successfully Update Parking",
-                updatedParking
-            );
-        })
-        .catch((err) => {
-            console.log("err",err)
-            utils.commonResponce(
-                res,
-                201,
-                "Error Occured While Updated Parking",
-                err.toString()
-            );
+        const parkingExist = await Parking.findById({ _id: parkingId });
+        if (parkingExist) {
+            const options = { useFindAndModify: false, new: true };
+
+            await Parking.findByIdAndUpdate(
+                { _id: parkingId },
+                {
+                    parkingName: parkingName,
+                    parkingNo: parkingNo,
+                    totalSpaces: totalSpaces,
+                    totalEntries: totalEntries,
+                    totalExits: totalExits,
+                    connectedTariff: connectedTariff,
+                    address: address,
+                    isAutoCloseBarrier: isAutoCloseBarrier,
+                    closeBarrierAfter: closeBarrierAfter,
+                },
+                options
+
+            ).then(updatedParking => {
+                utils.commonResponce(
+                    res,
+                    200,
+                    "Successfully Update Parking",
+                    updatedParking
+                );
+            })
+                .catch((err) => {
+                    console.log("err", err)
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Error Occured While Updated Parking",
+                        err.toString()
+                    );
+                });
+
+
+        }
+    } catch (error) {
+        console.log("error", error)
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while updating Parking",
         });
-
-
-    }
-    }catch(error){
-       console.log("error",error)
-       return res.status(500).json({
-        status: 500,
-        message: "Unexpected server error while updating Parking",
-      });
     }
 }
 
@@ -697,22 +699,22 @@ async function getParkingMonthlyAndDailyRevenueDataForGraphFunction(requestData)
         const monthsDates = getDates('month')
         const dailyDates = getDates('day')
 
-            for (j = 0; j <= monthsDates.length - 1; j++) {
+        for (j = 0; j <= monthsDates.length - 1; j++) {
 
-                monthly_shiftsDetails.push(
-                    await this.parkingAggregateForGraph(parkingId, monthsDates[j])
-                );
-            }
+            monthly_shiftsDetails.push(
+                await this.parkingAggregateForGraph(parkingId, monthsDates[j])
+            );
+        }
 
-            for (j = 0; j <= dailyDates.length - 1; j++) {
+        for (j = 0; j <= dailyDates.length - 1; j++) {
 
-                daily_shiftsDetails.push(
-                    await this.parkingAggregateForGraph(parkingId, dailyDates[j])
-                );
-            }
+            daily_shiftsDetails.push(
+                await this.parkingAggregateForGraph(parkingId, dailyDates[j])
+            );
+        }
 
-            totalMonthlyRevenue = monthly_shiftsDetails.map(d => d.shiftData.map(shift=> shift.totalCollection.filter(c=> c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected)=>  acc + collected.amount, 0)).reduce((a,b)=> a+b, 0)).reduce((a,b)=> a+b, 0)
-            totalDailyRevenue = daily_shiftsDetails.map(d => d.shiftData.map(shift=> shift.totalCollection.filter(c=> c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected)=>  acc + collected.amount, 0)).reduce((a,b)=> a+b, 0)).reduce((a,b)=> a+b, 0)
+        totalMonthlyRevenue = monthly_shiftsDetails.map(d => d.shiftData.map(shift => shift.totalCollection.filter(c => c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected) => acc + collected.amount, 0)).reduce((a, b) => a + b, 0)).reduce((a, b) => a + b, 0)
+        totalDailyRevenue = daily_shiftsDetails.map(d => d.shiftData.map(shift => shift.totalCollection.filter(c => c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected) => acc + collected.amount, 0)).reduce((a, b) => a + b, 0)).reduce((a, b) => a + b, 0)
 
 
         return {
@@ -723,8 +725,8 @@ async function getParkingMonthlyAndDailyRevenueDataForGraphFunction(requestData)
     } catch (error) {
         console.log('error: ', error);
         return {
-            totalMonthlyRevenue:0,
-            totalDailyRevenue:0
+            totalMonthlyRevenue: 0,
+            totalDailyRevenue: 0
         }
     }
 }
