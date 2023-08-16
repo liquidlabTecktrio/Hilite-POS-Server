@@ -121,10 +121,6 @@ exports.updateParking = async (req,res)=>{
             address: address,
             isAutoCloseBarrier:isAutoCloseBarrier,
             closeBarrierAfter: closeBarrierAfter,
-            startingOperationalHours: startingOperationalHours,
-            endingOperationalHours: endingOperationalHours,
-            startingNonOperationalHours: startingNonOperationalHours,
-            endingNonOperationalHours: endingNonOperationalHours,
         },
         options
         
@@ -147,13 +143,13 @@ exports.updateParking = async (req,res)=>{
         });
 
 
-    }
-    }catch(error){
-       console.log("error",error)
-       return res.status(500).json({
-        status: 500,
-        message: "Unexpected server error while updating Parking",
-      });
+        }
+    } catch (error) {
+        console.log("error", error)
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while updating Parking",
+        });
     }
 }
 
@@ -714,22 +710,22 @@ async function getParkingMonthlyAndDailyRevenueDataForGraphFunction(requestData)
         const monthsDates = getDates('month')
         const dailyDates = getDates('day')
 
-            for (j = 0; j <= monthsDates.length - 1; j++) {
+        for (j = 0; j <= monthsDates.length - 1; j++) {
 
-                monthly_shiftsDetails.push(
-                    await this.parkingAggregateForGraph(parkingId, monthsDates[j])
-                );
-            }
+            monthly_shiftsDetails.push(
+                await this.parkingAggregateForGraph(parkingId, monthsDates[j])
+            );
+        }
 
-            for (j = 0; j <= dailyDates.length - 1; j++) {
+        for (j = 0; j <= dailyDates.length - 1; j++) {
 
-                daily_shiftsDetails.push(
-                    await this.parkingAggregateForGraph(parkingId, dailyDates[j])
-                );
-            }
+            daily_shiftsDetails.push(
+                await this.parkingAggregateForGraph(parkingId, dailyDates[j])
+            );
+        }
 
-            totalMonthlyRevenue = monthly_shiftsDetails.map(d => d.shiftData.map(shift=> shift.totalCollection.filter(c=> c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected)=>  acc + collected.amount, 0)).reduce((a,b)=> a+b, 0)).reduce((a,b)=> a+b, 0)
-            totalDailyRevenue = daily_shiftsDetails.map(d => d.shiftData.map(shift=> shift.totalCollection.filter(c=> c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected)=>  acc + collected.amount, 0)).reduce((a,b)=> a+b, 0)).reduce((a,b)=> a+b, 0)
+        totalMonthlyRevenue = monthly_shiftsDetails.map(d => d.shiftData.map(shift => shift.totalCollection.filter(c => c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected) => acc + collected.amount, 0)).reduce((a, b) => a + b, 0)).reduce((a, b) => a + b, 0)
+        totalDailyRevenue = daily_shiftsDetails.map(d => d.shiftData.map(shift => shift.totalCollection.filter(c => c.paymentType != '' && c.paymentType != 'NFC' && c.paymentType).reduce((acc, collected) => acc + collected.amount, 0)).reduce((a, b) => a + b, 0)).reduce((a, b) => a + b, 0)
 
 
         return {
@@ -740,8 +736,8 @@ async function getParkingMonthlyAndDailyRevenueDataForGraphFunction(requestData)
     } catch (error) {
         console.log('error: ', error);
         return {
-            totalMonthlyRevenue:0,
-            totalDailyRevenue:0
+            totalMonthlyRevenue: 0,
+            totalDailyRevenue: 0
         }
     }
 }
