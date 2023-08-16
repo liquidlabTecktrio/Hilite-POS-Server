@@ -19,6 +19,7 @@ exports.createParking = async (req, res) => {
         const isAutoCloseBarrier = req.body.isAutoCloseBarrier
         const closeBarrierAfter = req.body.closeBarrierAfter
         const startingOperationalHours = req.body.startingOperationalHours
+        console.log("startingOperationalHours", startingOperationalHours)
         const endingOperationalHours = req.body.endingOperationalHours
         const startingNonOperationalHours = req.body.startingNonOperationalHours
         const endingNonOperationalHours = req.body.endingNonOperationalHours
@@ -86,65 +87,63 @@ exports.createParking = async (req, res) => {
     }
 }
 
-exports.updateParking = async (req,res)=>{
-    try{
-     const parkingId = req.body.parkingId;
-     const parkingName = req.body.parkingName
-     const parkingNo = req.body.parkingNo
-     const totalSpaces = req.body.totalSpaces
-     const totalEntries = req.body.totalEntries
-     const totalExits = req.body.totalExits
-     const connectedTariff = req.body.connectedTariff
-     const address = req.body.address
-     const isAutoCloseBarrier = req.body.isAutoCloseBarrier
-     const closeBarrierAfter = req.body.closeBarrierAfter
+exports.updateParking = async (req, res) => {
+    try {
+        const parkingId = req.body.updateParkingData.parkingId;
+        const parkingName = req.body.updateParkingData.updateParkingName
+        const parkingNo = req.body.updateParkingData.updateParkingNumber
+        const totalSpaces = req.body.updateParkingData.updateTotalSpaces
+        const totalEntries = req.body.updateParkingData.updateTotalEntries
+        const totalExits = req.body.updateParkingData.updateTotalExits
+        const connectedTariff = req.body.connectedTariff
+        const address = req.body.updateParkingData.updateAddress
+        const isAutoCloseBarrier = req.body.updateParkingData.updateIsAutoCloseBarrier
+        const closeBarrierAfter = req.body.updateParkingData.updateAutoCloseBarrierAfter
 
-     const startingOperationalHours = req.body.startingOperationalHours
-     const endingOperationalHours = req.body.endingOperationalHours
-     const startingNonOperationalHours = req.body.startingNonOperationalHours
-     const endingNonOperationalHours = req.body.endingNonOperationalHours
+        const startingOperationalHours = req.body.updateParkingData.updateStartingOperationalHours
+        const endingOperationalHours = req.body.updateParkingData.updateEndingOperationalHours
+        const startingNonOperationalHours = req.body.updateParkingData.updateStartingNonOperationalHours
+        const endingNonOperationalHours = req.body.updateParkingData.updateEndingNonOperationalHours
+        const parkingExist = await Parking.findById({ _id: parkingId });
+        if (parkingExist) {
+            const options = { useFindAndModify: false, new: true };
 
+            await Parking.findByIdAndUpdate(
+                { _id: parkingId },
+                {
+                    parkingName: parkingName,
+                    parkingNo: parkingNo,
+                    totalSpaces: totalSpaces,
+                    totalEntries: totalEntries,
+                    totalExits: totalExits,
+                    connectedTariff: connectedTariff,
+                    address: address,
+                    isAutoCloseBarrier: isAutoCloseBarrier,
+                    closeBarrierAfter: closeBarrierAfter,
+                    startingOperationalHours: startingOperationalHours,
+                    endingOperationalHours: endingOperationalHours,
+                    startingNonOperationalHours: startingNonOperationalHours,
+                    endingNonOperationalHours: endingNonOperationalHours,
+                },
+                options
 
-    const parkingExist =  await Parking.findById({ _id: parkingId });
-    if(parkingExist){
-        const options = { useFindAndModify: false, new: true };
-        
-        await Parking.findByIdAndUpdate(
-           { _id:parkingId},
-            {
-            parkingName: parkingName,
-            parkingNo: parkingNo,
-            totalSpaces: totalSpaces,
-            totalEntries: totalEntries,
-            totalExits: totalExits,
-            connectedTariff: connectedTariff,
-            address: address,
-            isAutoCloseBarrier:isAutoCloseBarrier,
-            closeBarrierAfter: closeBarrierAfter,
-            startingOperationalHours: startingOperationalHours,
-            endingOperationalHours: endingOperationalHours,
-            startingNonOperationalHours: startingNonOperationalHours,
-            endingNonOperationalHours: endingNonOperationalHours,
-        },
-        options
-        
-        ) .then( updatedParking => {
-            utils.commonResponce(
-                res,
-                200,
-                "Successfully Update Parking",
-                updatedParking
-            );
-        })
-        .catch((err) => {
-            console.log("err",err)
-            utils.commonResponce(
-                res,
-                201,
-                "Error Occured While Updated Parking",
-                err.toString()
-            );
-        });
+            ).then(updatedParking => {
+                utils.commonResponce(
+                    res,
+                    200,
+                    "Successfully Update Parking",
+                    updatedParking
+                );
+            })
+                .catch((err) => {
+                    console.log("err", err)
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Error Occured While Updated Parking",
+                        err.toString()
+                    );
+                });
 
 
         }
