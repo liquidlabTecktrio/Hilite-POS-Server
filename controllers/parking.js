@@ -121,6 +121,10 @@ exports.updateParking = async (req,res)=>{
             address: address,
             isAutoCloseBarrier:isAutoCloseBarrier,
             closeBarrierAfter: closeBarrierAfter,
+            startingOperationalHours: startingOperationalHours,
+            endingOperationalHours: endingOperationalHours,
+            startingNonOperationalHours: startingNonOperationalHours,
+            endingNonOperationalHours: endingNonOperationalHours,
         },
         options
         
