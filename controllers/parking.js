@@ -18,6 +18,10 @@ exports.createParking = async (req, res) => {
         const address = req.body.address
         const isAutoCloseBarrier = req.body.isAutoCloseBarrier
         const closeBarrierAfter = req.body.closeBarrierAfter
+        const startingOperationalHours = req.body.startingOperationalHours
+        const endingOperationalHours = req.body.endingOperationalHours
+        const startingNonOperationalHours = req.body.startingNonOperationalHours
+        const endingNonOperationalHours = req.body.endingNonOperationalHours
         // const vehicles = req.body.vehicles
 
         const findParkingWithSameNo = await Parking.findOne({ parkingNo: parkingNo })
@@ -38,6 +42,10 @@ exports.createParking = async (req, res) => {
                 address: address,
                 isAutoCloseBarrier: isAutoCloseBarrier,
                 closeBarrierAfter: closeBarrierAfter,
+                startingOperationalHours: startingOperationalHours,
+                endingOperationalHours: endingOperationalHours,
+                startingNonOperationalHours: startingNonOperationalHours,
+                endingNonOperationalHours: endingNonOperationalHours,
                 // vehicles: vehicles,
                 isActive: true,
             }).then(async (createdParking) => {
@@ -91,6 +99,11 @@ exports.updateParking = async (req,res)=>{
      const isAutoCloseBarrier = req.body.isAutoCloseBarrier
      const closeBarrierAfter = req.body.closeBarrierAfter
 
+     const startingOperationalHours = req.body.startingOperationalHours
+     const endingOperationalHours = req.body.endingOperationalHours
+     const startingNonOperationalHours = req.body.startingNonOperationalHours
+     const endingNonOperationalHours = req.body.endingNonOperationalHours
+
 
     const parkingExist =  await Parking.findById({ _id: parkingId });
     if(parkingExist){
@@ -108,6 +121,10 @@ exports.updateParking = async (req,res)=>{
             address: address,
             isAutoCloseBarrier:isAutoCloseBarrier,
             closeBarrierAfter: closeBarrierAfter,
+            startingOperationalHours: startingOperationalHours,
+            endingOperationalHours: endingOperationalHours,
+            startingNonOperationalHours: startingNonOperationalHours,
+            endingNonOperationalHours: endingNonOperationalHours,
         },
         options
         
