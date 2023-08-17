@@ -106,7 +106,7 @@ exports.updateOperator = async (req, res) => {
         const opretorName = req.body.updateOpertorData.updateOpretorName;
         console.log("opretorName", opretorName)
         const opretorNo = req.body.updateOpertorData.updateOperatorNumber;
-        const mobileNo = req.body.updateOpertorData.updateParkingNumber;
+        const mobileNo = req.body.updateOpertorData.updateMobileNumber;
         const opretorEmail = req.body.updateOpertorData.updateOperatorEmail;
         const username = req.body.updateOpertorData.updateUserName;
         const password = req.body.updateOpertorData.updatePassword;
