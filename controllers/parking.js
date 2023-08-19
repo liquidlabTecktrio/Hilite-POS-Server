@@ -19,11 +19,11 @@ exports.createParking = async (req, res) => {
         const isAutoCloseBarrier = req.body.isAutoCloseBarrier
         const closeBarrierAfter = req.body.closeBarrierAfter
         const startingOperationalHours = req.body.startingOperationalHours
-        console.log("startingOperationalHours", startingOperationalHours)
         const endingOperationalHours = req.body.endingOperationalHours
         const startingNonOperationalHours = req.body.startingNonOperationalHours
         const endingNonOperationalHours = req.body.endingNonOperationalHours
         // const vehicles = req.body.vehicles
+        const gstNo = req.body.updateParkingData.gstNo
 
         const findParkingWithSameNo = await Parking.findOne({ parkingNo: parkingNo })
         if (findParkingWithSameNo)
@@ -47,6 +47,7 @@ exports.createParking = async (req, res) => {
                 endingOperationalHours: endingOperationalHours,
                 startingNonOperationalHours: startingNonOperationalHours,
                 endingNonOperationalHours: endingNonOperationalHours,
+                gstNo,
                 // vehicles: vehicles,
                 isActive: true,
             }).then(async (createdParking) => {
@@ -104,6 +105,8 @@ exports.updateParking = async (req, res) => {
         const endingOperationalHours = req.body.updateParkingData.updateEndingOperationalHours
         const startingNonOperationalHours = req.body.updateParkingData.updateStartingNonOperationalHours
         const endingNonOperationalHours = req.body.updateParkingData.updateEndingNonOperationalHours
+        const gstNo = req.body.updateParkingData.gstNo
+
         const parkingExist = await Parking.findById({ _id: parkingId });
         if (parkingExist) {
             const options = { useFindAndModify: false, new: true };
@@ -124,6 +127,7 @@ exports.updateParking = async (req, res) => {
                     endingOperationalHours: endingOperationalHours,
                     startingNonOperationalHours: startingNonOperationalHours,
                     endingNonOperationalHours: endingNonOperationalHours,
+                    gstNo,
                 },
                 options
 

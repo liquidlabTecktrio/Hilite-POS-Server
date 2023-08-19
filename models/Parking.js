@@ -74,6 +74,10 @@ const Parking = new Schema(
         endingNonOperationalHours: {
             type: String
         },
+
+        gstNo: {
+            type: String
+        },
     },
     {
         timestamps: true,
