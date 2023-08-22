@@ -278,6 +278,8 @@ exports.appLogin = async (req, res, next) => {
               opretorId: findOpretor._id,
               opretorName: findOpretor.opretorName,
               opretorNo: findOpretor.opretorNo,
+              isSupervisor: findOpretor.isSupervisor,
+              supervisorPin: findOpretor.supervisorPin,
               shiftData: isShiftActive ? isShiftActive : {},
               tariffs: tariffData,
               devices: devices
