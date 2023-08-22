@@ -1210,6 +1210,7 @@ exports.checkLostTicket = async (req, res) => {
 
         const vehicleNo = req.body.vehicleNo;
         const parkingId = req.body.parkingId;
+        const exitTime = req.body.exitTime;
 
         const checkTransaction = await Ticket.aggregate([
             {
@@ -1367,6 +1368,7 @@ exports.checkLostTicket = async (req, res) => {
         // console.log('tariffData: ', tariffData);
         if (checkTransaction.length > 0) {
 
+            console.log('checkTransaction[0]: ', checkTransaction[0]);
             if (checkTransaction[0].exitTime) {
                 utils.commonResponce(res, 201, "Vehicle already exit the carpark or no entry found", vehicleNo);
             }
@@ -1404,8 +1406,9 @@ exports.checkLostTicket = async (req, res) => {
                 let startingNonOperationalHours = '00:00:00'
                 let endingNonOperationalHours = '05:59:59'
 
-                let _tariffData = tariffData.filter(t => t.tariffType == vehicleType)[0].tariffData
-
+                let _tariffData = tariffData.filter(t => t.tariffType == checkTransaction[0].vehicleType)[0].tariffData
+let entryTime = checkTransaction[0].entryTime
+let lostTicket = true
 
                 var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
                 var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -1466,10 +1469,10 @@ exports.checkLostTicket = async (req, res) => {
                 utils.commonResponce(res, 200, "Successfully calculated Tariff", {
                     entryTimeISO: entryTimeISO,
                     exitTimeISO: exitTimeISO,
-                    duration: duration,
-                    ticketId: ticket.ticketId,
-                    vehicleType: ticket.vehicleType,
-                    vehicleNo: ticket.vehicleNo,
+                    duration: mins,
+                    ticketId: checkTransaction[0].ticketId,
+                    vehicleType: checkTransaction[0].vehicleType,
+                    vehicleNo: checkTransaction[0].vehicleNo,
                     amount: charge,
                     lostTicketFine: fine,
                     // carwashType: carwashType,
@@ -1483,7 +1486,7 @@ exports.checkLostTicket = async (req, res) => {
         }
 
     } catch (error) {
-        console.log(error.toString())
+        console.log(error)
         utils.commonResponce(res, 500, "Unexpected server error while creating Lost Ticket", error.toString());
 
     }
