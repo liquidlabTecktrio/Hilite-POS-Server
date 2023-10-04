@@ -80,7 +80,8 @@ exports.createParking = async (req, res) => {
                 );
             });
 
-    } catch {
+    } catch (error){
+        console.log(error)
         return res.status(500).json({
             status: 500,
             message: "Unexpected server error while creating Parking",
