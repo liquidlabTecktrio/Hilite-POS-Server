@@ -964,10 +964,10 @@ exports.calculateCharge = async (req, res) => {
                                         return obj
                                     }
 
-                                    let startingOperationalHours = findParking.startingOperationalHours ? findParking.startingOperationalHours : '08:00:00'
-                                    let endingOperationalHours = findParking.endingOperationalHours ? findParking.endingOperationalHours : '23:59:59'
-                                    let startingNonOperationalHours = findParking.startingNonOperationalHours ? findParking.startingNonOperationalHours : '00:00:00'
-                                    let endingNonOperationalHours = findParking.endingNonOperationalHours ? findParking.endingNonOperationalHours : '07:59:59'
+                                    let startingOperationalHours = '06:00:00'
+                                    let endingOperationalHours = '23:59:59'
+                                    let startingNonOperationalHours = '00:00:00'
+                                    let endingNonOperationalHours = '05:59:59'
 
                                     let _tariffData = tariffData.filter(t => t.tariffType == vehicleType)[0].tariffData
 
@@ -1056,7 +1056,7 @@ exports.calculateCharge = async (req, res) => {
                                         "Successfully calculated charge",
                                         {
                                             stayDuration:
-                                                totalMin,
+                                            totalMin,
                                             charge,
                                             fine,
                                             supervisorId: lostTicket ? findSupervisor._id : null,
@@ -1368,6 +1368,7 @@ exports.checkLostTicket = async (req, res) => {
         // console.log('tariffData: ', tariffData);
         if (checkTransaction.length > 0) {
 
+            console.log('checkTransaction[0]: ', checkTransaction[0]);
             if (checkTransaction[0].exitTime) {
                 utils.commonResponce(res, 201, "Vehicle already exit the carpark or no entry found", vehicleNo);
             }
@@ -1400,15 +1401,14 @@ exports.checkLostTicket = async (req, res) => {
 
                 // added new code from here for new tariff by mustaqeem
 
-                let startingOperationalHours = findParking.startingOperationalHours ? findParking.startingOperationalHours : '08:00:00'
-                let endingOperationalHours = findParking.endingOperationalHours ? findParking.endingOperationalHours : '23:59:59'
-                let startingNonOperationalHours = findParking.startingNonOperationalHours ? findParking.startingNonOperationalHours : '00:00:00'
-                let endingNonOperationalHours = findParking.endingNonOperationalHours ? findParking.endingNonOperationalHours : '07:59:59'
-
+                let startingOperationalHours = '06:00:00'
+                let endingOperationalHours = '23:59:59'
+                let startingNonOperationalHours = '00:00:00'
+                let endingNonOperationalHours = '05:59:59'
 
                 let _tariffData = tariffData.filter(t => t.tariffType == checkTransaction[0].vehicleType)[0].tariffData
-                let entryTime = checkTransaction[0].entryTime
-                let lostTicket = true
+let entryTime = checkTransaction[0].entryTime
+let lostTicket = true
 
                 var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
                 var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -1476,7 +1476,7 @@ exports.checkLostTicket = async (req, res) => {
                     amount: charge,
                     lostTicketFine: fine,
                     // carwashType: carwashType,
-
+        
                 });
             }
 
@@ -2131,8 +2131,7 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 }
 
 
-// new tariff testing 
-calculateCharge_V2()
+// new tariff testing calculateCharge_V2()
 
 function calculateCharge_V2() {
     var tariff = {
@@ -2192,10 +2191,14 @@ function calculateCharge_V2() {
     let entryTime = '1691429277'
     let exitTime = '1691540877'
     let lostTicket = false
-    let startingOperationalHours = '08:00:00'
+    let startingOperationalHours = '06:00:00'
     let endingOperationalHours = '23:59:59'
     let startingNonOperationalHours = '00:00:00'
-    let endingNonOperationalHours = '07:59:59'
+    let endingNonOperationalHours = '05:59:59'
+    // let startingOperationalHours = '00:00:00'
+    // let endingOperationalHours = '11:59:59'
+    // let startingNonOperationalHours = '12:00:00'
+    // let endingNonOperationalHours = '23:59:59'
     let tariffEnableForNonOperationalHours = true
 
     var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -2356,16 +2359,14 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
                 if (duration >= tariffData.starting)
                     if (tariffData.isInfinite == true)
                         if (tariffData.isIterate == true)
-                            iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price, isOperationalHours)
+                            iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
                         else
-                            amount = tariffData.price //taking only one slab for opretional hours //added 04-10-2023
-                            // amount += tariffData.price
+                            amount += tariffData.price
                     else
                         if (tariffData.isIterate == true)
-                            iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price, isOperationalHours)
+                            iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
                         else
-                            amount = tariffData.price //taking only one slab for opretional hours //added 04-10-2023
-                            // amount += tariffData.price
+                            amount += tariffData.price
             })
         else
             _tariffData.tariffDataNonOperationalHours.map(tariffData => {
@@ -2385,16 +2386,13 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
 
     }
 
-    function iterateFunction(starting, ending, iterateEvery, price, isOperationalHours) {
-        if(isOperationalHours)
-        amount = 0 //initially making it zero //added 04-10-2023
-
+    function iterateFunction(starting, ending, iterateEvery, price) {
         for (let i = starting; i <= ending; i += iterateEvery) {
             if (duration >= i) {
                 amount += price
             }
         }
     }
-
+    console.log('amount: ', amount);
     return amount
 }

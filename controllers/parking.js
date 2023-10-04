@@ -23,7 +23,7 @@ exports.createParking = async (req, res) => {
         const startingNonOperationalHours = req.body.startingNonOperationalHours
         const endingNonOperationalHours = req.body.endingNonOperationalHours
         // const vehicles = req.body.vehicles
-        const gstNo = req.body.updateParkingData.gstNo
+        const gstNo = req.body.gstNo
 
         const findParkingWithSameNo = await Parking.findOne({ parkingNo: parkingNo })
         if (findParkingWithSameNo)
