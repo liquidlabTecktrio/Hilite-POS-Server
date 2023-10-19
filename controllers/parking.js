@@ -80,7 +80,7 @@ exports.createParking = async (req, res) => {
                 );
             });
 
-    } catch (error){
+    } catch (error) {
         console.log(error)
         return res.status(500).json({
             status: 500,
@@ -106,7 +106,7 @@ exports.updateParking = async (req, res) => {
         const endingOperationalHours = req.body.updateParkingData.updateEndingOperationalHours
         const startingNonOperationalHours = req.body.updateParkingData.updateStartingNonOperationalHours
         const endingNonOperationalHours = req.body.updateParkingData.updateEndingNonOperationalHours
-        const gstNo = req.body.updateParkingData.gstNo
+        const gstNo = req.body.updateParkingData.updateGSTNumber
 
         const parkingExist = await Parking.findById({ _id: parkingId });
         if (parkingExist) {
