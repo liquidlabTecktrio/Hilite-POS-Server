@@ -4,6 +4,7 @@ const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const Shift = require("../models/Shift");
 const Transaction = require("../models/Transaction");
+const Ticket = require("../models/Ticket");
 const PosHeartbeat = require("../models/PosHeartbeat")
 
 exports.createParking = async (req, res) => {
@@ -350,64 +351,103 @@ exports.getParkingDataForGraph = async (req, res) => {
                 switch (transaction.vehicleType) {
                     case '2':
 
-                        switch (transaction.transactionType) {
-                            case 'entry':
-                                entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += transaction.count
-                                entryExitTotalEntries += transaction.count
-                                break;
-                            case 'exit':
-                                entryExitTotalExits += transaction.count
-                                switch (transaction.lostTicket) {
-                                    case true:
-                                        entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += transaction.count
-                                        break;
-                                    default:
-                                        entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += transaction.count
-                                        break;
-                                }
-                                break;
+                        // switch (transaction.transactionType) {
+                        //     case 'entry':
+                        //         entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += transaction.count
+                        //         entryExitTotalEntries += transaction.count
+                        //         break;
+                        //     case 'exit':
+                        //         entryExitTotalExits += transaction.count
+                        //         switch (transaction.lostTicket) {
+                        //             case true:
+                        //                 entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += transaction.count
+                        //                 break;
+                        //             default:
+                        //                 entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += transaction.count
+                        //                 break;
+                        //         }
+                        //         break;
+                        // }
+
+                        if(transaction.entryDateISO){
+                            entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += 1
+                                    entryExitTotalEntries += 1
+                        }
+
+                        if(transaction.exitDateISO){
+                            entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += 1
+                            entryExitTotalExits +=1
+
+                            if(transaction.lostTicket)
+                             entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += 1
                         }
 
 
                         break;
                     case '3':
 
-                        switch (transaction.transactionType) {
-                            case 'entry':
-                                entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += transaction.count
-                                entryExitTotalEntries += transaction.count
-                                break;
-                            case 'exit':
-                                entryExitTotalExits += transaction.count
-                                switch (transaction.lostTicket) {
-                                    case true:
-                                        entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += transaction.count
-                                        break;
-                                    default:
-                                        entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += transaction.count
-                                        break;
-                                }
-                                break;
+                        // switch (transaction.transactionType) {
+                        //     case 'entry':
+                        //         entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += transaction.count
+                        //         entryExitTotalEntries += transaction.count
+                        //         break;
+                        //     case 'exit':
+                        //         entryExitTotalExits += transaction.count
+                        //         switch (transaction.lostTicket) {
+                        //             case true:
+                        //                 entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += transaction.count
+                        //                 break;
+                        //             default:
+                        //                 entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += transaction.count
+                        //                 break;
+                        //         }
+                        //         break;
+                        // }
+
+                        if(transaction.entryDateISO){
+                            entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += 1
+                                    entryExitTotalEntries += 1
+                        }
+
+                        if(transaction.exitDateISO){
+                            entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += 1
+                            entryExitTotalExits +=1
+
+                            if(transaction.lostTicket)
+                             entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += 1
                         }
                         break;
                     case '4':
 
-                        switch (transaction.transactionType) {
-                            case 'entry':
-                                entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += transaction.count
-                                entryExitTotalEntries += transaction.count
-                                break;
-                            case 'exit':
-                                entryExitTotalExits += transaction.count
-                                switch (transaction.lostTicket) {
-                                    case true:
-                                        entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += transaction.coun
-                                        break;
-                                    default:
-                                        entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += transaction.coun
-                                        break;
-                                }
-                                break;
+                        // switch (transaction.transactionType) {
+                        //     case 'entry':
+                        //         entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += transaction.count
+                        //         entryExitTotalEntries += transaction.count
+                        //         break;
+                        //     case 'exit':
+                        //         entryExitTotalExits += transaction.count
+                        //         switch (transaction.lostTicket) {
+                        //             case true:
+                        //                 entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += transaction.coun
+                        //                 break;
+                        //             default:
+                        //                 entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += transaction.coun
+                        //                 break;
+                        //         }
+                        //         break;
+                        // }
+
+                        if(transaction.entryDateISO){
+                            entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += 1
+                                    entryExitTotalEntries += 1
+                        }
+
+                        if(transaction.exitDateISO){
+                            entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += 1
+                            entryExitTotalExits +=1
+
+                            if(transaction.lostTicket)
+                             entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += 1
                         }
                         break;
 
@@ -583,64 +623,103 @@ async function getParkingDataForGraphFunction(requestData) {
                     switch (transaction.vehicleType) {
                         case '2':
 
-                            switch (transaction.transactionType) {
-                                case 'entry':
-                                    entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += transaction.count
-                                    entryExitTotalEntries += transaction.count
-                                    break;
-                                case 'exit':
-                                    entryExitTotalExits += transaction.count
-                                    switch (transaction.lostTicket) {
-                                        case true:
-                                            entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += transaction.count
-                                            break;
-                                        default:
-                                            entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += transaction.count
-                                            break;
-                                    }
-                                    break;
+                            // switch (transaction.transactionType) {
+                            //     case 'entry':
+                            //         entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += transaction.count
+                            //         entryExitTotalEntries += transaction.count
+                            //         break;
+                            //     case 'exit':
+                            //         entryExitTotalExits += transaction.count
+                            //         switch (transaction.lostTicket) {
+                            //             case true:
+                            //                 entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += transaction.count
+                            //                 break;
+                            //             default:
+                            //                 entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += transaction.count
+                            //                 break;
+                            //         }
+                            //         break;
+                            // }
+
+                            if(transaction.entryDateISO){
+                                entryExitData[entryExitTypes.indexOf('2 Wheeler Entry')].data[index] += 1
+                                        entryExitTotalEntries += 1
+                            }
+
+                            if(transaction.exitDateISO){
+                                entryExitData[entryExitTypes.indexOf('2 Wheeler Exit')].data[index] += 1
+                                entryExitTotalExits +=1
+
+                                if(transaction.lostTicket)
+                                 entryExitData[entryExitTypes.indexOf('2 Wheeler Lost Ticket')].data[index] += 1
                             }
 
 
                             break;
                         case '3':
 
-                            switch (transaction.transactionType) {
-                                case 'entry':
-                                    entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += transaction.count
-                                    entryExitTotalEntries += transaction.count
-                                    break;
-                                case 'exit':
-                                    entryExitTotalExits += transaction.count
-                                    switch (transaction.lostTicket) {
-                                        case true:
-                                            entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += transaction.count
-                                            break;
-                                        default:
-                                            entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += transaction.count
-                                            break;
-                                    }
-                                    break;
+                            // switch (transaction.transactionType) {
+                            //     case 'entry':
+                            //         entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += transaction.count
+                            //         entryExitTotalEntries += transaction.count
+                            //         break;
+                            //     case 'exit':
+                            //         entryExitTotalExits += transaction.count
+                            //         switch (transaction.lostTicket) {
+                            //             case true:
+                            //                 entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += transaction.count
+                            //                 break;
+                            //             default:
+                            //                 entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += transaction.count
+                            //                 break;
+                            //         }
+                            //         break;
+                            // }
+
+                            if(transaction.entryDateISO){
+                                entryExitData[entryExitTypes.indexOf('3 Wheeler Entry')].data[index] += 1
+                                        entryExitTotalEntries += 1
+                            }
+
+                            if(transaction.exitDateISO){
+                                entryExitData[entryExitTypes.indexOf('3 Wheeler Exit')].data[index] += 1
+                                entryExitTotalExits +=1
+
+                                if(transaction.lostTicket)
+                                 entryExitData[entryExitTypes.indexOf('3 Wheeler Lost Ticket')].data[index] += 1
                             }
                             break;
                         case '4':
 
-                            switch (transaction.transactionType) {
-                                case 'entry':
-                                    entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += transaction.count
-                                    entryExitTotalEntries += transaction.count
-                                    break;
-                                case 'exit':
-                                    entryExitTotalExits += transaction.count
-                                    switch (transaction.lostTicket) {
-                                        case true:
-                                            entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += transaction.coun
-                                            break;
-                                        default:
-                                            entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += transaction.coun
-                                            break;
-                                    }
-                                    break;
+                            // switch (transaction.transactionType) {
+                            //     case 'entry':
+                            //         entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += transaction.count
+                            //         entryExitTotalEntries += transaction.count
+                            //         break;
+                            //     case 'exit':
+                            //         entryExitTotalExits += transaction.count
+                            //         switch (transaction.lostTicket) {
+                            //             case true:
+                            //                 entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += transaction.coun
+                            //                 break;
+                            //             default:
+                            //                 entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += transaction.coun
+                            //                 break;
+                            //         }
+                            //         break;
+                            // }
+
+                            if(transaction.entryDateISO){
+                                entryExitData[entryExitTypes.indexOf('4 Wheeler Entry')].data[index] += 1
+                                        entryExitTotalEntries += 1
+                            }
+
+                            if(transaction.exitDateISO){
+                                entryExitData[entryExitTypes.indexOf('4 Wheeler Exit')].data[index] += 1
+                                entryExitTotalExits +=1
+
+                                if(transaction.lostTicket)
+                                 entryExitData[entryExitTypes.indexOf('4 Wheeler Lost Ticket')].data[index] += 1
                             }
                             break;
 
@@ -817,80 +896,143 @@ exports.entryExitAggregateForGraph = async (parkingId, date) => {
 
     try {
 
-        const entryExitData = await Transaction.aggregate(
+        // const entryExitData = await Transaction.aggregate(
+        //     [
+        //         {
+        //             '$addFields': {
+        //                 'dateISO': {
+        //                     '$dateFromString': {
+        //                         'dateString': '$time',
+        //                         'format': '%d-%m-%Y %H:%M:%S'
+        //                     }
+        //                 }
+        //             }
+        //         }, {
+        //             '$lookup': {
+        //                 'from': 'shifts',
+        //                 'localField': 'shiftId',
+        //                 'foreignField': '_id',
+        //                 'pipeline': [
+        //                     {
+        //                         '$project': {
+        //                             'parkingId': 1
+        //                         }
+        //                     }
+        //                 ],
+        //                 'as': 'parkingId'
+        //             }
+        //         }, {
+        //             '$addFields': {
+        //                 'parkingId': {
+        //                     '$first': '$parkingId'
+        //                 }
+        //             }
+        //         }, {
+        //             '$addFields': {
+        //                 'parkingId': '$parkingId.parkingId'
+        //             }
+        //         }, {
+        //             '$match': {
+        //                 'parkingId': mongoose.Types.ObjectId(parkingId),
+        //                 '$and': [
+        //                     {
+        //                         'dateISO': {
+        //                             '$gte': new Date(date.start)
+        //                         }
+        //                     }, {
+        //                         'dateISO': {
+        //                             '$lt': new Date(date.end)
+        //                         }
+        //                     }
+        //                 ]
+        //             }
+        //         }, {
+        //             '$group': {
+        //                 '_id': {
+        //                     'transactionType': '$transactionType',
+        //                     'vehicleType': '$vehicleType',
+        //                     'lostTicket': '$lostTicket'
+        //                 },
+        //                 'data': {
+        //                     '$push': '$$ROOT'
+        //                 }
+        //             }
+        //         }, {
+        //             '$addFields': {
+        //                 'transactionType': '$_id.transactionType',
+        //                 'vehicleType': '$_id.vehicleType',
+        //                 'lostTicket': '$_id.lostTicket',
+        //                 'count': {
+        //                     '$size': '$data'
+        //                 }
+        //             }
+        //         }, {
+        //             '$project': {
+        //                 '_id': 0,
+        //                 'data': 0
+        //             }
+        //         }
+        //     ]
+        // )
+
+        const entryExitData = await Ticket.aggregate(
             [
                 {
                     '$addFields': {
-                        'dateISO': {
-                            '$dateFromString': {
-                                'dateString': '$time',
-                                'format': '%d-%m-%Y %H:%M:%S'
-                            }
+                        entryDateISO: {
+                            $toDate:
+                                { $multiply: [{ $toInt: '$entryTime' }, 1000] }
+                        },
+                        exitDateISO: {
+                            $toDate:
+                                { $multiply: [{ $toInt: '$exitTime' }, 1000] }
                         }
                     }
                 }, {
-                    '$lookup': {
-                        'from': 'shifts',
-                        'localField': 'shiftId',
-                        'foreignField': '_id',
-                        'pipeline': [
-                            {
-                                '$project': {
-                                    'parkingId': 1
+                    '$addFields': {
+                        entryDateISO: {
+                            $cond: {
+                                if: {
+                                    '$and': [
+                                        {
+                                            'entryDateISO': {
+                                                '$gte': new Date(date.start)
+                                            }
+                                        }, {
+                                            'entryDateISO': {
+                                                '$lt': new Date(date.end)
+                                            }
+                                        }
+                                    ]
                                 }
                             }
-                        ],
-                        'as': 'parkingId'
-                    }
-                }, {
-                    '$addFields': {
-                        'parkingId': {
-                            '$first': '$parkingId'
+                        },
+                        exitDateISO: {
+                            '$and': [
+                                {
+                                    'exitDateISO': {
+                                        '$gte': new Date(date.start)
+                                    }
+                                }, {
+                                    'exitDateISO': {
+                                        '$lt': new Date(date.end)
+                                    }
+                                }
+                            ]
                         }
                     }
-                }, {
-                    '$addFields': {
-                        'parkingId': '$parkingId.parkingId'
-                    }
-                }, {
+                },
+                {
                     '$match': {
                         'parkingId': mongoose.Types.ObjectId(parkingId),
-                        '$and': [
+                        '$or': [
                             {
-                                'dateISO': {
-                                    '$gte': new Date(date.start)
-                                }
+                                entryDateISO: true
                             }, {
-                                'dateISO': {
-                                    '$lt': new Date(date.end)
-                                }
+                                exitDateISO: true
+
                             }
                         ]
-                    }
-                }, {
-                    '$group': {
-                        '_id': {
-                            'transactionType': '$transactionType',
-                            'vehicleType': '$vehicleType',
-                            'lostTicket': '$lostTicket'
-                        },
-                        'data': {
-                            '$push': '$$ROOT'
-                        }
-                    }
-                }, {
-                    '$addFields': {
-                        'transactionType': '$_id.transactionType',
-                        'vehicleType': '$_id.vehicleType',
-                        'lostTicket': '$_id.lostTicket',
-                        'count': {
-                            '$size': '$data'
-                        }
-                    }
-                }, {
-                    '$project': {
-                        '_id': 0,
-                        'data': 0
                     }
                 }
             ]
