@@ -480,15 +480,15 @@ exports.seasonParkerReport = async (req, res) => {
             }
         ])
 
-        if (MonthlyPassData.length > 0) {
+        // if (MonthlyPassData.length > 0) {
 
             utils.commonResponce(res, 200, "succesfully fetched season parkers", MonthlyPassData)
 
-        } else {
+        // } else {
 
-            utils.commonResponce(res, 404, "sNo season parker found")
+        //     utils.commonResponce(res, 404, "sNo season parker found")
 
-        }
+        // }
 
 
     } catch (error) {
@@ -554,7 +554,7 @@ exports.seasonParkerDetailReport = async (req, res) => {
 
         } else {
 
-            utils.commonResponce(res, 404, "shift not found, Please check the parking and shift number")
+            utils.commonResponce(res, 201, "shift not found, Please check the parking and shift number")
 
         }
 
