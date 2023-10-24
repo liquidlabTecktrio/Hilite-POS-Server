@@ -1708,7 +1708,6 @@ function calculate_parking_fee(duration, tariffData) {
 
 }
 
-
 function iterateFunction(duration, starting, ending, iterateEvery, price) {
     for (let i = starting; i <= ending; i += iterateEvery) {
         if (duration >= i) {
@@ -1723,9 +1722,9 @@ exports.checkMonthlyPass = async (req, res) => {
         const cardNumber = req.body.cardNumber
         const type = req.body.type
 
-        let passData = await MonthlyPass.findOne({ cardNumber, isActive: true, parkingId, status: type != 'entry' })
-        console.log('type != ', type != 'entry');
-        console.log('passData: ', passData);
+        const nfcCard = await NFCCard.findOne({nfcNumber:cardNumber})
+
+        let passData = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive: true, parkingId, status: type != 'entry' })
 
         if (passData) {
 
@@ -1751,7 +1750,6 @@ exports.checkMonthlyPass = async (req, res) => {
                 }
             ])
 
-            console.log('nfcTransaction: ', nfcTransaction);
             if (type != 'entry')
                 if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime)
                     utils.commonResponce(
@@ -1805,53 +1803,9 @@ exports.checkMonthlyPass = async (req, res) => {
 }
 
 exports.createTransactionNFC = async (req, res) => {
-    console.log('createTransactionNFC: ');
-    // try {
-    //     // "ticketId": "01010521687461962",
-    //     // "transactionType": "exit",
-    //     // "shiftId": "6496cc1d2c8f63e5a40756dc",
-    //     // "vehicleType": 2,
-    //     // "vehicleNo":"87654321",
-    //     // "paymentType":"upi",
-    //     // "amount":200,
-    //     // "lostTicket":false,
-    //     // "supervisorId":"6493f7f6dd2c362985776664"
-
-    //     const transactions = req.body.transactions
-    //     const faildTransactions = [];
-
-    //     await Bluebird.each(transactions, async (transaction, index) => {
-
-    //         const createTrasactionData = await createTransactionNFCfunction(transaction)
-    //         if (createTrasactionData.statusCode != 200) {
-    //             transaction.message = createTrasactionData.message
-    //             faildTransactions.push(transaction)
-    //         }
-    //     })
-
-    //     let shiftData = await Shift.findById(transactions[0].shiftId)
-
-    //     utils.commonResponce(
-    //         res,
-    //         transactions.length == faildTransactions.length ? 201 : 200,
-    //         transactions.length == faildTransactions.length ? "Some transaction could'nt create" : "Successfully created Transactions",
-    //         {
-    //             shiftData, faildTransactions
-    //         }
-    //     );
-
-    // } catch (error) {
-    //     return res.status(500).json({
-    //         status: 500,
-    //         message: "Unexpected server error while creating Transaction",
-    //     });
-
-    // }
-
     try {
 
         const ticketId = req.body.ticketId
-        console.log('req.body: ', req.body);
         const transactionType = req.body.transactionType
         const shiftId = req.body.shiftId
         const vehicleType = req.body.vehicleType
@@ -2132,7 +2086,7 @@ exports.updateMonthlyPassEntry = async (req, res) => {
 
 
 // new tariff testing 
-calculateCharge_V2()
+// calculateCharge_V2()
 
 function calculateCharge_V2() {
     var tariff = {

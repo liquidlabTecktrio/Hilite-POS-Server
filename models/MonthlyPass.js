@@ -25,6 +25,9 @@ const MonthlyPass = new Schema(
         cardNumber: {
             type: String
         },
+        nfcCardId: {
+            type: mongoose.Types.ObjectId
+        },
         vehicleType: {
             type: String
         },

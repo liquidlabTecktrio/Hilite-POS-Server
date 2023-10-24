@@ -9,13 +9,16 @@ exports.createOpretor = async (req, res) => {
     try {
 
         const opretorName = req.body.opretorName
-        const opretorNo = req.body.opretorNo
+        let opretorNo = req.body.opretorNo
         const parkingId = req.body.parkingId
         const mobileNo = req.body.mobileNo
         const opretorEmail = req.body.opretorEmail
         const username = req.body.username
         const password = req.body.password
         const isSupervisor = req.body.isSupervisor
+
+        if(opretorNo.length==1)
+        opretorNo = '0'+opretorNo
 
         const hashedPassword = await bcrypt.hash(
             password,
@@ -104,14 +107,16 @@ exports.updateOperator = async (req, res) => {
 
         const operatorId = req.body.updateOpertorData.operatorId
         const opretorName = req.body.updateOpertorData.updateOpretorName;
-        console.log("opretorName", opretorName)
-        const opretorNo = req.body.updateOpertorData.updateOperatorNumber;
+        let opretorNo = req.body.updateOpertorData.updateOperatorNumber;
         const mobileNo = req.body.updateOpertorData.updateMobileNumber;
         const opretorEmail = req.body.updateOpertorData.updateOperatorEmail;
         const username = req.body.updateOpertorData.updateUserName;
         const password = req.body.updateOpertorData.updatePassword;
         const isSupervisor = req.body.updateOpertorData.updateIsSupervisor;
         const parkingId = req.body.updateOpertorData.updateParkingId
+
+        if(opretorNo.length==1)
+        opretorNo = '0'+opretorNo
 
         const hashedPassword = await bcrypt.hash(
             password,

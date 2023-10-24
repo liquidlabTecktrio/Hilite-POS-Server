@@ -1,4 +1,5 @@
 const MonthlyPass = require("../models/MonthlyPass")
+const NFCCard = require("../models/NFCCard")
 const Package = require("../models/Package")
 const utils = require("./utils")
 const mongoose = require("mongoose");
@@ -10,14 +11,14 @@ function formatDate(date) {
     var mm = date.getMonth() + 1;
     var yyyy = date.getFullYear();
     if (dd < 10) {
-      dd = "0" + dd;
+        dd = "0" + dd;
     }
     if (mm < 10) {
-      mm = "0" + mm;
+        mm = "0" + mm;
     }
     date = dd + "-" + mm + "-" + yyyy;
     return date;
-  }
+}
 
 exports.createMonthlyPass = async (req, res) => {
     try {
@@ -27,57 +28,75 @@ exports.createMonthlyPass = async (req, res) => {
         const address = req.body.address
         const startDate = req.body.startDate
         const endDate = req.body.endDate
-        const cardNumber = req.body.cardNumber
+        // const cardNumber = req.body.cardNumber
         const vehicalType = req.body.vehicalType
         const parkingId = req.body.parkingId
         const packageId = req.body.packageId
 
+        const paymentType = req.body.paymentType
+        const nfcCardObjId = req.body.nfcCardObjId
+
+        const nfcCard = await NFCCard.findById(nfcCardObjId)
+
         const packageData = await Package.findById(packageId)
+        const activeMonthlyPassExist = await MonthlyPass.findOne({ nfcCardId: nfcCard._id })
 
-        if (packageData && packageData.vehicalType == vehicalType) {
+        if (!activeMonthlyPassExist) {
+            if (packageData && packageData.vehicalType == vehicalType) {
 
-            await MonthlyPass.create({
-                passHolderName: passHolderName,
-                phoneNumber: phoneNumber,
-                email: email,
-                address: address,
-                startDate: startDate,
-                endDate: endDate,
-                cardNumber: cardNumber,
-                vehicleType: vehicalType,
-                parkingId: parkingId,
-                packageId: packageData._id,
-                amount: packageData.amount,
-                fromTime: packageData.fromTime,
-                toTime: packageData.toTime,
-                status: false,
-                isActive: true,
-                purchaseDate: formatDate(new Date()),
-                paymentType: 'upi'
-            }).then(createMonthlyPass => {
+                await MonthlyPass.create({
+                    passHolderName: passHolderName,
+                    phoneNumber: phoneNumber,
+                    email: email,
+                    address: address,
+                    startDate: startDate,
+                    endDate: endDate,
+                    // cardNumber: cardNumber,
+                    vehicleType: vehicalType,
+                    parkingId: parkingId,
+                    packageId: packageData._id,
+                    amount: packageData.amount,
+                    fromTime: packageData.fromTime,
+                    toTime: packageData.toTime,
+                    status: false,
+                    isActive: true,
+                    purchaseDate: formatDate(new Date()),
+                    paymentType: paymentType,
+                    cardNumber: nfcCard.cardNumber,
+                    nfcCardId: nfcCard._id
+                }).then(createMonthlyPass => {
 
-                utils.commonResponce(
-                    res,
-                    200,
-                    "Successfully created Monthly Pass",
-                    createMonthlyPass
-                );
-            }).catch((err) => {
-                console.log("err", err)
+                    utils.commonResponce(
+                        res,
+                        200,
+                        "Successfully created Monthly Pass",
+                        createMonthlyPass
+                    );
+                }).catch((err) => {
+                    console.log("err", err)
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Error Occured While fetching Monthly Pass",
+                        err.toString()
+                    );
+                });
+
+            } else {
+
                 utils.commonResponce(
                     res,
                     201,
-                    "Error Occured While fetching Monthly Pass",
-                    err.toString()
+                    "Active Package Details Not Found"
                 );
-            });
+            }
 
         } else {
 
             utils.commonResponce(
                 res,
                 201,
-                "Active Package Details Not Found"
+                "Card already in use try to renew"
             );
         }
 
@@ -91,11 +110,124 @@ exports.createMonthlyPass = async (req, res) => {
     }
 }
 
+exports.renewMonthlyPass = async (req, res) => {
+    try {
+
+        const monthlyPassObjId = req.body.monthlyPassObjId
+        const startDate = req.body.startDate
+        const endDate = req.body.endDate
+        const vehicalType = req.body.vehicalType
+        const parkingId = req.body.parkingId
+        const packageId = req.body.packageId
+
+        const paymentType = req.body.paymentType
+        const nfcCardObjId = req.body.nfcCardObjId
+
+        const nfcCard = await NFCCard.findById(nfcCardObjId)
+        const packageData = await Package.findById(packageId)
+
+        // const activeMonthlyPassExist = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive:false })
+        const monthlyPassExist = await MonthlyPass.findById(monthlyPassObjId)
+
+        let activeMonthlyPassExist = await MonthlyPass.aggregate([
+            {
+                '$match': {
+                    nfcCardId: nfcCard._id, isActive: true
+                }
+            }, {
+                $sort: {
+                    createdAt: -1
+                }
+            }, {
+                $limit: 1
+            }
+        ])
+
+        if (monthlyPassExist) {
+            if (activeMonthlyPassExist.length <= 0) {
+
+                // activeMonthlyPassExist = activeMonthlyPassExist[0]
+
+                if (packageData && packageData.vehicalType == vehicalType) {
+
+                    await MonthlyPass.create({
+                        passHolderName: monthlyPassExist.passHolderName,
+                        phoneNumber: monthlyPassExist.phoneNumber,
+                        email: monthlyPassExist.email,
+                        address: monthlyPassExist.address,
+                        startDate: startDate,
+                        endDate: endDate,
+                        vehicleType: vehicalType,
+                        parkingId: parkingId,
+                        packageId: packageData._id,
+                        amount: packageData.amount,
+                        fromTime: packageData.fromTime,
+                        toTime: packageData.toTime,
+                        status: false,
+                        isActive: true,
+                        purchaseDate: formatDate(new Date()),
+                        paymentType: paymentType,
+                        cardNumber: nfcCard.cardNumber,
+                        nfcCardId: nfcCard._id
+                    }).then(createMonthlyPass => {
+
+                        utils.commonResponce(
+                            res,
+                            200,
+                            "Successfully renewed Monthly Pass",
+                            createMonthlyPass
+                        );
+                    }).catch((err) => {
+                        console.log("err", err)
+                        utils.commonResponce(
+                            res,
+                            201,
+                            "Error Occured While renewing Monthly Pass",
+                            err.toString()
+                        );
+                    });
+
+                } else {
+
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Active Package Details Not Found"
+                    );
+                }
+
+            } else {
+
+                utils.commonResponce(
+                    res,
+                    201,
+                    "Active Card already exist"
+                );
+            }
+
+        } else {
+
+            utils.commonResponce(
+                res,
+                201,
+                "Card details not found"
+            );
+        }
+
+
+    } catch (error) {
+        console.log("error", error)
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while renewing Monthly Pass",
+        });
+    }
+}
+
 exports.getMonthlyPass = async (req, res) => {
     try {
 
         await MonthlyPass.find().then(async (monthlyPassData) => {
-
 
             utils.commonResponce(
                 res,
@@ -143,7 +275,7 @@ exports.updateMonthlyPass = async (req, res) => {
         // const amount = req.body.updateMonthlyPassData.updateAmount;
 
         const monthlyPassExist = await MonthlyPass.findById(monthlyPassId);
-        if (monthlyPassExist) {
+        if (monthlyPassExist && monthlyPassExist.isActive) {
 
             const options = { useFindAndModify: false, new: true };
             await MonthlyPass.findByIdAndUpdate(
@@ -169,7 +301,6 @@ exports.updateMonthlyPass = async (req, res) => {
             )
                 .then(updateMonthlyPass => {
 
-
                     utils.commonResponce(res, 200, "Monthly Pass Updated Sucessfully", updateMonthlyPass)
                 }).catch(function (error) {
                     console.log(error);
@@ -177,7 +308,7 @@ exports.updateMonthlyPass = async (req, res) => {
 
                 });
         } else {
-            utils.commonResponce(res, 404, "Monthly Pass is not found ")
+            utils.commonResponce(res, 201, "Active Monthly Pass not found ")
         }
 
     } catch (error) {

@@ -11,6 +11,10 @@ const posHeartbeatController = require("../controllers/posHeartbeat");
 const ticketController = require("../controllers/ticket")
 const opretorController = require("../controllers/opretor");
 
+const nfcCardController = require("../controllers/nfcCard");
+
+
+
 router.post("/appLogin", appLoginController.appLogin);
 
 // router.post("/registerVehicle", vehicleController.registerVehicle);
@@ -55,6 +59,8 @@ router.post("/updateHeartbeat", posHeartbeatController.updateHeartbeat);
 router.post("/getSupervisorPin", opretorController.getSupervisorPin);
 
 
+
+router.post("/createNFCCard", nfcCardController.createNFCCard)
 
 
 module.exports = router;

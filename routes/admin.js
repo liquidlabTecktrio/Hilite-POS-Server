@@ -23,6 +23,7 @@ const vehicleController = require("../controllers/vehicle");
 const reportController = require("../controllers/reports");
 
 
+const nfcCardController = require("../controllers/nfcCard");
 
 
 
@@ -87,6 +88,7 @@ router.post("/createMonthlyPass", monthlyPassController.createMonthlyPass)
 router.post("/getMonthlyPass", monthlyPassController.getMonthlyPass)
 router.post("/updateMonthlyPass", monthlyPassController.updateMonthlyPass)
 
+router.post("/renewMonthlyPass", monthlyPassController.renewMonthlyPass)
 
 
 router.post("/getParkingRevenue", reportController.getParkingRevenue)
@@ -96,5 +98,10 @@ router.post("/seasonParkerDetailReport", reportController.seasonParkerDetailRepo
 
 router.post("/getParkingReport", reportController.getParkingReport)
 router.post("/getParkingSummaryReport", reportController.getParkingSummaryReport)
+
+
+
+router.post("/getNFCCards", nfcCardController.getNFCCards)
+
 
 module.exports = router;
