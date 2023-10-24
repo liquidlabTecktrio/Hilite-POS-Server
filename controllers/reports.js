@@ -1001,6 +1001,7 @@ exports.getParkingSummaryReport = async (req, res) => {
                             }
                           }
                     },
+                    'groupType':'Short Term parker'
                 }
             },
             {
@@ -1015,6 +1016,7 @@ exports.getParkingSummaryReport = async (req, res) => {
                     "totalUPICollection": 1,
                     "totalCashCollection": 1,
                     "totalCardCollection": 1,
+                    "groupType":1
                 }
             }
         ])
@@ -1171,6 +1173,7 @@ exports.getParkingSummaryReport = async (req, res) => {
                             }
                           }
                     },
+                    'groupType':'Season parker'
                 }
             },
             {
@@ -1185,6 +1188,7 @@ exports.getParkingSummaryReport = async (req, res) => {
                     "totalUPICollection": 1,
                     "totalCashCollection": 1,
                     "totalCardCollection": 1,
+                    "groupType":1
                 }
             }
         ])
