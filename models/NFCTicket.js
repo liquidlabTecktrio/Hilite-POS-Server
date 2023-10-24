@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const NFCTransaction = new Schema(
+const NFCTicket = new Schema(
     {
         ticketId: {
             type: String,
@@ -65,4 +65,4 @@ const NFCTransaction = new Schema(
     }
 );
 
-module.exports = mongoose.model("NFCTransactions", NFCTransaction);
+module.exports = mongoose.model("NFCTickets", NFCTicket);

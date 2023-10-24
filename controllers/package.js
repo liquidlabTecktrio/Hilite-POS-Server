@@ -7,7 +7,7 @@ exports.createPackage = async (req, res) => {
         const packageName = req.body.packageName
         const validityType = req.body.validityType
         const validity = req.body.validity
-        const vehicalType = req.body.vehicalType
+        const vehicleType = req.body.vehicleType
         const fromTime = req.body.fromTime
         const toTime = req.body.toTime
         const amount = req.body.amount
@@ -16,7 +16,7 @@ exports.createPackage = async (req, res) => {
             packageName: packageName,
             validityType: validityType,
             validity: validity,
-            vehicalType: vehicalType,
+            vehicleType: vehicleType,
             fromTime: fromTime,
             toTime: toTime,
             amount: amount
@@ -65,7 +65,7 @@ exports.updatePackage = async (req,res)=>{
      const packageName = req.body.packageName
      const validityType = req.body.validityType
      const validity = req.body.validity
-     const vehicalType = req.body.vehicalType
+     const vehicleType = req.body.vehicleType
      const fromTime = req.body.fromTime
      const toTime = req.body.toTime
      const amount = req.body.amount
@@ -81,7 +81,7 @@ exports.updatePackage = async (req,res)=>{
                 packageName: packageName,
                 validityType: validityType,
                 validity: validity,
-                vehicalType: vehicalType,
+                vehicleType: vehicleType,
                 fromTime: fromTime,
                 toTime: toTime,
                 amount: amount

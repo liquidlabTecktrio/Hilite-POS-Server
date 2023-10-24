@@ -29,7 +29,7 @@ exports.createMonthlyPass = async (req, res) => {
         const startDate = req.body.startDate
         const endDate = req.body.endDate
         // const cardNumber = req.body.cardNumber
-        const vehicalType = req.body.vehicalType
+        const vehicleType = req.body.vehicleType
         const parkingId = req.body.parkingId
         const packageId = req.body.packageId
 
@@ -42,7 +42,7 @@ exports.createMonthlyPass = async (req, res) => {
         const activeMonthlyPassExist = await MonthlyPass.findOne({ nfcCardId: nfcCard._id })
 
         if (!activeMonthlyPassExist) {
-            if (packageData && packageData.vehicalType == vehicalType) {
+            if (packageData && packageData.vehicleType == vehicleType) {
 
                 await MonthlyPass.create({
                     passHolderName: passHolderName,
@@ -52,7 +52,7 @@ exports.createMonthlyPass = async (req, res) => {
                     startDate: startDate,
                     endDate: endDate,
                     // cardNumber: cardNumber,
-                    vehicleType: vehicalType,
+                    vehicleType: vehicleType,
                     parkingId: parkingId,
                     packageId: packageData._id,
                     amount: packageData.amount,
@@ -116,7 +116,7 @@ exports.renewMonthlyPass = async (req, res) => {
         const monthlyPassObjId = req.body.monthlyPassObjId
         const startDate = req.body.startDate
         const endDate = req.body.endDate
-        const vehicalType = req.body.vehicalType
+        const vehicleType = req.body.vehicleType
         const parkingId = req.body.parkingId
         const packageId = req.body.packageId
 
@@ -148,7 +148,7 @@ exports.renewMonthlyPass = async (req, res) => {
 
                 // activeMonthlyPassExist = activeMonthlyPassExist[0]
 
-                if (packageData && packageData.vehicalType == vehicalType) {
+                if (packageData && packageData.vehicleType == vehicleType) {
 
                     await MonthlyPass.create({
                         passHolderName: monthlyPassExist.passHolderName,
@@ -157,7 +157,7 @@ exports.renewMonthlyPass = async (req, res) => {
                         address: monthlyPassExist.address,
                         startDate: startDate,
                         endDate: endDate,
-                        vehicleType: vehicalType,
+                        vehicleType: vehicleType,
                         parkingId: parkingId,
                         packageId: packageData._id,
                         amount: packageData.amount,

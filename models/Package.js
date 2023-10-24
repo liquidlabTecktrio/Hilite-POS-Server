@@ -13,7 +13,7 @@ const Package = new Schema(
         validity: {
             type: Number
         },
-        vehicalType: {
+        vehicleType: {
             type: Number
         },
         amount: {
