@@ -12,9 +12,9 @@ exports.updateHeartbeat = async (req, res) => {
     try {
 
         const posDeviceID = req.body.posDeviceID;
-        console.log('posDeviceID: ', posDeviceID);
+        const newPosDeviceID = req.body.newPosDeviceID;
 
-        await PosHeartbeat.findOneAndUpdate({ posDeviceID },
+        await PosHeartbeat.findOneAndUpdate({ newPosDeviceID },
             {
                 isAlive: true,
                 lastUpdated: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss")

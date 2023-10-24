@@ -89,6 +89,7 @@ exports.appLogin = async (req, res, next) => {
   const username = req.body.username;
   const password = req.body.password;
   const posDeviceID = req.body.posDeviceID;
+  const newPosDeviceID = req.body.newPosDeviceID;
 
   // validate the request
   const validation = await validateUserInput(username, password);
@@ -223,8 +224,8 @@ exports.appLogin = async (req, res, next) => {
         }).then(async (userData) => {
 
 
-          if (await PosHeartbeat.findOne({ posDeviceID }))
-            await PosHeartbeat.findOneAndUpdate({ posDeviceID }, {
+          if (await PosHeartbeat.findOne({ newPosDeviceID }))
+            await PosHeartbeat.findOneAndUpdate({ newPosDeviceID }, {
               opretorId: findOpretor._id,
               opretorName: findOpretor.opretorName,
               opretorNo: findOpretor.opretorNo,
@@ -240,7 +241,7 @@ exports.appLogin = async (req, res, next) => {
             })
           else
             await PosHeartbeat.create({
-              posDeviceID: posDeviceID,
+              newPosDeviceID: newPosDeviceID,
               opretorId: findOpretor._id,
               opretorName: findOpretor.opretorName,
               opretorNo: findOpretor.opretorNo,
@@ -308,6 +309,7 @@ exports.appLogin = async (req, res, next) => {
 exports.appLogout = async (req, res, next) => {
   const opretorId = req.body.opretorId;
   const posDeviceID = req.body.posDeviceID;
+  const newPosDeviceID = req.body.newPosDeviceID;
 
   // checking admin exist or not
   const findOpretor = await Opretor.findOne({ _id: mongoose.Types.ObjectId(opretorId), isLogedIn: true });
@@ -319,7 +321,7 @@ exports.appLogout = async (req, res, next) => {
       lastLogin: findOpretor.logedInTime,
     }).then(async (shiftCreatedData) => {
 
-      await PosHeartbeat.findOneAndUpdate({ posDeviceID, isActive: true }, { isActive: false })
+      await PosHeartbeat.findOneAndUpdate({ newPosDeviceID, isActive: true }, { isActive: false })
 
       // web socket 
       dashboardController.getDashboardDataFunction()

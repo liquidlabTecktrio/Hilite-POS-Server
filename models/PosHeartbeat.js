@@ -5,7 +5,11 @@ const PosHeartbeat = new Schema(
   {
     posDeviceID: {
       type: String,
-      required: true,
+      // required: true,
+    },
+    newPosDeviceID: {
+      type: String,
+      // required: true,
     },
     opretorId: {
       type: String,
