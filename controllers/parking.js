@@ -988,41 +988,51 @@ exports.entryExitAggregateForGraph = async (parkingId, date) => {
                                 { $multiply: [{ $toInt: '$exitTime' }, 1000] }
                         }
                     }
-                }, {
+                }, 
+                {
                     '$addFields': {
                         entryDateISO: {
                             $cond: {
                                 if: {
                                     '$and': [
                                         {
-                                            'entryDateISO': {
-                                                '$gte': new Date(date.start)
-                                            }
+                                            '$gte': [
+                                                '$entryDateISO', new Date(date.start)
+                                            ]
                                         }, {
-                                            'entryDateISO': {
-                                                '$lt': new Date(date.end)
-                                            }
+                                            '$lte': [
+                                                '$entryDateISO', new Date(date.end)
+                                            ]
                                         }
                                     ]
-                                }
+                                },
+                                then: true,
+                                else: false
                             }
                         },
                         exitDateISO: {
-                            '$and': [
-                                {
-                                    'exitDateISO': {
-                                        '$gte': new Date(date.start)
-                                    }
-                                }, {
-                                    'exitDateISO': {
-                                        '$lt': new Date(date.end)
-                                    }
-                                }
-                            ]
+                            $cond: {
+                                if: {
+                                    '$and': [
+                                        {
+                                            '$gte': [
+                                                '$exitDateISO', new Date(date.start)
+                                            ]
+                                        }, {
+                                            '$lte': [
+                                                '$exitDateISO', new Date(date.end)
+                                            ]
+                                        }
+                                    ]
+                                },
+                                then: true,
+                                else: false
+                            }
                         }
                     }
                 },
                 {
+
                     '$match': {
                         'parkingId': mongoose.Types.ObjectId(parkingId),
                         '$or': [
