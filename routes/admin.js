@@ -94,4 +94,6 @@ router.post("/shiftReport", reportController.shiftReport)
 router.post("/seasonParkerReport", reportController.seasonParkerReport)
 router.post("/seasonParkerDetailReport", reportController.seasonParkerDetailReport)
 
+router.post("/getParkingReport", reportController.getParkingReport)
+
 module.exports = router;

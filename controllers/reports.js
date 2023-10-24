@@ -175,6 +175,7 @@ const Bluebird = require("bluebird");
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const MonthlyPass = require("../models/MonthlyPass");
+const Ticket = require("../models/Ticket");
 
 exports.getParkingRevenue = async (req, res) => {
     try {
@@ -482,7 +483,7 @@ exports.seasonParkerReport = async (req, res) => {
 
         // if (MonthlyPassData.length > 0) {
 
-            utils.commonResponce(res, 200, "succesfully fetched season parkers", MonthlyPassData)
+        utils.commonResponce(res, 200, "succesfully fetched season parkers", MonthlyPassData)
 
         // } else {
 
@@ -566,7 +567,192 @@ exports.seasonParkerDetailReport = async (req, res) => {
     }
 }
 
+exports.getParkingReport = async (req, res) => {
+    try {
+        const parkingId = req.body.parkingId;
+        console.log("parkingId", parkingId)
+        const fromDate = new Date(new Date(req.body.date).setHours(0));
+        console.log("fromDate", fromDate)
+        let toDate = new Date(new Date(req.body.date).setHours(24));
+        console.log("toDate", toDate)
 
+        let parkingsData = await Ticket.aggregate([
+            {
+                '$addFields': {
+                    entryDateISO: {
+                        $toDate:
+                            { $multiply: [{ $toInt: '$entryTime' }, 1000] }
+                    },
+                    exitDateISO: {
+                            // $cond: {
+                            //     if: {
+                            //             '$ne': ['$exitTime', null]
+                            //     },
+                            //     then: {
+                            //         $toDate:{
+                            //             $multiply: [{ $toInt: '$exitTime' }, 1000] 
+                            //         }
+                            //         },
+                            //     else: null
+                            // }
+
+                            $toDate:
+                            { $multiply: [{ $toInt: '$exitTime' }, 1000] }
+                    },
+                    date: fromDate
+                }
+            }, {
+                '$addFields': {
+                    entryDateISOMatched: {
+                        $cond: {
+                            if: {
+                                '$and': [
+                                    {
+                                        '$gte': [
+                                            '$entryDateISO', fromDate
+                                        ]
+                                    }, {
+                                        '$lte': [
+                                            '$entryDateISO', toDate
+                                        ]
+                                    }
+                                ]
+                            },
+                            then: true,
+                            else: false
+                        }
+                    },
+                    exitDateISOMatched: {
+                        $cond: {
+                            if: {
+                                '$and': [
+                                    {
+                                        '$gte': [
+                                            '$exitDateISO', fromDate
+                                        ]
+                                    }, {
+                                        '$lte': [
+                                            '$exitDateISO', toDate
+                                        ]
+                                    }
+                                ]
+                            },
+                            then: true,
+                            else: false
+                        }
+                    }
+                }
+            },
+            {
+                '$match': {
+                    'parkingId': mongoose.Types.ObjectId(parkingId),
+                    '$or': [
+                        {
+                            entryDateISOMatched: true
+                        }, {
+                            exitDateISOMatched: true
+
+                        }
+                    ]
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'opretors',
+                    'localField': 'opretorId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'opretorName': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'operator'
+                }
+            }, {
+                '$lookup': {
+                    'from': 'parkings',
+                    'localField': 'parkingId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'parkingName': 1,
+                                'parkingNo': 1,
+                                'address': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'parking'
+                }
+            }, {
+                '$lookup': {
+                    'from': 'shifts',
+                    'localField': 'shiftId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'shiftNo': 1
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'shiftNo'
+                }
+            }, {
+                '$addFields': {
+                    'operator': {
+                        '$first': '$operator'
+                    },
+                    'parking': {
+                        '$first': '$parking'
+                    },
+                    'shiftNo': {
+                        '$first': '$shiftNo'
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'opretorName': '$operator.opretorName',
+                    'parkingName': '$parking.parkingName',
+                    'parkingNo': '$parking.parkingNo',
+                    'address': '$parking.address',
+                    'shiftNo': '$shiftNo.shiftNo',
+                }
+            }, {
+                '$project': {
+                    "date": 1,
+                    "ticketId": 1,
+                    "vehicleType": 1,
+                    "vehicleNo": 1,
+                    "parkingName": 1,
+                    "parkingNo": 1,
+                    "address": 1,
+                    "entryDateISO": 1,
+                    "duration": 1,
+                    "exitDateISO": 1,
+                    "amount": 1,
+                    "paymentType": 1,
+                    "receiptNo": 1,
+                    "shiftNo": 1,
+                }
+            }
+        ])
+
+        let totalParkingFeeCollection = parkingsData.filter(p => p.paymentType != null).reduce((a, c) => { return a + c.amount }, 0)
+        let totalUPICollection = parkingsData.filter(p => p.paymentType == 'upi').reduce((a, c) => { return a + c.amount }, 0)
+        let totalCashCollection = parkingsData.filter(p => p.paymentType == 'cash').reduce((a, c) => { return a + c.amount }, 0)
+        let totalCardCollection = parkingsData.filter(p => p.paymentType == 'card').reduce((a, c) => { return a + c.amount }, 0)
+
+
+        utils.commonResponce(res, 200, "Successsfully fetched parkings report", { totalParkingFeeCollection, totalUPICollection, totalCashCollection, totalCardCollection, parkingsData })
+    } catch (error) {
+        utils.commonResponce(res, 500, "Unexpected error while getting parkings report", error.toString())
+    }
+}
 
 
 
