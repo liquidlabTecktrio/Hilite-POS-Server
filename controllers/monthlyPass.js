@@ -4,6 +4,21 @@ const utils = require("./utils")
 const mongoose = require("mongoose");
 
 
+
+function formatDate(date) {
+    var dd = date.getDate();
+    var mm = date.getMonth() + 1;
+    var yyyy = date.getFullYear();
+    if (dd < 10) {
+      dd = "0" + dd;
+    }
+    if (mm < 10) {
+      mm = "0" + mm;
+    }
+    date = dd + "-" + mm + "-" + yyyy;
+    return date;
+  }
+
 exports.createMonthlyPass = async (req, res) => {
     try {
         const passHolderName = req.body.passHolderName
@@ -29,14 +44,16 @@ exports.createMonthlyPass = async (req, res) => {
                 startDate: startDate,
                 endDate: endDate,
                 cardNumber: cardNumber,
-                vehicalType: vehicalType,
+                vehicleType: vehicalType,
                 parkingId: parkingId,
                 packageId: packageData._id,
                 amount: packageData.amount,
                 fromTime: packageData.fromTime,
                 toTime: packageData.toTime,
                 status: false,
-                isActive: true
+                isActive: true,
+                purchaseDate: formatDate(new Date()),
+                paymentType: 'upi'
             }).then(createMonthlyPass => {
 
                 utils.commonResponce(

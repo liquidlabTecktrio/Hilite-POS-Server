@@ -25,8 +25,8 @@ const MonthlyPass = new Schema(
         cardNumber: {
             type: String
         },
-        vehicalType: {
-            type: Number
+        vehicleType: {
+            type: String
         },
         parkingId: {
             type: mongoose.Types.ObjectId
@@ -36,6 +36,12 @@ const MonthlyPass = new Schema(
         },
         amount: {
             type: Number
+        },
+        paymentType: {
+            type: String
+        },
+        purchaseDate: {
+            type: String
         },
         fromTime: {
             type: String

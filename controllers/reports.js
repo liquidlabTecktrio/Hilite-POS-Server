@@ -584,19 +584,19 @@ exports.getParkingReport = async (req, res) => {
                             { $multiply: [{ $toInt: '$entryTime' }, 1000] }
                     },
                     exitDateISO: {
-                            // $cond: {
-                            //     if: {
-                            //             '$ne': ['$exitTime', null]
-                            //     },
-                            //     then: {
-                            //         $toDate:{
-                            //             $multiply: [{ $toInt: '$exitTime' }, 1000] 
-                            //         }
-                            //         },
-                            //     else: null
-                            // }
+                        // $cond: {
+                        //     if: {
+                        //             '$ne': ['$exitTime', null]
+                        //     },
+                        //     then: {
+                        //         $toDate:{
+                        //             $multiply: [{ $toInt: '$exitTime' }, 1000] 
+                        //         }
+                        //         },
+                        //     else: null
+                        // }
 
-                            $toDate:
+                        $toDate:
                             { $multiply: [{ $toInt: '$exitTime' }, 1000] }
                     },
                     date: fromDate
@@ -748,9 +748,451 @@ exports.getParkingReport = async (req, res) => {
         let totalCardCollection = parkingsData.filter(p => p.paymentType == 'card').reduce((a, c) => { return a + c.amount }, 0)
 
 
-        utils.commonResponce(res, 200, "Successsfully fetched parkings report", { totalParkingFeeCollection, totalUPICollection, totalCashCollection, totalCardCollection, parkingsData })
+        utils.commonResponce(res, 200, "Successsfully generated parkings report", { totalParkingFeeCollection, totalUPICollection, totalCashCollection, totalCardCollection, parkingsData })
     } catch (error) {
-        utils.commonResponce(res, 500, "Unexpected error while getting parkings report", error.toString())
+        utils.commonResponce(res, 500, "Unexpected error while generating parkings report", error.toString())
+    }
+}
+
+function getReportDates(reportType, reportDate){
+
+    let fromDate;
+    let toDate;
+    
+    switch (reportType) {
+        case "Daily":
+            fromDate = new Date(new Date(reportDate).setHours(0));
+            toDate = new Date(new Date(reportDate).setHours(24));
+            
+            break;
+            
+            case "Weekly":
+                
+                break;
+                
+                
+                case "Monthly":
+                    
+                    fromDate = new Date(new Date(reportDate.split("-")[0], parseInt(reportDate.split("-")[1])-1, 1).setHours(0));
+                    toDate = new Date(new Date(reportDate.split("-")[0], reportDate.split("-")[1], 0).setHours(24));
+                    
+                    break;
+                    
+                    default:
+                        break;
+                    }
+                    console.log('fromDate: ', fromDate);
+                    console.log('toDate: ', toDate);
+
+                    return {
+                        fromDate,
+                        toDate
+                    }
+}
+
+exports.getParkingSummaryReport = async (req, res) => {
+    try {
+        const parkingId = req.body.parkingId;
+        // const fromDate = new Date(new Date(req.body.fromDate).setHours(0));
+        // let toDate = new Date(new Date(req.body.toDate).setHours(24));
+        
+        
+        const reportDates = getReportDates(req.body.reportType, req.body.reportDate);
+        fromDate = reportDates.fromDate
+        toDate = reportDates.toDate
+        
+         console.log("fromDate", fromDate)
+         console.log("toDate", toDate)
+
+        let parkingsData = await Ticket.aggregate([
+            {
+                '$addFields': {
+                    // entryDateISO: {
+                    //     $toDate:
+                    //         { $multiply: [{ $toInt: '$entryTime' }, 1000] }
+                    // },
+                    exitDateISO: {
+
+                        $toDate:
+                            { $multiply: [{ $toInt: '$exitTime' }, 1000] }
+                    },
+                }
+            }, {
+                '$addFields': {
+                    // entryDateISOMatched: {
+                    //     $cond: {
+                    //         if: {
+                    //             '$and': [
+                    //                 {
+                    //                     '$gte': [
+                    //                         '$entryDateISO', fromDate
+                    //                     ]
+                    //                 }, {
+                    //                     '$lte': [
+                    //                         '$entryDateISO', toDate
+                    //                     ]
+                    //                 }
+                    //             ]
+                    //         },
+                    //         then: true,
+                    //         else: false
+                    //     }
+                    // },
+                    exitDateISOMatched: {
+                        $cond: {
+                            if: {
+                                '$and': [
+                                    {
+                                        '$gte': [
+                                            '$exitDateISO', fromDate
+                                        ]
+                                    }, {
+                                        '$lte': [
+                                            '$exitDateISO', toDate
+                                        ]
+                                    }
+                                ]
+                            },
+                            then: true,
+                            else: false
+                        }
+                    }
+                }
+            },
+            {
+                '$match': {
+                    'parkingId': mongoose.Types.ObjectId(parkingId),
+                    // '$or': [
+                    //     {
+                    //         entryDateISOMatched: true
+                    //     }, {
+                    exitDateISOMatched: true
+                    //     }
+                    // ]
+                }
+            }, {
+                '$lookup': {
+                    'from': 'parkings',
+                    'localField': 'parkingId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'parkingName': 1,
+                                'parkingNo': 1,
+                                'address': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'parking'
+                }
+            }, {
+                '$addFields': {
+                    'parking': {
+                        '$first': '$parking'
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'parkingName': '$parking.parkingName',
+                    'parkingNo': '$parking.parkingNo',
+                    'address': '$parking.address',
+                }
+            },
+            {
+                '$group': {
+                    '_id': {
+                        vehicleType: '$vehicleType',
+                        parkingName: '$parkingName',
+                        parkingNo: '$parkingNo',
+                        address: '$address',
+                    },
+                    noOfVehicle: {
+                        $sum: 1
+                    },
+                    paymentCollection: {
+                        // $sum: '$amount'
+                        $push: '$$ROOT'
+                    },
+                }
+            },
+            {
+                '$addFields': {
+                    'totalParkingFeeCollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': '$paymentCollection',
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                    'totalUPICollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': {
+                                '$filter': {
+                                    'input': '$paymentCollection',
+                                    'as': 'ms',
+                                    'cond': {
+                                      '$eq': [
+                                        '$$ms.paymentType', 'upi'
+                                      ]
+                                    }
+                                  }
+                              },
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                    'totalCashCollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': {
+                                '$filter': {
+                                    'input': '$paymentCollection',
+                                    'as': 'ms',
+                                    'cond': {
+                                      '$eq': [
+                                        '$$ms.paymentType', 'cash'
+                                      ]
+                                    }
+                                  }
+                              },
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                    'totalCardCollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': {
+                                '$filter': {
+                                    'input': '$paymentCollection',
+                                    'as': 'ms',
+                                    'cond': {
+                                      '$eq': [
+                                        '$$ms.paymentType', 'card'
+                                      ]
+                                    }
+                                  }
+                              },
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                }
+            },
+            {
+                '$project': {
+                    "_id": 0,
+                    "vehicleType": '$_id.vehicleType',
+                    "parkingName": '$_id.parkingName',
+                    "parkingNo": '$_id.parkingNo',
+                    "address": '$_id.address',
+                    "noOfVehicle": 1,
+                    "totalParkingFeeCollection": 1,
+                    "totalUPICollection": 1,
+                    "totalCashCollection": 1,
+                    "totalCardCollection": 1,
+                }
+            }
+        ])
+
+        let seasonParkersData = await MonthlyPass.aggregate([
+            {
+                '$addFields': {
+                    purchaseDateISO: {
+                        $dateFromString: {
+                            dateString: '$purchaseDate',
+                            format: "%d-%m-%Y"
+                        }
+                    }
+                }
+            },
+            {
+                '$match': {
+                    'parkingId': mongoose.Types.ObjectId(parkingId),
+                            'purchaseDateISO': {
+                                '$gte': fromDate
+                            },
+                            'purchaseDateISO': {
+                                '$lte': toDate
+                            }
+                }
+            }, {
+                '$lookup': {
+                    'from': 'parkings',
+                    'localField': 'parkingId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'parkingName': 1,
+                                'parkingNo': 1,
+                                'address': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'parking'
+                }
+            }, {
+                '$addFields': {
+                    'parking': {
+                        '$first': '$parking'
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'parkingName': '$parking.parkingName',
+                    'parkingNo': '$parking.parkingNo',
+                    'address': '$parking.address',
+                }
+            },
+            {
+                '$group': {
+                    '_id': {
+                        vehicleType: '$vehicleType',
+                        parkingName: '$parkingName',
+                        parkingNo: '$parkingNo',
+                        address: '$address',
+                    },
+                    noOfVehicle: {
+                        $sum: 1
+                    },
+                    paymentCollection: {
+                        // $sum: '$amount'
+                        $push: '$$ROOT'
+                    },
+                }
+            },
+            {
+                '$addFields': {
+                    'totalParkingFeeCollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': '$paymentCollection',
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                    'totalUPICollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': {
+                                '$filter': {
+                                    'input': '$paymentCollection',
+                                    'as': 'ms',
+                                    'cond': {
+                                      '$eq': [
+                                        '$$ms.paymentType', 'upi'
+                                      ]
+                                    }
+                                  }
+                              },
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                    'totalCashCollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': {
+                                '$filter': {
+                                    'input': '$paymentCollection',
+                                    'as': 'ms',
+                                    'cond': {
+                                      '$eq': [
+                                        '$$ms.paymentType', 'cash'
+                                      ]
+                                    }
+                                  }
+                              },
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                    'totalCardCollection': {
+                        '$sum': {
+                            '$map': {
+                              'input': {
+                                '$filter': {
+                                    'input': '$paymentCollection',
+                                    'as': 'ms',
+                                    'cond': {
+                                      '$eq': [
+                                        '$$ms.paymentType', 'card'
+                                      ]
+                                    }
+                                  }
+                              },
+                              'as': 'sumValue',
+                              'in': {
+                                '$sum': [
+                                  '$$sumValue.amount'
+                                ]
+                              }
+                            }
+                          }
+                    },
+                }
+            },
+            {
+                '$project': {
+                    "_id": 0,
+                    "vehicleType": '$_id.vehicleType',
+                    "parkingName": '$_id.parkingName',
+                    "parkingNo": '$_id.parkingNo',
+                    "address": '$_id.address',
+                    "noOfVehicle": 1,
+                    "totalParkingFeeCollection": 1,
+                    "totalUPICollection": 1,
+                    "totalCashCollection": 1,
+                    "totalCardCollection": 1,
+                }
+            }
+        ])
+  
+
+        utils.commonResponce(res, 200, "Successsfully generated parkings summary report", [...parkingsData, ...seasonParkersData])
+    } catch (error) {
+        utils.commonResponce(res, 500, "Unexpected error while generating parkings summary report", error.toString())
     }
 }
 

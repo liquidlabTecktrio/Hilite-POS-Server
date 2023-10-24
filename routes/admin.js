@@ -95,5 +95,6 @@ router.post("/seasonParkerReport", reportController.seasonParkerReport)
 router.post("/seasonParkerDetailReport", reportController.seasonParkerDetailReport)
 
 router.post("/getParkingReport", reportController.getParkingReport)
+router.post("/getParkingSummaryReport", reportController.getParkingSummaryReport)
 
 module.exports = router;
