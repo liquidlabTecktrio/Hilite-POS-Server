@@ -280,10 +280,14 @@ exports.getParkingDataForGraph = async (req, res) => {
             {
                 name: 'Waved Off',
                 data: dates.map(d => 0)
+            },
+            {
+                name: 'NFC',
+                data: dates.map(d => 0)
             }
         ]
 
-        let paymentTypes = ['cash', 'card', 'upi', 'waved off']
+        let paymentTypes = ['cash', 'card', 'upi', 'waved off', 'NFC']
 
         shiftsDetails.map((d, index) => {
 
@@ -498,7 +502,7 @@ exports.getParkingDataForGraph = async (req, res) => {
         console.log('error: ', error);
         return res.status(500).json({
             status: 500,
-            message: "Unexpected server error while creating Parking",
+            message: "Unexpected server error while generating revenue Parking",
         });
     }
 }
@@ -552,10 +556,14 @@ async function getParkingDataForGraphFunction(requestData) {
             {
                 name: 'Waved Off',
                 data: dates.map(d => 0)
+            },
+            {
+                name: 'NFC',
+                data: dates.map(d => 0)
             }
         ]
 
-        let paymentTypes = ['cash', 'card', 'upi', 'waved off']
+        let paymentTypes = ['cash', 'card', 'upi', 'waved off', 'NFC']
         if (!cancelIncomeGraphData)
             shiftsDetails.map((d, index) => {
 

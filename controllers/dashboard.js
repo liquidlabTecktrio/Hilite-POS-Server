@@ -122,7 +122,7 @@ exports.getDashboardData = async (req, res) => {
 
         if (monthlyPassRevenueData.length > 0)
             if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
-                totalIncome = monthlyPassRevenueData[0].totalSeasonParkerRevenue
+                totalIncome += monthlyPassRevenueData[0].totalSeasonParkerRevenue
             }
 
         let pastTwoWeeksIncomeDetails = []
@@ -319,7 +319,7 @@ async function getDashboardDataFunction(requestData) {
 
         if (monthlyPassRevenueData.length > 0)
             if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
-                totalIncome = monthlyPassRevenueData[0].totalSeasonParkerRevenue
+                totalIncome += monthlyPassRevenueData[0].totalSeasonParkerRevenue
             }
 
 
