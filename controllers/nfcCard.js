@@ -11,9 +11,10 @@ exports.createNFCCard = async (req, res) => {
         const cardNumber = req.body.cardNumber
         const nfcNumber = req.body.nfcNumber
 
-        const cardNotAvailable = await NFCCard.findOne({ cardNumber })
+        const cardNotAvailable = await NFCCard.findOne({ cardNumber });
+        const nfcNumberAvailable =  await NFCCard.findOne({ nfcNumber });
 
-        if (!cardNotAvailable) {
+        if (!cardNotAvailable && !nfcNumberAvailable) {
 
             await NFCCard.create({
                 cardNumber: cardNumber,
