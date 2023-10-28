@@ -570,11 +570,8 @@ exports.seasonParkerDetailReport = async (req, res) => {
 exports.getParkingReport = async (req, res) => {
     try {
         const parkingId = req.body.parkingId;
-        console.log("parkingId", parkingId)
         const fromDate = new Date(new Date(req.body.date).setHours(0));
-        console.log("fromDate", fromDate)
         let toDate = new Date(new Date(req.body.date).setHours(24));
-        console.log("toDate", toDate)
 
         let parkingsData = await Ticket.aggregate([
             {
@@ -747,6 +744,14 @@ exports.getParkingReport = async (req, res) => {
         let totalCashCollection = parkingsData.filter(p => p.paymentType == 'cash').reduce((a, c) => { return a + c.amount }, 0)
         let totalCardCollection = parkingsData.filter(p => p.paymentType == 'card').reduce((a, c) => { return a + c.amount }, 0)
 
+        parkingsData.map(p => {
+           
+            p.date = p.date.toJSON().split('T')[0].split('-').reverse().join('/')
+            p.entryDateISO = p.entryDateISO.toJSON().split('T')[0].split('-').reverse().join('/') + '-' + p.entryDateISO.toJSON().split('T')[1].split('.')[0]
+            if (p.exitDateISO != null)
+                p.exitDateISO = p.exitDateISO.toJSON().split('T')[0].split('-').reverse().join('/') + '-' + p.exitDateISO.toJSON().split('T')[1].split('.')[0]
+
+        })
 
         utils.commonResponce(res, 200, "Successsfully generated parkings report", { totalParkingFeeCollection, totalUPICollection, totalCashCollection, totalCardCollection, parkingsData })
     } catch (error) {
@@ -754,89 +759,89 @@ exports.getParkingReport = async (req, res) => {
     }
 }
 
-function getReportDates(reportType, reportDate){
+function getReportDates(reportType, reportDate) {
 
     let fromDate;
     let toDate;
-    
+
     switch (reportType) {
         case "Daily":
             fromDate = new Date(new Date(reportDate).setHours(0));
             toDate = new Date(new Date(reportDate).setHours(24));
-            
-            break;
-            
-            case "Weekly":
-                
-                let startDateOfWeek = getDateOfIsoWeek(reportDate.split('-')[1].slice(1,3), reportDate.split('-')[0])
-                console.log('startDateOfWeek: ', startDateOfWeek);
-                fromDate = getDateOfIsoWeek(reportDate.split('-')[1].slice(1,3), reportDate.split('-')[0])
-                toDate = getDateOfIsoWeek(reportDate.split('-')[1].slice(1,3), reportDate.split('-')[0])
-                toDate.setDate(toDate.getDate()+7)
-                
-                break;
-                
-                case "Monthly":
-                    
-                    fromDate = new Date(new Date(reportDate.split("-")[0], parseInt(reportDate.split("-")[1])-1, 1).setHours(0));
-                    toDate = new Date(new Date(reportDate.split("-")[0], reportDate.split("-")[1], 0).setHours(24));
-                    
-                    break;
-                    
-                    default:
-                        break;
-                    }
-                    console.log('fromDate: ', fromDate);
-                    console.log('toDate: ', toDate);
 
-                    return {
-                        fromDate,
-                        toDate
-                    }
+            break;
+
+        case "Weekly":
+
+            let startDateOfWeek = getDateOfIsoWeek(reportDate.split('-')[1].slice(1, 3), reportDate.split('-')[0])
+            console.log('startDateOfWeek: ', startDateOfWeek);
+            fromDate = getDateOfIsoWeek(reportDate.split('-')[1].slice(1, 3), reportDate.split('-')[0])
+            toDate = getDateOfIsoWeek(reportDate.split('-')[1].slice(1, 3), reportDate.split('-')[0])
+            toDate.setDate(toDate.getDate() + 7)
+
+            break;
+
+        case "Monthly":
+
+            fromDate = new Date(new Date(reportDate.split("-")[0], parseInt(reportDate.split("-")[1]) - 1, 1).setHours(0));
+            toDate = new Date(new Date(reportDate.split("-")[0], reportDate.split("-")[1], 0).setHours(24));
+
+            break;
+
+        default:
+            break;
+    }
+    console.log('fromDate: ', fromDate);
+    console.log('toDate: ', toDate);
+
+    return {
+        fromDate,
+        toDate
+    }
 }
 
 function getDateOfIsoWeek(week, year) {
     week = parseFloat(week);
     year = parseFloat(year);
-  
+
     if (week < 1 || week > 53) {
-      throw new RangeError("ISO 8601 weeks are numbered from 1 to 53");
+        throw new RangeError("ISO 8601 weeks are numbered from 1 to 53");
     } else if (!Number.isInteger(week)) {
-      throw new TypeError("Week must be an integer");
+        throw new TypeError("Week must be an integer");
     } else if (!Number.isInteger(year)) {
-      throw new TypeError("Year must be an integer");
+        throw new TypeError("Year must be an integer");
     }
-  
+
     const simple = new Date(year, 0, 1 + (week - 1) * 7);
     const dayOfWeek = simple.getDay();
     const isoWeekStart = simple;
-  
+
     // Get the Monday past, and add a week if the day was
     // Friday, Saturday or Sunday.
-  
+
     isoWeekStart.setDate(simple.getDate() - dayOfWeek + 1);
     if (dayOfWeek > 4) {
-      isoWeekStart.setDate(isoWeekStart.getDate() + 7);
+        isoWeekStart.setDate(isoWeekStart.getDate() + 7);
     }
-  
+
     // The latest possible ISO week starts on December 28 of the current year.
     if (isoWeekStart.getFullYear() > year ||
-      (isoWeekStart.getFullYear() == year &&
-        isoWeekStart.getMonth() == 11 &&
-        isoWeekStart.getDate() > 28)) {
-      throw new RangeError(`${year} has no ISO week ${week}`);
+        (isoWeekStart.getFullYear() == year &&
+            isoWeekStart.getMonth() == 11 &&
+            isoWeekStart.getDate() > 28)) {
+        throw new RangeError(`${year} has no ISO week ${week}`);
     }
-  
+
     return isoWeekStart;
-  }
+}
 
 exports.getParkingSummaryReport = async (req, res) => {
     try {
         const parkingId = req.body.parkingId;
         // const fromDate = new Date(new Date(req.body.fromDate).setHours(0));
         // let toDate = new Date(new Date(req.body.toDate).setHours(24));
-        
-        
+
+
         const reportDates = getReportDates(req.body.reportType, req.body.reportDate);
         fromDate = reportDates.fromDate
         toDate = reportDates.toDate
@@ -959,86 +964,86 @@ exports.getParkingSummaryReport = async (req, res) => {
                     'totalParkingFeeCollection': {
                         '$sum': {
                             '$map': {
-                              'input': '$paymentCollection',
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                'input': '$paymentCollection',
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
                     'totalUPICollection': {
                         '$sum': {
                             '$map': {
-                              'input': {
-                                '$filter': {
-                                    'input': '$paymentCollection',
-                                    'as': 'ms',
-                                    'cond': {
-                                      '$eq': [
-                                        '$$ms.paymentType', 'upi'
-                                      ]
+                                'input': {
+                                    '$filter': {
+                                        'input': '$paymentCollection',
+                                        'as': 'ms',
+                                        'cond': {
+                                            '$eq': [
+                                                '$$ms.paymentType', 'upi'
+                                            ]
+                                        }
                                     }
-                                  }
-                              },
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                },
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
                     'totalCashCollection': {
                         '$sum': {
                             '$map': {
-                              'input': {
-                                '$filter': {
-                                    'input': '$paymentCollection',
-                                    'as': 'ms',
-                                    'cond': {
-                                      '$eq': [
-                                        '$$ms.paymentType', 'cash'
-                                      ]
+                                'input': {
+                                    '$filter': {
+                                        'input': '$paymentCollection',
+                                        'as': 'ms',
+                                        'cond': {
+                                            '$eq': [
+                                                '$$ms.paymentType', 'cash'
+                                            ]
+                                        }
                                     }
-                                  }
-                              },
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                },
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
                     'totalCardCollection': {
                         '$sum': {
                             '$map': {
-                              'input': {
-                                '$filter': {
-                                    'input': '$paymentCollection',
-                                    'as': 'ms',
-                                    'cond': {
-                                      '$eq': [
-                                        '$$ms.paymentType', 'card'
-                                      ]
+                                'input': {
+                                    '$filter': {
+                                        'input': '$paymentCollection',
+                                        'as': 'ms',
+                                        'cond': {
+                                            '$eq': [
+                                                '$$ms.paymentType', 'card'
+                                            ]
+                                        }
                                     }
-                                  }
-                              },
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                },
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
-                    'groupType':'Short Term parker'
+                    'groupType': 'Short Term parker'
                 }
             },
             {
@@ -1053,7 +1058,7 @@ exports.getParkingSummaryReport = async (req, res) => {
                     "totalUPICollection": 1,
                     "totalCashCollection": 1,
                     "totalCardCollection": 1,
-                    "groupType":1
+                    "groupType": 1
                 }
             }
         ])
@@ -1072,12 +1077,12 @@ exports.getParkingSummaryReport = async (req, res) => {
             {
                 '$match': {
                     'parkingId': mongoose.Types.ObjectId(parkingId),
-                            'purchaseDateISO': {
-                                '$gte': fromDate
-                            },
-                            'purchaseDateISO': {
-                                '$lte': toDate
-                            }
+                    'purchaseDateISO': {
+                        '$gte': fromDate
+                    },
+                    'purchaseDateISO': {
+                        '$lte': toDate
+                    }
                 }
             }, {
                 '$lookup': {
@@ -1131,86 +1136,86 @@ exports.getParkingSummaryReport = async (req, res) => {
                     'totalParkingFeeCollection': {
                         '$sum': {
                             '$map': {
-                              'input': '$paymentCollection',
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                'input': '$paymentCollection',
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
                     'totalUPICollection': {
                         '$sum': {
                             '$map': {
-                              'input': {
-                                '$filter': {
-                                    'input': '$paymentCollection',
-                                    'as': 'ms',
-                                    'cond': {
-                                      '$eq': [
-                                        '$$ms.paymentType', 'upi'
-                                      ]
+                                'input': {
+                                    '$filter': {
+                                        'input': '$paymentCollection',
+                                        'as': 'ms',
+                                        'cond': {
+                                            '$eq': [
+                                                '$$ms.paymentType', 'upi'
+                                            ]
+                                        }
                                     }
-                                  }
-                              },
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                },
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
                     'totalCashCollection': {
                         '$sum': {
                             '$map': {
-                              'input': {
-                                '$filter': {
-                                    'input': '$paymentCollection',
-                                    'as': 'ms',
-                                    'cond': {
-                                      '$eq': [
-                                        '$$ms.paymentType', 'cash'
-                                      ]
+                                'input': {
+                                    '$filter': {
+                                        'input': '$paymentCollection',
+                                        'as': 'ms',
+                                        'cond': {
+                                            '$eq': [
+                                                '$$ms.paymentType', 'cash'
+                                            ]
+                                        }
                                     }
-                                  }
-                              },
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                },
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
                     'totalCardCollection': {
                         '$sum': {
                             '$map': {
-                              'input': {
-                                '$filter': {
-                                    'input': '$paymentCollection',
-                                    'as': 'ms',
-                                    'cond': {
-                                      '$eq': [
-                                        '$$ms.paymentType', 'card'
-                                      ]
+                                'input': {
+                                    '$filter': {
+                                        'input': '$paymentCollection',
+                                        'as': 'ms',
+                                        'cond': {
+                                            '$eq': [
+                                                '$$ms.paymentType', 'card'
+                                            ]
+                                        }
                                     }
-                                  }
-                              },
-                              'as': 'sumValue',
-                              'in': {
-                                '$sum': [
-                                  '$$sumValue.amount'
-                                ]
-                              }
+                                },
+                                'as': 'sumValue',
+                                'in': {
+                                    '$sum': [
+                                        '$$sumValue.amount'
+                                    ]
+                                }
                             }
-                          }
+                        }
                     },
-                    'groupType':'Season parker'
+                    'groupType': 'Season parker'
                 }
             },
             {
@@ -1225,11 +1230,11 @@ exports.getParkingSummaryReport = async (req, res) => {
                     "totalUPICollection": 1,
                     "totalCashCollection": 1,
                     "totalCardCollection": 1,
-                    "groupType":1
+                    "groupType": 1
                 }
             }
         ])
-  
+
 
         utils.commonResponce(res, 200, "Successsfully generated parkings summary report", [...parkingsData, ...seasonParkersData])
     } catch (error) {
