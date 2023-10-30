@@ -578,7 +578,9 @@ exports.getParkingReport = async (req, res) => {
                 '$addFields': {
                     entryDateISO: {
                         $toDate:
-                            { $multiply: [{ $toInt: '$entryTime' }, 1000] }
+                            // { $multiply: [{ $toInt: '$entryTime' }, 1000] }
+                            { $multiply: [{$add:[{ $toInt: '$entryTime' }, 19800]}, 1000] }
+
                     },
                     exitDateISO: {
                         // $cond: {
@@ -594,7 +596,9 @@ exports.getParkingReport = async (req, res) => {
                         // }
 
                         $toDate:
-                            { $multiply: [{ $toInt: '$exitTime' }, 1000] }
+                            // { $multiply: [{ $toInt: '$exitTime' }, 1000] }
+                            { $multiply: [{$add:[{ $toInt: '$exitTime' }, 19800]}, 1000] }
+
                     },
                     date: fromDate
                 }
@@ -856,7 +860,8 @@ exports.getParkingSummaryReport = async (req, res) => {
                     exitDateISO: {
 
                         $toDate:
-                            { $multiply: [{ $toInt: '$exitTime' }, 1000] }
+                            // { $multiply: [{ $toInt: '$exitTime' }, 1000] }
+                            { $multiply: [{$add:[{ $toInt: '$exitTime' }, 19800]}, 1000] }
                     },
                 }
             }, {

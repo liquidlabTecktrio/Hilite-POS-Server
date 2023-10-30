@@ -63,4 +63,8 @@ router.post("/getSupervisorPin", opretorController.getSupervisorPin);
 router.post("/createNFCCard", nfcCardController.createNFCCard)
 
 
+router.post("/closeShift_v2", shiftController.closeShift_v2);
+
+
+
 module.exports = router;
