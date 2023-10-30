@@ -123,7 +123,7 @@ exports.closeShift = async (req, res, next) => {
 function getShiftEndDeatils() {
   return [
     {
-      vehicleType: '2',
+      vehicleType: '2 Wheeler',
       Count: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
@@ -136,7 +136,7 @@ function getShiftEndDeatils() {
       Total: 0
     },
     {
-      vehicleType: '4',
+      vehicleType: '4 Wheeler',
       Count: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
