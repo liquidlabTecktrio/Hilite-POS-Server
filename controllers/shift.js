@@ -161,19 +161,19 @@ function getShiftEndDeatils() {
       Over_Night_Vehicle_Collection_UPI: 0,
       Total: 0
     },
-    {
-      vehicleType: 'Total',
-      Count: 0,
-      Collection_Cash: 0,
-      Collection_UPI: 0,
-      Lost_Ticket_Count: 0,
-      Lost_Ticket_Collection_Cash: 0,
-      Lost_Ticket_Collection_UPI: 0,
-      Over_Night_Vehicle_Count: 0,
-      Over_Night_Vehicle_Collection_Cash: 0,
-      Over_Night_Vehicle_Collection_UPI: 0,
-      Total: 0
-    }
+    // {
+    //   vehicleType: 'Total',
+    //   Count: 0,
+    //   Collection_Cash: 0,
+    //   Collection_UPI: 0,
+    //   Lost_Ticket_Count: 0,
+    //   Lost_Ticket_Collection_Cash: 0,
+    //   Lost_Ticket_Collection_UPI: 0,
+    //   Over_Night_Vehicle_Count: 0,
+    //   Over_Night_Vehicle_Collection_Cash: 0,
+    //   Over_Night_Vehicle_Collection_UPI: 0,
+    //   Total: 0
+    // }
   ]
 }
 
@@ -222,18 +222,19 @@ exports.closeShift_v2 = async (req, res, next) => {
         _shiftData = JSON.parse(JSON.stringify(_shiftData))
 
         _shiftData.shiftEndDetails = getShiftEndDeatils()
-        let vehicleTypes = ['2', '4', 'Bicycle', 'Total']
+        // let vehicleTypes = ['2', '4', 'Bicycle', 'Total']
+        let vehicleTypes = ['2', '4', 'Bicycle']
 
         _shiftData.tickets.map(ticket => {
           switch (ticket.vehicleType) {
             case '4':
               _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
 
 
               if (ticket.lostTicket) {
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Count += 1
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
               }
 
               if (ticket.amount > 0) {
@@ -241,21 +242,21 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                 if (ticket.paymentType == 'cash') {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_Cash += ticket.amount
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
 
                   if (ticket.lostTicket) {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_Cash += ticket.amount
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
                   }
                 }
 
                 if (ticket.paymentType == 'upi') {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_UPI += ticket.amount
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
 
                   if (ticket.lostTicket) {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_UPI += ticket.amount
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
                   }
                 }
               }
@@ -265,12 +266,12 @@ exports.closeShift_v2 = async (req, res, next) => {
             case '2':
 
               _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
 
 
               if (ticket.lostTicket) {
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Count += 1
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
               }
 
               if (ticket.amount > 0) {
@@ -278,21 +279,21 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                 if (ticket.paymentType == 'cash') {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_Cash += ticket.amount
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
 
                   if (ticket.lostTicket) {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_Cash += ticket.amount
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
                   }
                 }
 
                 if (ticket.paymentType == 'upi') {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_UPI += ticket.amount
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
 
                   if (ticket.lostTicket) {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_UPI += ticket.amount
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
                   }
                 }
               }
@@ -302,11 +303,11 @@ exports.closeShift_v2 = async (req, res, next) => {
             case '3':
 
               _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
 
               if (ticket.lostTicket) {
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Count += 1
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
               }
 
               if (ticket.amount > 0) {
@@ -314,21 +315,21 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                 if (ticket.paymentType == 'cash') {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_Cash += ticket.amount
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
 
                   if (ticket.lostTicket) {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_Cash += ticket.amount
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
                   }
                 }
 
                 if (ticket.paymentType == 'upi') {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_UPI += ticket.amount
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
 
                   if (ticket.lostTicket) {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_UPI += ticket.amount
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
                   }
                 }
               }
