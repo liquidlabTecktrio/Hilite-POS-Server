@@ -26,7 +26,8 @@
     "jsonwebtoken": "^9.0.0",
     "moment-timezone": "^0.5.40",
     "mongoose": "^6.8.0",
-    "ws": "^8.11.0",
-    "node-schedule": "^2.1.1"
+    "node-input-validator": "^4.5.1",
+    "node-schedule": "^2.1.1",
+    "ws": "^8.11.0"
   }
 }

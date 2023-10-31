@@ -25,6 +25,8 @@ const reportController = require("../controllers/reports");
 
 const nfcCardController = require("../controllers/nfcCard");
 
+const appVersionController = require("../controllers/appversion");
+const appWithoutBarrierVersionController = require("../controllers/appWithoutBarrierVersion");
 
 
 
@@ -121,6 +123,11 @@ router.post("/getParkingSummaryReport", reportController.getParkingSummaryReport
 
 
 router.post("/getNFCCards", nfcCardController.getNFCCards)
+
+
+router.post("/addAppVersion", appVersionController.updateAppVersion);
+router.post("/addAppWithoutBarrierVersion", appWithoutBarrierVersionController.updateAppWithoutBarrierVersion);
+
 
 
 module.exports = router;

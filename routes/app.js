@@ -13,6 +13,8 @@ const opretorController = require("../controllers/opretor");
 
 const nfcCardController = require("../controllers/nfcCard");
 
+const appVersionController = require("../controllers/appversion");
+const appWithoutBarrierVersionController = require("../controllers/appWithoutBarrierVersion");
 
 
 router.post("/appLogin", appLoginController.appLogin);
@@ -62,8 +64,11 @@ router.post("/getSupervisorPin", opretorController.getSupervisorPin);
 
 router.post("/createNFCCard", nfcCardController.createNFCCard)
 
-
 router.post("/closeShift_v2", shiftController.closeShift_v2);
+
+router.post("/getLatestAppVersion",appVersionController.getLatestAppVersion);
+router.post("/getLatestAppWithoutBarrierVersion",appWithoutBarrierVersionController.getLatestAppWithoutBarrierVersion);
+
 
 
 
