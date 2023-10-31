@@ -256,7 +256,9 @@ exports.getMonthlyPass = async (req, res) => {
 exports.updateMonthlyPass = async (req, res) => {
     try {
         const monthlyPassId = req.body.monthlyPassId
+        console.log("monthlyPassId",monthlyPassId)
         const isActive = req.body.isActive
+        console.log("isActive",isActive)
 
         // const name = req.body.updateMonthlyPassData.updateName
 
@@ -275,6 +277,7 @@ exports.updateMonthlyPass = async (req, res) => {
         // const amount = req.body.updateMonthlyPassData.updateAmount;
 
         const monthlyPassExist = await MonthlyPass.findById(monthlyPassId);
+        console.log("monthlyPassExist",monthlyPassExist)
         if (monthlyPassExist && monthlyPassExist.isActive) {
 
             const options = { useFindAndModify: false, new: true };
