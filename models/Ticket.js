@@ -21,6 +21,9 @@ const Ticket = new Schema(
         shiftId: {
             type: mongoose.Types.ObjectId,
         },
+        exitShiftId: {
+            type: mongoose.Types.ObjectId,
+        },
         duration: {
             type: Number
         },

@@ -186,7 +186,7 @@ async function createTransactionfunction(transactionData) {
 
 
                 await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
-                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket
+                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId:shiftId
                 })
 
                 // started from here // mustaqeem

@@ -1248,6 +1248,119 @@ exports.getParkingSummaryReport = async (req, res) => {
 }
 
 
+exports.getDayEndReportReport = async (req, res) => {
+    try {
+
+        let todaysShiftsData = await Shift.aggregate([
+            {
+                '$match': {
+                    'parkingId': mongoose.Types.ObjectId(parkingId),
+                    'isActive': false
+                }
+            },
+            {
+                '$addFields': {
+                    'shiftEndDateISO': {
+                        '$dateFromString': {
+                            'dateString': '$shiftStopTime',
+                            'format': "%d-%m-%Y %H:%M:%S"
+                        }
+                    }
+                }
+            }, {
+                '$match': {
+                    'shiftEndDateISO': {
+                        '$gte': fromDate,
+                        '$lte': toDate,
+
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'reducedTotalCollection': {
+                        '$reduce': {
+                            'input': '$totalCollection',
+                            'initialValue': 0,
+                            'in': {
+                                '$add': [
+                                    '$$value', '$$this.amount'
+                                ]
+                            }
+                        }
+                    }
+                }
+            }, {
+                '$lookup': {
+                    'from': 'opretors',
+                    'localField': 'opretorId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'opretorName': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'operator'
+                }
+            }, {
+                '$lookup': {
+                    'from': 'parkings',
+                    'localField': 'parkingId',
+                    'pipeline': [
+                        {
+                            '$project': {
+                                'parkingName': 1,
+                                '_id': 0
+                            }
+                        }
+                    ],
+                    'foreignField': '_id',
+                    'as': 'parking'
+                }
+            }, {
+                '$addFields': {
+                    'operator': {
+                        '$first': '$operator'
+                    },
+                    'parking': {
+                        '$first': '$parking'
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'operator': '$operator.opretorName',
+                    'parking': '$parking.parkingName'
+                }
+            }, {
+                '$project': {
+                    "_id": 0,
+                    'shiftId': 1,
+                    'shiftNo': 1,
+                    "shiftStartTime": 1,
+                    "shiftStopTime": 1,
+                    "totalTicketIssued": 1,
+                    "totalTicketCancelled": 1,
+                    "totalTicketCollected": 1,
+                    "totalLostTicketCollected": 1,
+                    "reducedTotalCollection": 1,
+                    "operator": 1,
+                    "parking": 1
+                }
+            }
+        ])
+
+     
+
+
+        utils.commonResponce(res, 200, "Successsfully generated parkings summary report", [...parkingsData, ...seasonParkersData])
+    } catch (error) {
+        utils.commonResponce(res, 500, "Unexpected error while generating parkings summary report", error.toString())
+    }
+}
+
+
 
 
 
