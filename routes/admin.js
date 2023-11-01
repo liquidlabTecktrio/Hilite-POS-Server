@@ -128,6 +128,7 @@ router.post("/getNFCCards", nfcCardController.getNFCCards)
 router.post("/addAppVersion", appVersionController.updateAppVersion);
 router.post("/addAppWithoutBarrierVersion", appWithoutBarrierVersionController.updateAppWithoutBarrierVersion);
 
+router.post("/getDayEndReportReport", reportController.getDayEndReportReport)
 
 
 module.exports = router;
