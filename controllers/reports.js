@@ -176,6 +176,7 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const MonthlyPass = require("../models/MonthlyPass");
 const Ticket = require("../models/Ticket");
+const dayEndExcel = require("../controllers/dayEndExcel");
 
 exports.getParkingRevenue = async (req, res) => {
     try {
@@ -1247,12 +1248,14 @@ exports.getParkingSummaryReport = async (req, res) => {
     }
 }
 
-
 exports.getDayEndReportReport = async (req, res) => {
     try {
 
-        const fromDate = new Date(new Date().setHours(0));
-        const toDate = new Date(new Date().setHours(24));
+        // const fromDate = new Date(new Date().setHours(0));
+        // const toDate = new Date(new Date().setHours(24));
+
+        const fromDate = new Date(new Date(req.body.date).setHours(0));
+        let toDate = new Date(new Date(req.body.date).setHours(24));
 
         const monthStart = new Date(new Date(fromDate.getFullYear(), fromDate.getMonth(), 1).setHours(0));
         const monthEnd = new Date(new Date(fromDate.getFullYear(), (fromDate.getMonth() + 1), 0).setHours(24));
@@ -1492,7 +1495,6 @@ exports.getDayEndReportReport = async (req, res) => {
             })
 
         })
-
 
 
         // getting this month's Shifts
@@ -1778,6 +1780,12 @@ exports.getDayEndReportReport = async (req, res) => {
                 }
             }
         ])
+
+
+        // const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
+        // let PathName = dayEndExcelPathName;
+        // console.log('PathName: ', PathName);
+
 
         utils.commonResponce(res, 200, "Successsfully generated day end report", { date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData })
     } catch (error) {

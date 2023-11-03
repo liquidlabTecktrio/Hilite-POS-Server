@@ -124,7 +124,9 @@ function getShiftEndDeatils() {
   return [
     {
       vehicleType: '2 Wheeler',
-      Count: 0,
+      // Count: 0,
+      TicketIssuedCount: 0,
+      TicketCollectedCount: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
       Lost_Ticket_Count: 0,
@@ -137,7 +139,9 @@ function getShiftEndDeatils() {
     },
     {
       vehicleType: '4 Wheeler',
-      Count: 0,
+      // Count: 0,
+      TicketIssuedCount: 0,
+      TicketCollectedCount: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
       Lost_Ticket_Count: 0,
@@ -150,7 +154,9 @@ function getShiftEndDeatils() {
     },
     {
       vehicleType: 'Bicycle',
-      Count: 0,
+      // Count: 0,
+      TicketIssuedCount: 0,
+      TicketCollectedCount: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
       Lost_Ticket_Count: 0,
@@ -201,366 +207,380 @@ exports.closeShift_v2 = async (req, res, next) => {
         })
 
 
-      let _shiftData = await Shift.aggregate([
-        {
-          '$match': {
-            '_id': mongoose.Types.ObjectId(findShift._id)
+        let _shiftData = await Shift.aggregate([
+          {
+            '$match': {
+              '_id': mongoose.Types.ObjectId(findShift._id)
+            }
+          }, {
+            '$lookup': {
+              'from': 'tickets',
+              'localField': '_id',
+              'foreignField': 'shiftId',
+              // 'foreignField': 'exitShiftId',
+              'as': 'tickets'
+            }
           }
-        }, {
-          '$lookup': {
-            'from': 'tickets',
-            'localField': '_id',
-            'foreignField': 'shiftId',
-            // 'foreignField': 'exitShiftId',
-            'as': 'tickets'
+        ])
+
+        let _shiftDataWithExitTickets = await Shift.aggregate([
+          {
+            '$match': {
+              '_id': mongoose.Types.ObjectId(findShift._id)
+            }
+          }, {
+            '$lookup': {
+              'from': 'tickets',
+              'localField': '_id',
+              // 'foreignField': 'shiftId',
+              'foreignField': 'exitShiftId',
+              'as': 'tickets'
+            }
           }
+        ])
+
+
+        console.log('closeShift_v2 length: ', _shiftData.length);
+
+        _shiftData = _shiftData[0]
+        _shiftData = JSON.parse(JSON.stringify(_shiftData))
+
+        _shiftData.shiftEndDetails = getShiftEndDeatils()
+        // _shiftData.Count = 0;
+        _shiftData.TicketIssuedCount = 0,
+          _shiftData.TicketCollectedCount = 0,
+          _shiftData.Collection_Cash = 0;
+        _shiftData.Collection_UPI = 0;
+        _shiftData.Lost_Ticket_Count = 0;
+        _shiftData.Lost_Ticket_Collection_Cash = 0;
+        _shiftData.Lost_Ticket_Collection_UPI = 0;
+        _shiftData.Over_Night_Vehicle_Count = 0;
+        _shiftData.Over_Night_Vehicle_Collection_Cash = 0;
+        _shiftData.Over_Night_Vehicle_Collection_UPI = 0;
+        _shiftData.Total = 0;
+
+        let vehicleTypes = ['2', '4', 'Bicycle']
+
+
+        if (_shiftData.tickets.length > 0) {
+
+          _shiftData.tickets.map(ticket => {
+            switch (ticket.vehicleType) {
+              case '4':
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].TicketIssuedCount += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+                // _shiftData.Count += 1
+                _shiftData.TicketIssuedCount += 1
+
+
+                // if (ticket.lostTicket) {
+                //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Count += 1
+                //   // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                //   _shiftData.Lost_Ticket_Count += 1
+                // }
+
+                // if (ticket.amount > 0) {
+                //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Total += ticket.amount
+                //   _shiftData.Total += ticket.amount
+
+
+                //   if (ticket.paymentType == 'cash') {
+                //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_Cash += ticket.amount
+                //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                //     _shiftData.Collection_Cash += ticket.amount
+
+                //     if (ticket.lostTicket) {
+                //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_Cash += ticket.amount
+                //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                //       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
+                //     }
+                //   }
+
+                //   if (ticket.paymentType == 'upi') {
+                //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_UPI += ticket.amount
+                //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                //     _shiftData.Collection_UPI += ticket.amount
+
+                //     if (ticket.lostTicket) {
+                //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_UPI += ticket.amount
+                //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                //       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
+                //     }
+                //   }
+                // }
+
+                break;
+
+              case '2':
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].TicketIssuedCount += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+                // _shiftData.Count += 1
+                _shiftData.TicketIssuedCount += 1
+
+
+                // if (ticket.lostTicket) {
+                //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Count += 1
+                //   // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                //   _shiftData.Lost_Ticket_Count += 1
+                // }
+
+                // if (ticket.amount > 0) {
+                //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Total += ticket.amount
+                //   _shiftData.Total += ticket.amount
+
+                //   if (ticket.paymentType == 'cash') {
+                //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_Cash += ticket.amount
+                //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                //     _shiftData.Collection_Cash += ticket.amount
+
+                //     if (ticket.lostTicket) {
+                //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_Cash += ticket.amount
+                //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                //       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
+                //     }
+                //   }
+
+                //   if (ticket.paymentType == 'upi') {
+                //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_UPI += ticket.amount
+                //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                //     _shiftData.Collection_UPI += ticket.amount
+
+                //     if (ticket.lostTicket) {
+                //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_UPI += ticket.amount
+                //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                //       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
+                //     }
+                //   }
+                // }
+
+                break;
+
+              case '3':
+
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].TicketIssuedCount += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+                // _shiftData.Count += 1
+                _shiftData.TicketIssuedCount += 1
+
+                // if (ticket.lostTicket) {
+                //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Count += 1
+                //   // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                //   _shiftData.Lost_Ticket_Count += 1
+                // }
+
+                // if (ticket.amount > 0) {
+                //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Total += ticket.amount
+                //   _shiftData.Total += ticket.amount
+
+                //   if (ticket.paymentType == 'cash') {
+                //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_Cash += ticket.amount
+                //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                //     _shiftData.Collection_Cash += ticket.amount
+
+                //     if (ticket.lostTicket) {
+                //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_Cash += ticket.amount
+                //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                //       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
+                //     }
+                //   }
+
+                //   if (ticket.paymentType == 'upi') {
+                //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_UPI += ticket.amount
+                //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                //     _shiftData.Collection_UPI += ticket.amount
+
+                //     if (ticket.lostTicket) {
+                //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_UPI += ticket.amount
+                //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                //       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
+                //     }
+                //   }
+                // }
+
+                break;
+
+              default:
+                break;
+            }
+
+          })
+
+          delete _shiftData.tickets
+
         }
-      ])
 
-      let _shiftDataWithExitTickets = await Shift.aggregate([
-        {
-          '$match': {
-            '_id': mongoose.Types.ObjectId(findShift._id)
-          }
-        }, {
-          '$lookup': {
-            'from': 'tickets',
-            'localField': '_id',
-            // 'foreignField': 'shiftId',
-            'foreignField': 'exitShiftId',
-            'as': 'tickets'
-          }
+        if (_shiftDataWithExitTickets.length == 1) {
+
+          _shiftDataWithExitTickets = _shiftDataWithExitTickets[0]
+          _shiftDataWithExitTickets = JSON.parse(JSON.stringify(_shiftDataWithExitTickets))
+
+          // let vehicleTypes = ['2', '4', 'Bicycle', 'Total']
+
+          _shiftDataWithExitTickets.tickets.map(ticket => {
+            switch (ticket.vehicleType) {
+              case '4':
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].TicketCollectedCount += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+                // _shiftData.Count += 1
+                _shiftData.TicketCollectedCount += 1
+
+
+                if (ticket.lostTicket) {
+                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Count += 1
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                  _shiftData.Lost_Ticket_Count += 1
+                }
+
+                if (ticket.amount > 0) {
+                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Total += ticket.amount
+                  _shiftData.Total += ticket.amount
+
+
+                  if (ticket.paymentType == 'cash') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_Cash += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                    _shiftData.Collection_Cash += ticket.amount
+
+                    if (ticket.lostTicket) {
+                      _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_Cash += ticket.amount
+                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                      _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
+                    }
+                  }
+
+                  if (ticket.paymentType == 'upi') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_UPI += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                    _shiftData.Collection_UPI += ticket.amount
+
+                    if (ticket.lostTicket) {
+                      _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_UPI += ticket.amount
+                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                      _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
+                    }
+                  }
+                }
+
+                break;
+
+              case '2':
+
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].TicketCollectedCount += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+                // _shiftData.Count += 1
+                _shiftData.TicketCollectedCount += 1
+
+
+                if (ticket.lostTicket) {
+                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Count += 1
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                  _shiftData.Lost_Ticket_Count += 1
+                }
+
+                if (ticket.amount > 0) {
+                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Total += ticket.amount
+                  _shiftData.Total += ticket.amount
+
+                  if (ticket.paymentType == 'cash') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_Cash += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                    _shiftData.Collection_Cash += ticket.amount
+
+                    if (ticket.lostTicket) {
+                      _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_Cash += ticket.amount
+                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                      _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
+                    }
+                  }
+
+                  if (ticket.paymentType == 'upi') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_UPI += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                    _shiftData.Collection_UPI += ticket.amount
+
+                    if (ticket.lostTicket) {
+                      _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_UPI += ticket.amount
+                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                      _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
+                    }
+                  }
+                }
+
+                break;
+
+              case '3':
+
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].TicketCollectedCount += 1
+                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
+                // _shiftData.Count += 1
+                _shiftData.TicketCollectedCount += 1
+
+                if (ticket.lostTicket) {
+                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Count += 1
+                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
+                  _shiftData.Lost_Ticket_Count += 1
+                }
+
+                if (ticket.amount > 0) {
+                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Total += ticket.amount
+                  _shiftData.Total += ticket.amount
+
+                  if (ticket.paymentType == 'cash') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_Cash += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
+                    _shiftData.Collection_Cash += ticket.amount
+
+                    if (ticket.lostTicket) {
+                      _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_Cash += ticket.amount
+                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
+                      _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
+                    }
+                  }
+
+                  if (ticket.paymentType == 'upi') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_UPI += ticket.amount
+                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
+                    _shiftData.Collection_UPI += ticket.amount
+
+                    if (ticket.lostTicket) {
+                      _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_UPI += ticket.amount
+                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
+                      _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
+                    }
+                  }
+                }
+
+                break;
+
+              default:
+                break;
+            }
+
+          })
+
+          delete _shiftData.tickets
+
         }
-      ])
 
+        // console.log('closeShift_v2 length: ', _shiftData);
 
-      console.log('closeShift_v2 length: ', _shiftData.length);
 
-      _shiftData = _shiftData[0]
-      _shiftData = JSON.parse(JSON.stringify(_shiftData))
 
-      _shiftData.shiftEndDetails = getShiftEndDeatils()
-      _shiftData.Count = 0;
-      _shiftData.Collection_Cash = 0;
-      _shiftData.Collection_UPI = 0;
-      _shiftData.Lost_Ticket_Count = 0;
-      _shiftData.Lost_Ticket_Collection_Cash = 0;
-      _shiftData.Lost_Ticket_Collection_UPI = 0;
-      _shiftData.Over_Night_Vehicle_Count = 0;
-      _shiftData.Over_Night_Vehicle_Collection_Cash = 0;
-      _shiftData.Over_Night_Vehicle_Collection_UPI = 0;
-      _shiftData.Total = 0;
-
-      let vehicleTypes = ['2', '4', 'Bicycle']
-
-      
-      if (_shiftData.tickets.length > 0) {
-
-        _shiftData.tickets.map(ticket => {
-          switch (ticket.vehicleType) {
-            case '4':
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
-              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-              _shiftData.Count += 1
-
-
-              // if (ticket.lostTicket) {
-              //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Count += 1
-              //   // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
-              //   _shiftData.Lost_Ticket_Count += 1
-              // }
-
-              // if (ticket.amount > 0) {
-              //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Total += ticket.amount
-              //   _shiftData.Total += ticket.amount
-
-
-              //   if (ticket.paymentType == 'cash') {
-              //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_Cash += ticket.amount
-              //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
-              //     _shiftData.Collection_Cash += ticket.amount
-
-              //     if (ticket.lostTicket) {
-              //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_Cash += ticket.amount
-              //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
-              //       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
-              //     }
-              //   }
-
-              //   if (ticket.paymentType == 'upi') {
-              //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_UPI += ticket.amount
-              //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
-              //     _shiftData.Collection_UPI += ticket.amount
-
-              //     if (ticket.lostTicket) {
-              //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_UPI += ticket.amount
-              //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
-              //       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
-              //     }
-              //   }
-              // }
-
-              break;
-
-            case '2':
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
-              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-              _shiftData.Count += 1
-
-
-              // if (ticket.lostTicket) {
-              //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Count += 1
-              //   // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
-              //   _shiftData.Lost_Ticket_Count += 1
-              // }
-
-              // if (ticket.amount > 0) {
-              //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Total += ticket.amount
-              //   _shiftData.Total += ticket.amount
-
-              //   if (ticket.paymentType == 'cash') {
-              //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_Cash += ticket.amount
-              //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
-              //     _shiftData.Collection_Cash += ticket.amount
-
-              //     if (ticket.lostTicket) {
-              //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_Cash += ticket.amount
-              //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
-              //       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
-              //     }
-              //   }
-
-              //   if (ticket.paymentType == 'upi') {
-              //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_UPI += ticket.amount
-              //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
-              //     _shiftData.Collection_UPI += ticket.amount
-
-              //     if (ticket.lostTicket) {
-              //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_UPI += ticket.amount
-              //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
-              //       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
-              //     }
-              //   }
-              // }
-
-              break;
-
-            case '3':
-
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
-              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-              _shiftData.Count += 1
-
-              // if (ticket.lostTicket) {
-              //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Count += 1
-              //   // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
-              //   _shiftData.Lost_Ticket_Count += 1
-              // }
-
-              // if (ticket.amount > 0) {
-              //   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Total += ticket.amount
-              //   _shiftData.Total += ticket.amount
-
-              //   if (ticket.paymentType == 'cash') {
-              //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_Cash += ticket.amount
-              //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
-              //     _shiftData.Collection_Cash += ticket.amount
-
-              //     if (ticket.lostTicket) {
-              //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_Cash += ticket.amount
-              //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
-              //       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
-              //     }
-              //   }
-
-              //   if (ticket.paymentType == 'upi') {
-              //     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_UPI += ticket.amount
-              //     // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
-              //     _shiftData.Collection_UPI += ticket.amount
-
-              //     if (ticket.lostTicket) {
-              //       _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_UPI += ticket.amount
-              //       // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
-              //       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
-              //     }
-              //   }
-              // }
-
-              break;
-
-            default:
-              break;
-          }
-
-        })
-
-        delete _shiftData.tickets
-
-      }
-
-      if (_shiftDataWithExitTickets.length == 1) {
-
-        _shiftDataWithExitTickets = _shiftDataWithExitTickets[0]
-      _shiftDataWithExitTickets = JSON.parse(JSON.stringify(_shiftDataWithExitTickets))
-    
-        // let vehicleTypes = ['2', '4', 'Bicycle', 'Total']
-
-        _shiftDataWithExitTickets.tickets.map(ticket => {
-          switch (ticket.vehicleType) {
-            case '4':
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
-              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-              _shiftData.Count += 1
-
-
-              if (ticket.lostTicket) {
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Count += 1
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
-                _shiftData.Lost_Ticket_Count += 1
-              }
-
-              if (ticket.amount > 0) {
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Total += ticket.amount
-                _shiftData.Total += ticket.amount
-
-
-                if (ticket.paymentType == 'cash') {
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_Cash += ticket.amount
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
-                  _shiftData.Collection_Cash += ticket.amount
-
-                  if (ticket.lostTicket) {
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_Cash += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
-                    _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
-                  }
-                }
-
-                if (ticket.paymentType == 'upi') {
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_UPI += ticket.amount
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
-                  _shiftData.Collection_UPI += ticket.amount
-
-                  if (ticket.lostTicket) {
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_UPI += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
-                    _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
-                  }
-                }
-              }
-
-              break;
-
-            case '2':
-
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
-              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-              _shiftData.Count += 1
-
-
-              if (ticket.lostTicket) {
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Count += 1
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
-                _shiftData.Lost_Ticket_Count += 1
-              }
-
-              if (ticket.amount > 0) {
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Total += ticket.amount
-                _shiftData.Total += ticket.amount
-
-                if (ticket.paymentType == 'cash') {
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_Cash += ticket.amount
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
-                  _shiftData.Collection_Cash += ticket.amount
-
-                  if (ticket.lostTicket) {
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_Cash += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
-                    _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
-                  }
-                }
-
-                if (ticket.paymentType == 'upi') {
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_UPI += ticket.amount
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
-                  _shiftData.Collection_UPI += ticket.amount
-
-                  if (ticket.lostTicket) {
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_UPI += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
-                    _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
-                  }
-                }
-              }
-
-              break;
-
-            case '3':
-
-              _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
-              // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-              _shiftData.Count += 1
-
-              if (ticket.lostTicket) {
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Count += 1
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
-                _shiftData.Lost_Ticket_Count += 1
-              }
-
-              if (ticket.amount > 0) {
-                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Total += ticket.amount
-                _shiftData.Total += ticket.amount
-
-                if (ticket.paymentType == 'cash') {
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_Cash += ticket.amount
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
-                  _shiftData.Collection_Cash += ticket.amount
-
-                  if (ticket.lostTicket) {
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_Cash += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
-                    _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
-                  }
-                }
-
-                if (ticket.paymentType == 'upi') {
-                  _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_UPI += ticket.amount
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
-                  _shiftData.Collection_UPI += ticket.amount
-
-                  if (ticket.lostTicket) {
-                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_UPI += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
-                    _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
-                  }
-                }
-              }
-
-              break;
-
-            default:
-              break;
-          }
-
-        })
-
-        delete _shiftData.tickets
-
-      }
-
-      // console.log('closeShift_v2 length: ', _shiftData);
-
-
-
-      return res.status(200).json({
-        status: 200,
-        message: "shift closed successfull",
-        data: {
-          shiftData:
-            // shiftData
-            _shiftData
-        },
-      });
+        return res.status(200).json({
+          status: 200,
+          message: "shift closed successfull",
+          data: {
+            shiftData:
+              // shiftData
+              _shiftData
+          },
+        });
 
       })
 
