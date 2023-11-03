@@ -21,6 +21,16 @@ function getArrayOfColumnNames(n) {
     return columnArray;
 }
 
+function numberToColumn(number) {
+    let result = '';
+    while (number > 0) {
+        const remainder = (number - 1) % 26;
+        result = String.fromCharCode(65 + remainder) + result;
+        number = Math.floor((number - 1) / 26);
+    }
+    return result;
+}
+
 exports.dayEndReportExcelFunc = async (obj) => {
     try {
 
@@ -43,45 +53,27 @@ exports.dayEndReportExcelFunc = async (obj) => {
         });
 
 
-
         // date
         let dateSplit = new Date(obj.date).toString().split(' ')
 
-        worksheet.mergeCells('A1:F1');
         worksheet.getRow(1).alignment = { horizontal: 'center' }
-        worksheet.getCell('F1').value = `${dateSplit[0]}, ${dateSplit[1]} ${dateSplit[2]}, ${dateSplit[3]}`;
+        worksheet.getCell('A1').value = `${dateSplit[0]}, ${dateSplit[1]} ${dateSplit[2]}, ${dateSplit[3]}`;
         worksheet.getCell('A1').font = { bold: true }
 
 
 
-        // const insideColumns = getArrayOfColumnNames(data.AllShiftEndingTodayData.length * 3);
-        // console.log('data.AllShiftEndingTodayData.length: ', data.AllShiftEndingTodayData.length);
-        // console.log('insideColumns: ', insideColumns);
-
-        // let collums = obj.AllShiftEndingTodayData.map((d, index) => { return { "key": "shiftStartTime-" + index } })
-        // console.log('collums: ', collums);
-        // let data = obj.AllShiftEndingTodayData.map((d, index) => { let key = `shiftStartTime-${index}`; return { key: d.shiftStartTime } })
-        // console.log('data: ', data);
-
-        // worksheet.columns = [
-        //     // { key: 'accountName' },
-        //     ...collums,
-        // ]
-
-        // worksheet.addRow(...data)
-
-
-
-        worksheet.addRow();
+        // worksheet.addRow();
 
         // Define the columns dynamically based on the keys in the data objects
-        // const columns = Object.keys(obj.AllShiftEndingTodayData[0]);
         const columnsKeys = ['shiftNo', 'opretorName', 'shiftStartTime', 'shiftStopTime', 'parkingName',]
         const columnsKeyNames = ['Shift No', 'Opretor Name', 'Start Time', 'Stop Time', 'Parking']
-        const columnsNames = ['', 'Shift No', '', 'Opretor Name', '', 'Start Time', '', 'Stop Time', 'Parking']
+        const columnsNames = ['', 'Shift No', '', 'Opretor Name', '', 'Start Time', '', 'Stop Time', '', 'Parking']
 
         // Add headers to the worksheet
-        worksheet.addRow(columnsNames);
+        const shiftHeaders = worksheet.addRow(columnsNames)
+        shiftHeaders.alignment = { horizontal: 'center' };
+        shiftHeaders.font = { bold: true }
+
 
         // Add data to the worksheet
         obj.AllShiftEndingTodayData.forEach(item => {
@@ -90,29 +82,88 @@ exports.dayEndReportExcelFunc = async (obj) => {
         });
 
 
+        // worksheet.addRow();
 
 
-        worksheet.addRow();
+        // Add parking names to the worksheet
+
+        const rowData = [''].concat(obj.allParkings.flatMap(p => [p.parkingName, '', '', '']));
+        const newRow = worksheet.addRow(rowData);
+        newRow.alignment = { horizontal: 'center' }
+        newRow.alignment = { horizontal: 'center' }
+        newRow.font = { bold: true }
+
+
+        for (let col = 2; col <= rowData.length; col += 4) {
+            worksheet.mergeCells(`${numberToColumn(col)}${newRow.number}:${numberToColumn(col + 3)}${newRow.number}`);
+        }
+
+        // based on parking merge cells for date first row
+        worksheet.mergeCells(`${numberToColumn(1)}1:${numberToColumn(rowData.length)}1`);
 
 
 
-        // Add data to the worksheet
-        console.log(obj.allParkings.map(p => {
-            return ('', p.parkingName)
-        }));
+        // Add vehicle type for parkings to the worksheet
+        let vehicleTypes = ["2 Wheeler", "4 Wheeler", "Bicycle", "Total"]
+        const vehicleHeaders = worksheet.addRow([''].concat(obj.allParkings.flatMap(p => [...vehicleTypes])));
 
-        worksheet.addRow(obj.allParkings.map(p => {
-            return ('', p.parkingName)
-        }));
+        vehicleHeaders.alignment = { horizontal: 'center' }
+        vehicleHeaders.font = { bold: true }
+
+        // Add data to all parking vehicle wise to the worksheet
+        obj.dayEndReportData.forEach(rowData => {
+
+            let colums = [rowData.name]
+            obj.allParkings.map(p => {
+                rowData.parkingsWiseData.filter(pp => pp._id == p._id).map(p => p.vehicleWiseData.map(v => { colums.push(v.value) }))
+            })
+            worksheet.addRow(colums);
+        });
 
 
 
 
+
+        // Set alignment for all columns 
+        worksheet.columns.forEach((col, index) => {
+            if (index !== 0) {
+                col.alignment = { horizontal: 'center', wrapText: true };
+            } else {
+                col.alignment = { horizontal: 'start', wrapText: true };
+            }
+        });
+
+
+
+        // Set a light border for all cells in the worksheet
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+            });
+        });
+
+
+        // Set the column widths based on the calculated values
+        const columnWidths = worksheet.columns.map((column) => {
+            return column.values.reduce((acc, value) => {
+                const cellLength = value ? value.toString().length : 0;
+                return cellLength > acc ? cellLength : acc;
+            }, 0);
+        });
+
+        columnWidths.forEach((width, index) => {
+            worksheet.getColumn(index + 1).width = width + 2; // Add some extra padding
+        });
 
 
         //save
-        // const fileName = `Day-End-Report-${data.date.split("-").reverse().splice(0, 3).join("-")}.xlsx`;
-        const fileName = `Day-End-Report.xlsx`;
+        const fileName = `Day-End-Report-${dateSplit[0]}_${dateSplit[1]} ${dateSplit[2]}_${dateSplit[3]}.xlsx`;
+        // const fileName = `Day-End-Report.xlsx`;
         // console.log('fileName: ', fileName);
         const PathName = path.join(__dirname, "../Documents/dayEndReport/") + fileName;
         await workbook.xlsx.writeFile(PathName, {

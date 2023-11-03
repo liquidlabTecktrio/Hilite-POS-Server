@@ -1,170 +1,3 @@
-// const mongoose = require("mongoose");
-// const utils = require("./utils");
-// const Shift = require("../models/Shift")
-
-
-// exports.getParkingRevenue = async (req, res) => {
-
-//     try {
-//         const parkingId = req.body.parkingId;
-//         console.log("parkingId", parkingId)
-//         const fromDate = new Date(req.body.fromDate);
-//         console.log("fromDate", fromDate)
-//         const toDate = new Date(req.body.toDate);
-//         console.log("toDate", toDate)
-//         const revenueData = await Shift.aggregate(
-//             [
-//                 {
-//                     '$match': {
-//                         'parkingId': mongoose.Types.ObjectId(parkingId),
-//                         'isActive': false
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'shiftEndDate': {
-//                             '$split': [
-//                                 '$shiftStopTime', ' '
-//                             ]
-//                         }
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'shiftEndDate': {
-//                             '$first': '$shiftEndDate'
-//                         }
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'shiftEndDateArray': {
-//                             '$split': [
-//                                 '$shiftEndDate', '-'
-//                             ]
-//                         }
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'date': {
-//                             '$toInt': {
-//                                 '$arrayElemAt': [
-//                                     '$shiftEndDateArray', 0
-//                                 ]
-//                             }
-//                         }
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'shiftEndDateISO': {
-//                             '$dateFromParts': {
-//                                 'year': {
-//                                     '$toInt': {
-//                                         '$arrayElemAt': [
-//                                             '$shiftEndDateArray', 2
-//                                         ]
-//                                     }
-//                                 },
-//                                 'month': {
-//                                     '$toInt': {
-//                                         '$arrayElemAt': [
-//                                             '$shiftEndDateArray', 1
-//                                         ]
-//                                     }
-//                                 },
-//                                 'day': {
-//                                     '$toInt': {
-//                                         '$arrayElemAt': [
-//                                             '$shiftEndDateArray', 0
-//                                         ]
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }, {
-//                     '$match': {
-//                         'shiftEndDateISO': {
-//                             '$gte': fromDate,
-//                             '$lte': toDate
-//                         }
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'reducedTotalCollection': {
-//                             '$reduce': {
-//                                 'input': '$totalCollection',
-//                                 'initialValue': 0,
-//                                 'in': {
-//                                     '$add': [
-//                                         '$$value', '$$this.amount'
-//                                     ]
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }, {
-//                     '$lookup': {
-//                         'from': 'opretors',
-//                         'localField': 'opretorId',
-//                         'pipeline': [
-//                             {
-//                                 '$project': {
-//                                     'opretorName': 1,
-//                                     '_id': 0
-//                                 }
-//                             }
-//                         ],
-//                         'foreignField': '_id',
-//                         'as': 'opretor'
-//                     }
-//                 }, {
-//                     '$lookup': {
-//                         'from': 'parkings',
-//                         'localField': 'parkingId',
-//                         'pipeline': [
-//                             {
-//                                 '$project': {
-//                                     'parkingName': 1,
-//                                     '_id': 0
-//                                 }
-//                             }
-//                         ],
-//                         'foreignField': '_id',
-//                         'as': 'parking'
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'operator': {
-//                             '$first': '$opretor'
-//                         },
-//                         'parking': {
-//                             '$first': '$parking'
-//                         }
-//                     }
-//                 }, {
-//                     '$addFields': {
-//                         'operator': '$operator.opretorName',
-//                         'parking': '$parking.parkingName'
-//                     }
-//                 }, {
-//                     '$project': {
-//                         '_id': 0,
-//                         'opretorId': 0,
-//                         'parkingId': 0,
-//                         'date': 0,
-//                         'shiftEndDate': 0,
-//                         'shiftEndDateArray': 0,
-//                         'shiftEndDateISO': 0
-//                     }
-//                 }
-//             ]
-//         )
-//         utils.commonResponce(res, 200, "Successsfully calculated revenue", revenueData)
-//     } catch (error) {
-//         console.log("error", error)
-//         utils.commonResponce(res, 500, "Unexpected error while generating revenue report", error.toString())
-//     }
-// }
-
-
 const Transaction = require("../models/Transaction");
 const Tariff = require("../models/Tariff");
 const Shift = require("../models/Shift");
@@ -177,6 +10,9 @@ const moment = require("moment-timezone");
 const MonthlyPass = require("../models/MonthlyPass");
 const Ticket = require("../models/Ticket");
 const dayEndExcel = require("../controllers/dayEndExcel");
+const fs = require("fs");
+const path = require("path");
+
 
 exports.getParkingRevenue = async (req, res) => {
     try {
@@ -1275,6 +1111,7 @@ exports.getDayEndReportReport = async (req, res) => {
 
         // const fromDate = new Date(new Date().setHours(0));
         // const toDate = new Date(new Date().setHours(24));
+        req.body.date = '2023-11-03' //for testing
 
         const fromDate = new Date(new Date(req.body.date).setHours(0));
         let toDate = new Date(new Date(req.body.date).setHours(24));
@@ -1804,12 +1641,28 @@ exports.getDayEndReportReport = async (req, res) => {
         ])
 
 
-        // const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
-        // let PathName = dayEndExcelPathName;
-        // console.log('PathName: ', PathName);
+        const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
+        let PathName = dayEndExcelPathName;
+        console.log('PathName: ', PathName);
+
+        res.sendFile(PathName, function (err) {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log("Sent Excel file succesfully!")
+
+                // delete excel file
+                fs.unlink(path.join(PathName), function (err) {
+                    if (err) {
+                        console.log(err, "error");
+                    }
+                });
+
+            }
+        })
 
 
-        utils.commonResponce(res, 200, "Successsfully generated day end report", { date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData })
+        // utils.commonResponce(res, 200, "Successsfully generated day end report", { date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData })
     } catch (error) {
         console.log('error: ', error);
         utils.commonResponce(res, 500, "Unexpected error while generating day end report", error.toString())
