@@ -333,7 +333,6 @@ exports.shiftReport = async (req, res) => {
     try {
 
         const parkingId = req.body.parkingId;
-        console.log("parkingId", parkingId)
         const shiftNo = req.body.shiftNo;
 
         const shiftData = await Shift.aggregate([
@@ -342,14 +341,33 @@ exports.shiftReport = async (req, res) => {
                     'parkingId': mongoose.Types.ObjectId(parkingId),
                     'shiftNo': shiftNo
                 }
-            }, {
+            },
+            //  {
+            //     '$lookup': {
+            //         'from': 'transactions',
+            //         'localField': '_id',
+            //         'foreignField': 'shiftId',
+            //         'as': 'transactions'
+            //     }
+            // },
+            {
                 '$lookup': {
-                    'from': 'transactions',
+                    'from': 'tickets',
                     'localField': '_id',
                     'foreignField': 'shiftId',
-                    'as': 'transactions'
+                    // 'foreignField': 'exitShiftId',
+                    'as': 'entryTickets'
                 }
             }, {
+                '$lookup': {
+                    'from': 'tickets',
+                    'localField': '_id',
+                    //   'foreignField': 'shiftId',
+                    'foreignField': 'exitShiftId',
+                    'as': 'exitTickets'
+                }
+            },
+            {
                 '$lookup': {
                     'from': 'opretors',
                     'localField': 'opretorId',
@@ -386,7 +404,8 @@ exports.shiftReport = async (req, res) => {
                     },
                     'parking': {
                         '$first': '$parking'
-                    }
+                    },
+                    'transactions': []
                 }
             }, {
                 '$addFields': {
@@ -413,7 +432,8 @@ exports.shiftReport = async (req, res) => {
                         '$function': {
                             'body': 'function(transactions){const cash_collection = transactions.filter((collection)=> collection.paymentType == "cash").reduce((a,c)=>a+c.amount,0); return cash_collection}',
                             'args': [
-                                '$transactions'
+                                // '$transactions'
+                                '$exitTickets'
                             ],
                             'lang': 'js'
                         }
@@ -422,7 +442,8 @@ exports.shiftReport = async (req, res) => {
                         '$function': {
                             'body': 'function(transactions){const cash_collection = transactions.filter((collection)=> collection.paymentType == "card").reduce((a,c)=>a+c.amount,0); return cash_collection}',
                             'args': [
-                                '$transactions'
+                                // '$transactions'
+                                '$exitTickets'
                             ],
                             'lang': 'js'
                         }
@@ -431,7 +452,8 @@ exports.shiftReport = async (req, res) => {
                         '$function': {
                             'body': 'function(transactions){const cash_collection = transactions.filter((collection)=> collection.paymentType == "upi").reduce((a,c)=>a+c.amount,0); return cash_collection}',
                             'args': [
-                                '$transactions'
+                                // '$transactions'
+                                '$exitTickets'
                             ],
                             'lang': 'js'
                         }
