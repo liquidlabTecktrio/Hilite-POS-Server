@@ -124,7 +124,7 @@ function getShiftEndDeatils() {
   return [
     {
       vehicleType: '2 Wheeler',
-      // Count: 0,
+      Count: 0,
       TicketIssuedCount: 0,
       TicketCollectedCount: 0,
       Collection_Cash: 0,
@@ -139,7 +139,7 @@ function getShiftEndDeatils() {
     },
     {
       vehicleType: '4 Wheeler',
-      // Count: 0,
+      Count: 0,
       TicketIssuedCount: 0,
       TicketCollectedCount: 0,
       Collection_Cash: 0,
@@ -154,7 +154,7 @@ function getShiftEndDeatils() {
     },
     {
       vehicleType: 'Bicycle',
-      // Count: 0,
+      Count: 0,
       TicketIssuedCount: 0,
       TicketCollectedCount: 0,
       Collection_Cash: 0,
@@ -246,7 +246,7 @@ exports.closeShift_v2 = async (req, res, next) => {
         _shiftData = JSON.parse(JSON.stringify(_shiftData))
 
         _shiftData.shiftEndDetails = getShiftEndDeatils()
-        // _shiftData.Count = 0;
+        _shiftData.Count = 0;
         _shiftData.TicketIssuedCount = 0,
           _shiftData.TicketCollectedCount = 0,
           _shiftData.Collection_Cash = 0;
@@ -267,10 +267,10 @@ exports.closeShift_v2 = async (req, res, next) => {
           _shiftData.tickets.map(ticket => {
             switch (ticket.vehicleType) {
               case '4':
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].TicketIssuedCount += 1
                 // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-                // _shiftData.Count += 1
+                _shiftData.Count += 1
                 _shiftData.TicketIssuedCount += 1
 
 
@@ -313,10 +313,10 @@ exports.closeShift_v2 = async (req, res, next) => {
                 break;
 
               case '2':
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].TicketIssuedCount += 1
                 // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-                // _shiftData.Count += 1
+                _shiftData.Count += 1
                 _shiftData.TicketIssuedCount += 1
 
 
@@ -359,10 +359,10 @@ exports.closeShift_v2 = async (req, res, next) => {
 
               case '3':
 
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].TicketIssuedCount += 1
                 // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-                // _shiftData.Count += 1
+                _shiftData.Count += 1
                 _shiftData.TicketIssuedCount += 1
 
                 // if (ticket.lostTicket) {
@@ -422,10 +422,10 @@ exports.closeShift_v2 = async (req, res, next) => {
           _shiftDataWithExitTickets.tickets.map(ticket => {
             switch (ticket.vehicleType) {
               case '4':
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].TicketCollectedCount += 1
                 // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-                // _shiftData.Count += 1
+                _shiftData.Count += 1
                 _shiftData.TicketCollectedCount += 1
 
 
@@ -469,10 +469,10 @@ exports.closeShift_v2 = async (req, res, next) => {
 
               case '2':
 
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].TicketCollectedCount += 1
                 // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-                // _shiftData.Count += 1
+                _shiftData.Count += 1
                 _shiftData.TicketCollectedCount += 1
 
 
@@ -515,10 +515,10 @@ exports.closeShift_v2 = async (req, res, next) => {
 
               case '3':
 
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
+                _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].TicketCollectedCount += 1
                 // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
-                // _shiftData.Count += 1
+                _shiftData.Count += 1
                 _shiftData.TicketCollectedCount += 1
 
                 if (ticket.lostTicket) {
