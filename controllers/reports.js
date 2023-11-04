@@ -9,9 +9,9 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const MonthlyPass = require("../models/MonthlyPass");
 const Ticket = require("../models/Ticket");
-const dayEndExcel = require("../controllers/dayEndExcel");
-const fs = require("fs");
-const path = require("path");
+// const dayEndExcel = require("../controllers/dayEndExcel");
+// const fs = require("fs");
+// const path = require("path");
 
 
 exports.getParkingRevenue = async (req, res) => {
@@ -27,7 +27,7 @@ exports.getParkingRevenue = async (req, res) => {
             {
                 '$match': {
                     'parkingId': mongoose.Types.ObjectId(parkingId),
-                    'isActive': false
+                    // 'isActive': false
                 }
             },
             {
@@ -37,15 +37,45 @@ exports.getParkingRevenue = async (req, res) => {
                             'dateString': '$shiftStopTime',
                             'format': "%d-%m-%Y %H:%M:%S"
                         }
+                    },
+                    'shiftStartDateISO': {
+                        '$dateFromString': {
+                            'dateString': '$shiftStartTime',
+                            'format': "%d-%m-%Y %H:%M:%S"
+                        }
                     }
                 }
             }, {
                 '$match': {
-                    'shiftEndDateISO': {
-                        '$gte': fromDate,
-                        '$lte': toDate,
+                    // 'shiftEndDateISO': {
+                    //     '$gte': fromDate,
+                    //     '$lte': toDate,
 
-                    }
+                    // }
+                    $or: [
+                        {
+                            $and: [
+                                {
+                                    'isActive': false
+                                }, {
+                                    'shiftEndDateISO': {
+                                        '$gte': fromDate,
+                                        '$lte': toDate,
+                                    }
+                                }
+                            ]
+                        }, {
+                            $and: [
+                                {
+                                    'isActive': true
+                                }, {
+                                    'shiftStartDateISO': {
+                                        '$lte': toDate,
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
             }, {
                 '$addFields': {
@@ -110,6 +140,7 @@ exports.getParkingRevenue = async (req, res) => {
                     "_id": 0,
                     'shiftId': 1,
                     'shiftNo': 1,
+                    'isActive': 1,
                     "shiftStartTime": 1,
                     "shiftStopTime": 1,
                     "totalTicketIssued": 1,
@@ -304,6 +335,28 @@ exports.shiftReport = async (req, res) => {
         ])
 
         if (shiftData.length > 0) {
+
+            shiftData.map(s => {
+                s.entryTickets.map(p => {
+                    p.entryTime = new Date((parseInt(p.entryTime) + 19800) * 1000);
+                    p.entryTime = p.entryTime.toJSON().split('T')[0].split('-').reverse().join('/') + '-' + p.entryTime.toJSON().split('T')[1].split('.')[0]
+
+                    if (p.exitTime != null) {
+                        p.exitTime = new Date((parseInt(p.exitTime) + 19800) * 1000);
+                        p.exitTime = p.exitTime.toJSON().split('T')[0].split('-').reverse().join('/') + '-' + p.exitTime.toJSON().split('T')[1].split('.')[0]
+                    }
+                })
+
+                s.exitTickets.map(p => {
+                    p.entryTime = new Date((parseInt(p.entryTime) + 19800) * 1000);
+                    p.entryTime = p.entryTime.toJSON().split('T')[0].split('-').reverse().join('/') + '-' + p.entryTime.toJSON().split('T')[1].split('.')[0]
+
+                    if (p.exitTime != null) {
+                        p.exitTime = new Date((parseInt(p.exitTime) + 19800) * 1000);
+                        p.exitTime = p.exitTime.toJSON().split('T')[0].split('-').reverse().join('/') + '-' + p.exitTime.toJSON().split('T')[1].split('.')[0]
+                    }
+                })
+            })
 
             utils.commonResponce(res, 200, "succesfully generated shift report", shiftData)
 
@@ -1641,25 +1694,25 @@ exports.getDayEndReportReport = async (req, res) => {
         ])
 
 
-        const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
-        let PathName = dayEndExcelPathName;
-        console.log('PathName: ', PathName);
+        // const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
+        // let PathName = dayEndExcelPathName;
+        // console.log('PathName: ', PathName);
 
-        res.sendFile(PathName, function (err) {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log("Sent Excel file succesfully!")
+        // res.sendFile(PathName, function (err) {
+        //     if (err) {
+        //         console.log(err);
+        //     } else {
+        //         console.log("Sent Excel file succesfully!")
 
-                // delete excel file
-                fs.unlink(path.join(PathName), function (err) {
-                    if (err) {
-                        console.log(err, "error");
-                    }
-                });
+        //         // delete excel file
+        //         fs.unlink(path.join(PathName), function (err) {
+        //             if (err) {
+        //                 console.log(err, "error");
+        //             }
+        //         });
 
-            }
-        })
+        //     }
+        // })
 
 
         // utils.commonResponce(res, 200, "Successsfully generated day end report", { date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData })
