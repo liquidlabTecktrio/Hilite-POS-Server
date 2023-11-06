@@ -9,9 +9,9 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const MonthlyPass = require("../models/MonthlyPass");
 const Ticket = require("../models/Ticket");
-const dayEndExcel = require("../controllers/dayEndExcel");
-const fs = require("fs");
-const path = require("path");
+// const dayEndExcel = require("../controllers/dayEndExcel");
+// const fs = require("fs");
+// const path = require("path");
 
 
 exports.getParkingRevenue = async (req, res) => {
@@ -1164,7 +1164,7 @@ exports.getDayEndReportReport = async (req, res) => {
 
         // const fromDate = new Date(new Date().setHours(0));
         // const toDate = new Date(new Date().setHours(24));
-        // req.body.date = '2023-11-03' //for testing
+        req.body.date = '2023-11-03' //for testing
 
         const fromDate = new Date(new Date(req.body.date).setHours(0));
         let toDate = new Date(new Date(req.body.date).setHours(24));
@@ -1179,20 +1179,17 @@ exports.getDayEndReportReport = async (req, res) => {
         ])
         let allParkingsIds = allParkings.map(p => p._id.toString())
 
-        let rowNames = ["Vehicle Count", "Entry Count", "Exit Count", "FOC upto 10 min Count", "Revenue Collection Cash", "Revenue Collection UPI",
-            "MTD Vehicle Count", "MTD Entry Count", "MTD Exit Count", "MTD FOC upto 10 min Count", "MTD Revenue Collection Cash", "MTD Revenue Collection UPI",
+        let rowNames = ["Vehicle Count", "Revenue Collection Cash", "Revenue Collection UPI",
+            "MTD Vehicle Count", "MTD Revenue Collection Cash", "MTD Revenue Collection UPI",
             "Lost Ticket Count", "Lost Ticket Revenue Collection Cash", "Lost Ticket Revenue Collection UPI",
             "MTD Lost Ticket Count", "MTD Lost Ticket Revenue Collection Cash", "MTD Lost Ticket Revenue Collection UPI",
             "Over Night Vehicle Count", "Over Night Revenue Collection Cash", "Over Night Revenue Collection UPI",
-            "MTD Over Night Vehicle Count", "MTD Over Night Revenue Collection Cash", "MTD Over Night Revenue Collection UPI",
-
-            "Monthly Pass Count", "Monthly Pass Revenue Cash", "Monthly Pass Revenue UPI",
-            "MTD Monthly Pass Count", "MTD Monthly Pass Revenue Cash", "MTD Monthly Pass Revenue UPI",
-        ]
+            "MTD Over Night Vehicle Count", "MTD Over Night Revenue Collection Cash", "MTD Over Night Revenue Collection UPI"]
 
         let vehicleTypes = ['2 Wheeler', '4 Wheeler', 'Bicycle', 'Total']
 
         // setting up data stuctute based on rows and colums (parkings)
+
         let dayEndReportData = rowNames.map(r => {
             return {
                 name: r, parkingsWiseData: allParkings.map(p => {
@@ -1209,10 +1206,8 @@ exports.getDayEndReportReport = async (req, res) => {
         })
 
 
-
-        // Tickets start
-
         // getting todays Shifts
+
         let todaysShiftsData = await Shift.aggregate([
             {
                 '$addFields': {
@@ -1270,6 +1265,7 @@ exports.getDayEndReportReport = async (req, res) => {
         ])
 
         // calculating todays count, revenue, lostTicket and etc 
+
         todaysShiftsData.map(shiftData => {
 
             // getting only count from entry tickets
@@ -1279,23 +1275,14 @@ exports.getDayEndReportReport = async (req, res) => {
                     case '4':
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
                         break;
                     case '2':
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
                         break;
                     case '3':
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
                         break;
                     default:
                         break;
@@ -1311,9 +1298,6 @@ exports.getDayEndReportReport = async (req, res) => {
                     case '4':
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
                         if (ticket.lostTicket) {
                             dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
@@ -1342,10 +1326,6 @@ exports.getDayEndReportReport = async (req, res) => {
                                 }
                             }
                         }
-                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                        }
 
                         break;
 
@@ -1353,9 +1333,6 @@ exports.getDayEndReportReport = async (req, res) => {
 
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
                         if (ticket.lostTicket) {
                             dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
@@ -1384,10 +1361,7 @@ exports.getDayEndReportReport = async (req, res) => {
                                 }
                             }
                         }
-                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                        }
+
 
                         break;
 
@@ -1395,9 +1369,6 @@ exports.getDayEndReportReport = async (req, res) => {
 
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
                         dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
                         if (ticket.lostTicket) {
                             dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
@@ -1426,10 +1397,7 @@ exports.getDayEndReportReport = async (req, res) => {
                                 }
                             }
                         }
-                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                        }
+
 
                         break;
 
@@ -1442,6 +1410,7 @@ exports.getDayEndReportReport = async (req, res) => {
 
 
         // getting this month's Shifts
+
         let thisMonthShiftsData = await Shift.aggregate([
             {
                 '$addFields': {
@@ -1464,13 +1433,13 @@ exports.getDayEndReportReport = async (req, res) => {
                         {
                             'shiftStartDateISO': {
                                 '$gte': monthStart,
-                                '$lte': toDate,
+                                '$lte': monthEnd,
 
                             }
                         }, {
                             'shiftEndDateISO': {
                                 '$gte': monthStart,
-                                '$lte': toDate,
+                                '$lte': monthEnd,
 
                             }
                         }
@@ -1499,6 +1468,7 @@ exports.getDayEndReportReport = async (req, res) => {
         ])
 
         // calculating this months's count, revenue, lostTicket and etc 
+
         thisMonthShiftsData.map(shiftData => {
 
             // getting only count from entry tickets
@@ -1508,26 +1478,14 @@ exports.getDayEndReportReport = async (req, res) => {
                     case '4':
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
                         break;
                     case '2':
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
                         break;
                     case '3':
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
                         break;
                     default:
                         break;
@@ -1543,9 +1501,6 @@ exports.getDayEndReportReport = async (req, res) => {
                     case '4':
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
                         if (ticket.lostTicket) {
                             dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
@@ -1574,10 +1529,6 @@ exports.getDayEndReportReport = async (req, res) => {
                                 }
                             }
                         }
-                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                        }
 
                         break;
 
@@ -1585,10 +1536,6 @@ exports.getDayEndReportReport = async (req, res) => {
 
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
 
                         if (ticket.lostTicket) {
                             dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
@@ -1617,10 +1564,6 @@ exports.getDayEndReportReport = async (req, res) => {
                                 }
                             }
                         }
-                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                        }
 
 
                         break;
@@ -1629,10 +1572,6 @@ exports.getDayEndReportReport = async (req, res) => {
 
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
                         dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
 
                         if (ticket.lostTicket) {
                             dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
@@ -1661,10 +1600,6 @@ exports.getDayEndReportReport = async (req, res) => {
                                 }
                             }
                         }
-                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                        }
 
 
                         break;
@@ -1675,197 +1610,6 @@ exports.getDayEndReportReport = async (req, res) => {
             })
 
         })
-
-        // Tickets end
-
-
-
-        // Monthly Pass start
-
-        // getting todays's monthly passes
-        const todat_monthlyPassRevenueData = await MonthlyPass.aggregate([
-            {
-                '$addFields': {
-                    'purchaseDateISo': {
-                        '$dateFromString': {
-                            'dateString': "$purchaseDate"
-                        }
-                    }
-                }
-            },
-            {
-                '$match': {
-                    'purchaseDateISo': {
-                        '$gte': fromDate,
-                        '$lte': toDate,
-
-                    }
-                }
-            },
-            {
-                '$project': {
-                    "parkingId": 1,
-                    "amount": 1,
-                    "paymentType": 1,
-                    "purchaseDate": 1,
-                    "vehicalType": 1
-                }
-            }
-        ])
-
-        // calculating count, revenue from todays's monthly passes
-        todat_monthlyPassRevenueData.map(monthlyPass => {
-            switch (monthlyPass.vehicleType) {
-                case '4':
-                    dayEndReportData[rowNames.indexOf('Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (monthlyPass.amount > 0) {
-
-                        if (monthlyPass.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-
-                        if (monthlyPass.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-                    }
-                    break;
-                case '2':
-                    dayEndReportData[rowNames.indexOf('Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (monthlyPass.amount > 0) {
-
-                        if (monthlyPass.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-
-                        if (monthlyPass.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-                    }
-                    break;
-                case '3':
-                    dayEndReportData[rowNames.indexOf('Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (monthlyPass.amount > 0) {
-
-                        if (monthlyPass.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-
-                        if (monthlyPass.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        })
-
-
-        // getting this months's monthly passes
-        const MTD_monthlyPassRevenueData = await MonthlyPass.aggregate([
-            {
-                '$addFields': {
-                    'purchaseDateISo': {
-                        '$dateFromString': {
-                            'dateString': "$purchaseDate"
-                        }
-                    }
-                }
-            },
-            {
-                '$match': {
-                    'purchaseDateISo': {
-                        '$gte': monthStart,
-                        '$lte': toDate,
-
-                    }
-                }
-            },
-            {
-                '$project': {
-                    "parkingId": 1,
-                    "amount": 1,
-                    "paymentType": 1,
-                    "purchaseDate": 1,
-                    "vehicalType": 1
-                }
-            }
-        ])
-
-        // calculating count, revenue from this month's monthly passes for 
-        MTD_monthlyPassRevenueData.map(monthlyPass => {
-            switch (monthlyPass.vehicleType) {
-                case '4':
-                    dayEndReportData[rowNames.indexOf('MTD Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (monthlyPass.amount > 0) {
-
-                        if (monthlyPass.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-
-                        if (monthlyPass.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-                    }
-                    break;
-                case '2':
-                    dayEndReportData[rowNames.indexOf('MTD Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (monthlyPass.amount > 0) {
-
-                        if (monthlyPass.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-
-                        if (monthlyPass.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-                    }
-                    break;
-                case '3':
-                    dayEndReportData[rowNames.indexOf('MTD Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Monthly Pass Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (monthlyPass.amount > 0) {
-
-                        if (monthlyPass.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-
-                        if (monthlyPass.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += monthlyPass.amount
-                            dayEndReportData[rowNames.indexOf('MTD Monthly Pass Revenue UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += monthlyPass.amount
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        })
-
-        // Monthly Pass end
-
-
 
 
         // getting all shifts ending today With operators and parkings details 
@@ -1950,24 +1694,25 @@ exports.getDayEndReportReport = async (req, res) => {
         ])
 
 
-        const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
-        let PathName = dayEndExcelPathName;
+        // const dayEndExcelPathName = await dayEndExcel.dayEndReportExcelFunc({ date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData });
+        // let PathName = dayEndExcelPathName;
+        // console.log('PathName: ', PathName);
 
-        res.sendFile(PathName, function (err) {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log("Sent Excel file succesfully!")
+        // res.sendFile(PathName, function (err) {
+        //     if (err) {
+        //         console.log(err);
+        //     } else {
+        //         console.log("Sent Excel file succesfully!")
 
-                // delete excel file
-                fs.unlink(path.join(PathName), function (err) {
-                    if (err) {
-                        console.log(err, "error");
-                    }
-                });
+        //         // delete excel file
+        //         fs.unlink(path.join(PathName), function (err) {
+        //             if (err) {
+        //                 console.log(err, "error");
+        //             }
+        //         });
 
-            }
-        })
+        //     }
+        // })
 
 
         // utils.commonResponce(res, 200, "Successsfully generated day end report", { date: fromDate.toString(), AllShiftEndingTodayData, allParkings, dayEndReportData })
