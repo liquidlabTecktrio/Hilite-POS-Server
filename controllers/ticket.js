@@ -288,6 +288,14 @@ async function createTransactionfunction(transactionData) {
 exports.createManualExit = async (req, res) => {
     try {
 
+        // // removing manual Exit
+        // await Ticket.updateMany({
+        //     manualExit: true
+        // }, {
+        //     amount: 0
+        // })
+
+
         const TicketsFourWheeler = await Ticket.aggregate(
             [
                 {
@@ -311,44 +319,54 @@ exports.createManualExit = async (req, res) => {
                     }
                 }, {
                     '$match': {
-                        'entryDateISO': {
-                            '$lte': new Date('Tue, 31 Oct 2023 23:59:59 GMT')
-                        },
-                        'typeOfExitTime': 'missing',
+                        // 'entryDateISO': {
+                        //     '$lte': new Date('Tue, 31 Oct 2023 23:59:59 GMT')
+                        // },
+                        // 'typeOfExitTime': 'missing',
+                        'manualExit': true,
                         'vehicleType': "4"
                     }
                 }
             ]
         )
 
-        // await Bluebird.each(TicketsFourWheeler, async (transaction, index) => {
-        //     console.log('4 wheeler index: ', index);
+        await Bluebird.each(TicketsFourWheeler, async (transaction, index) => {
+            console.log('4 wheeler index: ', index);
 
-        //     const amount = index < 210 ? 25 : 0;
-        //     const paymentType = 'cash';
-        //     const lostTicket = false;
-        //     const exitTime = (parseInt(transaction.entryTime) + 19800);
+            // const amount = index < 210 ? 25 : 0;
+            // const paymentType = 'cash';
+            const amount = index < 181 ? 25 : 0;
+            const paymentType = index < 120 ? 'cash' : 'upi';
+            // const lostTicket = false;
+            let exitTime = parseInt(transaction.entryTime);
+            if (index < 181)
+                exitTime += 19800
+            else
+                exitTime += 480
 
-        //     var entryTimeISO = moment.unix(transaction.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-        //     var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-        //     var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
 
-        //     const findSerialNumbers = await SerialNumbers.findOne({ parkingId: transaction.parkingId })
+            var entryTimeISO = moment.unix(transaction.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
 
-        //     await Ticket.findOneAndUpdate({ _id: transaction._id }, {
-        //         exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, manualExit: true
-        //     })
+            const findSerialNumbers = await SerialNumbers.findOne({ parkingId: transaction.parkingId })
 
-        //     await SerialNumbers.findOneAndUpdate({ parkingId: transaction.parkingId }, {
-        //         $inc: { receiptNo: 1 }
-        //     }, { returnNewDocument: true })
 
-        //     await Parking.findByIdAndUpdate(transaction.parkingId, {
-        //         $inc: {
-        //             currentOccupiedSpaces: -1
-        //         },
-        //     })
-        // })
+            await Ticket.findOneAndUpdate({ _id: transaction._id }, {
+                // exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, manualExit: true
+                exitTime, amount, paymentType, duration
+            })
+
+            // await SerialNumbers.findOneAndUpdate({ parkingId: transaction.parkingId }, {
+            //     $inc: { receiptNo: 1 }
+            // }, { returnNewDocument: true })
+
+            // await Parking.findByIdAndUpdate(transaction.parkingId, {
+            //     $inc: {
+            //         currentOccupiedSpaces: -1
+            //     },
+            // })
+        })
 
         const TicketsTwoWheeler = await Ticket.aggregate(
             [
@@ -373,44 +391,52 @@ exports.createManualExit = async (req, res) => {
                     }
                 }, {
                     '$match': {
-                        'entryDateISO': {
-                            '$lte': new Date('Tue, 31 Oct 2023 23:59:59 GMT')
-                        },
-                        'typeOfExitTime': 'missing',
+                        // 'entryDateISO': {
+                        //     '$lte': new Date('Tue, 31 Oct 2023 23:59:59 GMT')
+                        // },
+                        // 'typeOfExitTime': 'missing',
+                        'manualExit': true,
                         'vehicleType': "2"
                     }
                 }
             ]
         )
 
-        // await Bluebird.each(TicketsTwoWheeler, async (transaction, index) => {
-        //     console.log('2 wheeler index: ', index);
+        await Bluebird.each(TicketsTwoWheeler, async (transaction, index) => {
+            console.log('2 wheeler index: ', index);
 
-        //     const amount = index < 312 ? 10 : 0;
-        //     const paymentType = 'cash';
-        //     const lostTicket = false;
-        //     const exitTime = (parseInt(transaction.entryTime) + 19800);
+            // const amount = index < 312 ? 10 : 0;
+            // const paymentType = 'cash';
+            const amount = index < 297 ? 10 : 0;
+            const paymentType = index < 137 ? 'cash' : 'upi';
+            // const lostTicket = false;
+            let exitTime = parseInt(transaction.entryTime);
+            if (index < 297)
+                exitTime += 19800
+            else
+                exitTime += 480
 
-        //     var entryTimeISO = moment.unix(transaction.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-        //     var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
-        //     var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            var entryTimeISO = moment.unix(transaction.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
 
-        //     const findSerialNumbers = await SerialNumbers.findOne({ parkingId: transaction.parkingId })
+            // const findSerialNumbers = await SerialNumbers.findOne({ parkingId: transaction.parkingId })
 
-        //     await Ticket.findOneAndUpdate({ _id: transaction._id }, {
-        //         exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, manualExit: true
-        //     })
+            await Ticket.findOneAndUpdate({ _id: transaction._id }, {
+                // exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, manualExit: true
+                exitTime, amount, paymentType, duration
+            })
 
-        //     await SerialNumbers.findOneAndUpdate({ parkingId: transaction.parkingId }, {
-        //         $inc: { receiptNo: 1 }
-        //     }, { returnNewDocument: true })
+            // await SerialNumbers.findOneAndUpdate({ parkingId: transaction.parkingId }, {
+            //     $inc: { receiptNo: 1 }
+            // }, { returnNewDocument: true })
 
-        //     await Parking.findByIdAndUpdate(transaction.parkingId, {
-        //         $inc: {
-        //             currentOccupiedSpaces: -1
-        //         },
-        //     })
-        // })
+            // await Parking.findByIdAndUpdate(transaction.parkingId, {
+            //     $inc: {
+            //         currentOccupiedSpaces: -1
+            //     },
+            // })
+        })
 
         return res.status(200).json({
             status: 200,
