@@ -63,6 +63,9 @@ const Ticket = new Schema(
             type: Number,
             // required: true,
         },
+        manualExit: {
+            type: Boolean,
+        },
     },
     {
         timestamps: true,
