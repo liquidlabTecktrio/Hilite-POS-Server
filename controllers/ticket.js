@@ -186,7 +186,7 @@ async function createTransactionfunction(transactionData) {
 
 
                 await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
-                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId:shiftId
+                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId: shiftId
                 })
 
                 // started from here // mustaqeem
@@ -270,6 +270,97 @@ async function createTransactionfunction(transactionData) {
             }
 
         }
+
+
+    } catch (error) {
+        console.log('error: ', error);
+        statusCode = 201
+        message = error.toString()
+        return {
+            statusCode, message
+        }
+    }
+
+
+}
+
+async function createManualExit(transactionData) {
+    console.log('createTransactionfunction: ', transactionData);
+    let statusCode = 200;
+    let message = '';
+    try {
+
+        const ticketId = transactionData.ticketId
+        const transactionType = transactionData.transactionType
+        const shiftId = transactionData.shiftId
+
+        let shiftData = await Shift.findById(shiftId)
+
+        entryTime = ticketId.slice(-10);
+
+
+        if (transactionType == 'exit') {
+
+            const amount = transactionData.amount;
+            const paymentType = transactionData.paymentType;
+            const lostTicket = transactionData.lostTicket;
+            const exitTime = transactionData.exitTime;
+
+            var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+            const findSerialNumbers = await SerialNumbers.findOne({ parkingId: shiftData.parkingId })
+
+            await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
+                exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId: shiftId
+            })
+
+            // started from here // mustaqeem
+
+            await SerialNumbers.findOneAndUpdate({ parkingId: shiftData.parkingId }, {
+                $inc: { receiptNo: 1 }
+            }, { returnNewDocument: true })
+
+
+
+            await Parking.findByIdAndUpdate(shiftData.parkingId, {
+                $inc: {
+                    currentOccupiedSpaces: -1
+                },
+            })
+
+            let obj = {
+                $inc: {
+                    totalTicketCollected: 1,
+                    totalLostTicketCollected: lostTicket ? 1 : 0,
+                }, $push: {}
+            }
+
+            if (shiftData.totalCollection.filter(c => c.paymentType == paymentType).length <= 0)
+                obj['$push']['totalCollection'] = [{
+                    paymentType: paymentType,
+                    amount: amount,
+                }]
+            else
+                obj['$inc']['totalCollection.$[a].amount'] = amount
+
+            await Shift.findByIdAndUpdate(shiftId, obj,
+                {
+                    arrayFilters: [
+                        { "a.paymentType": paymentType },
+                    ],
+                }
+            )
+
+
+            statusCode = 200
+            message = 'Successfully created transaction'
+            return {
+                statusCode, message
+            }
+        }
+
 
 
     } catch (error) {
@@ -1724,7 +1815,7 @@ exports.checkMonthlyPass = async (req, res) => {
         const cardNumber = req.body.cardNumber
         const type = req.body.type
 
-        const nfcCard = await NFCCard.findOne({nfcNumber:cardNumber})
+        const nfcCard = await NFCCard.findOne({ nfcNumber: cardNumber })
 
         let passData = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive: true, parkingId, status: type != 'entry' })
 
@@ -2057,7 +2148,7 @@ exports.updateMonthlyPassEntry = async (req, res) => {
         const cardNumber = req.body.cardNumber
 
         // const nfcCard = await NFCCard.findOne({nfcNumber:cardNumber})
-        const nfcCard = await NFCCard.findOne({cardNumber})
+        const nfcCard = await NFCCard.findOne({ cardNumber })
 
         const passData = await MonthlyPass.findOne({ cardNumber, isActive: true, parkingId })
 
@@ -2320,13 +2411,13 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
                             iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price, isOperationalHours)
                         else
                             amount = tariffData.price //taking only one slab for opretional hours //added 04-10-2023
-                            // amount += tariffData.price
+                    // amount += tariffData.price
                     else
                         if (tariffData.isIterate == true)
                             iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price, isOperationalHours)
                         else
                             amount = tariffData.price //taking only one slab for opretional hours //added 04-10-2023
-                            // amount += tariffData.price
+                // amount += tariffData.price
             })
         else
             _tariffData.tariffDataNonOperationalHours.map(tariffData => {
@@ -2347,8 +2438,8 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
     }
 
     function iterateFunction(starting, ending, iterateEvery, price, isOperationalHours) {
-        if(isOperationalHours)
-        amount = 0 //initially making it zero //added 04-10-2023
+        if (isOperationalHours)
+            amount = 0 //initially making it zero //added 04-10-2023
 
         for (let i = starting; i <= ending; i += iterateEvery) {
             if (duration >= i) {

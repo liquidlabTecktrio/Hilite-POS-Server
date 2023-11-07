@@ -1172,12 +1172,6 @@ exports.getDayEndReportReport = async (req, res) => {
         const monthStart = new Date(new Date(fromDate.getFullYear(), fromDate.getMonth(), 1).setHours(0));
         const monthEnd = new Date(new Date(fromDate.getFullYear(), (fromDate.getMonth() + 1), 0).setHours(24));
 
-        console.log('req.body.date: ', req.body.date);
-        console.log('fromDate: ', fromDate);
-        console.log('toDate: ', toDate);
-        console.log('monthStart: ', monthStart);
-        console.log('monthEnd: ', monthEnd);
-
 
         // let allParkings = await Parking.find({ isActive: true })
         let allParkings = await Parking.aggregate([
@@ -1219,629 +1213,468 @@ exports.getDayEndReportReport = async (req, res) => {
         // Tickets start
 
         // getting todays Shifts
-        // let todaysShiftsData = await Shift.aggregate([
-        //     {
-        //         '$addFields': {
-        //             'shiftStartDateISO': {
-        //                 '$dateFromString': {
-        //                     'dateString': '$shiftStartTime',
-        //                     'format': "%d-%m-%Y %H:%M:%S"
-        //                 }
-        //             },
-        //             'shiftEndDateISO': {
-        //                 '$dateFromString': {
-        //                     'dateString': '$shiftStopTime',
-        //                     'format': "%d-%m-%Y %H:%M:%S"
-        //                 }
-        //             }
-        //         }
-        //     }, {
-        //         '$match': {
-        //             $or: [
-        //                 {
-        //                     'shiftStartDateISO': {
-        //                         '$gte': fromDate,
-        //                         '$lte': toDate,
-
-        //                     }
-        //                 }, {
-        //                     'shiftEndDateISO': {
-        //                         '$gte': fromDate,
-        //                         '$lte': toDate,
-
-        //                     }
-        //                 }
-        //             ]
-
-        //         }
-        //     },
-        //     {
-        //         '$lookup': {
-        //             'from': 'tickets',
-        //             'localField': '_id',
-        //             'foreignField': 'shiftId',
-        //             // 'foreignField': 'exitShiftId',
-        //             'as': 'entry_tickets'
-        //         }
-        //     },
-        //     {
-        //         '$lookup': {
-        //             'from': 'tickets',
-        //             'localField': '_id',
-        //             // 'foreignField': 'shiftId',
-        //             'foreignField': 'exitShiftId',
-        //             'as': 'exit_tickets'
-        //         }
-        //     }
-        // ])
-
-        let todaysEntryTickets = await Ticket.aggregate([
+        let todaysShiftsData = await Shift.aggregate([
             {
                 '$addFields': {
-                    entryDateISO: {
-                        $toDate:
-                            { $multiply: [{ $add: [{ $toInt: '$entryTime' }, 19800] }, 1000] }
+                    'shiftStartDateISO': {
+                        '$dateFromString': {
+                            'dateString': '$shiftStartTime',
+                            'format': "%d-%m-%Y %H:%M:%S"
+                        }
                     },
-                }
-            }, {
-                '$addFields': {
-                    entryDateISOMatched: {
-                        $cond: {
-                            if: {
-                                '$and': [
-                                    {
-                                        '$gte': [
-                                            '$entryDateISO', fromDate
-                                        ]
-                                    }, {
-                                        '$lte': [
-                                            '$entryDateISO', toDate
-                                        ]
-                                    }
-                                ]
-                            },
-                            then: true,
-                            else: false
+                    'shiftEndDateISO': {
+                        '$dateFromString': {
+                            'dateString': '$shiftStopTime',
+                            'format': "%d-%m-%Y %H:%M:%S"
                         }
                     }
                 }
-            },
-            {
-                '$match': {
-                    entryDateISOMatched: true
-                }
-            },
-
-        ])
-
-        let todaysExitTickets = await Ticket.aggregate([
-            {
-                '$addFields': {
-                    exitDateISO: {
-                        $toDate:
-                            { $multiply: [{ $add: [{ $toInt: '$exitTime' }, 19800] }, 1000] }
-                    },
-                }
             }, {
-                '$addFields': {
-                    exitDateISOMatched: {
-                        $cond: {
-                            if: {
-                                '$and': [
-                                    {
-                                        '$gte': [
-                                            '$exitDateISO', fromDate
-                                        ]
-                                    }, {
-                                        '$lte': [
-                                            '$exitDateISO', toDate
-                                        ]
-                                    }
-                                ]
-                            },
-                            then: true,
-                            else: false
+                '$match': {
+                    $or: [
+                        {
+                            'shiftStartDateISO': {
+                                '$gte': fromDate,
+                                '$lte': toDate,
+
+                            }
+                        }, {
+                            'shiftEndDateISO': {
+                                '$gte': fromDate,
+                                '$lte': toDate,
+
+                            }
                         }
-                    }
+                    ]
+
                 }
             },
             {
-                '$match': {
-                    exitDateISOMatched: true
+                '$lookup': {
+                    'from': 'tickets',
+                    'localField': '_id',
+                    'foreignField': 'shiftId',
+                    // 'foreignField': 'exitShiftId',
+                    'as': 'entry_tickets'
                 }
             },
-
+            {
+                '$lookup': {
+                    'from': 'tickets',
+                    'localField': '_id',
+                    // 'foreignField': 'shiftId',
+                    'foreignField': 'exitShiftId',
+                    'as': 'exit_tickets'
+                }
+            }
         ])
 
         // calculating todays count, revenue, lostTicket and etc 
-        // todaysShiftsData.map(shiftData => {
+        todaysShiftsData.map(shiftData => {
 
-        // getting only count from entry tickets
+            // getting only count from entry tickets
 
-        // shiftData.entry_tickets.map(ticket => {
-        todaysEntryTickets.map(ticket => {
+            shiftData.entry_tickets.map(ticket => {
+                switch (ticket.vehicleType) {
+                    case '4':
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-            switch (ticket.vehicleType) {
-                case '4':
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        break;
+                    case '2':
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    break;
-                case '2':
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        break;
+                    case '3':
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    break;
-                case '3':
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        break;
+                    default:
+                        break;
+                }
+            })
 
-                    dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    break;
-                default:
-                    break;
-            }
+
+            // getting count, revenue, lostTicket and etc from exit tickets
+
+            shiftData.exit_tickets.map(ticket => {
+
+                switch (ticket.vehicleType) {
+                    case '4':
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        if (ticket.lostTicket) {
+                            dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        if (ticket.amount > 0) {
+
+                            if (ticket.paymentType == 'cash') {
+                                dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+
+                            if (ticket.paymentType == 'upi') {
+                                dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+                        }
+                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
+                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        break;
+
+                    case '2':
+
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        if (ticket.lostTicket) {
+                            dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        if (ticket.amount > 0) {
+
+                            if (ticket.paymentType == 'cash') {
+                                dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+
+                            if (ticket.paymentType == 'upi') {
+                                dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+                        }
+                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
+                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        break;
+
+                    case '3':
+
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        if (ticket.lostTicket) {
+                            dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                            dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        if (ticket.amount > 0) {
+
+                            if (ticket.paymentType == 'cash') {
+                                dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+
+                            if (ticket.paymentType == 'upi') {
+                                dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+                        }
+                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
+                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                            dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        break;
+
+                    default:
+                        break;
+                }
+            })
+
         })
-
-        // getting count, revenue, lostTicket and etc from exit tickets
-
-        // shiftData.exit_tickets.map(ticket => {
-        todaysExitTickets.map(ticket => {
-
-            switch (ticket.vehicleType) {
-                case '4':
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (ticket.lostTicket) {
-                        dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    if (ticket.amount > 0) {
-
-                        if (ticket.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-
-                        if (ticket.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-                    }
-                    else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                        dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    break;
-
-                case '2':
-
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (ticket.lostTicket) {
-                        dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    if (ticket.amount > 0) {
-
-                        if (ticket.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-
-                        if (ticket.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-                    }
-                    else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                        dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    break;
-
-                case '3':
-
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (ticket.lostTicket) {
-                        dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    if (ticket.amount > 0) {
-
-                        if (ticket.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-
-                        if (ticket.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-                    }
-                    else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                        dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    break;
-
-                default:
-                    break;
-            }
-        })
-
-        // })
 
 
         // getting this month's Shifts
-        // let thisMonthShiftsData = await Shift.aggregate([
-        //     {
-        //         '$addFields': {
-        //             'shiftStartDateISO': {
-        //                 '$dateFromString': {
-        //                     'dateString': '$shiftStartTime',
-        //                     'format': "%d-%m-%Y %H:%M:%S"
-        //                 }
-        //             },
-        //             'shiftEndDateISO': {
-        //                 '$dateFromString': {
-        //                     'dateString': '$shiftStopTime',
-        //                     'format': "%d-%m-%Y %H:%M:%S"
-        //                 }
-        //             }
-        //         }
-        //     }, {
-        //         '$match': {
-        //             $or: [
-        //                 {
-        //                     'shiftStartDateISO': {
-        //                         '$gte': monthStart,
-        //                         '$lte': toDate,
-
-        //                     }
-        //                 }, {
-        //                     'shiftEndDateISO': {
-        //                         '$gte': monthStart,
-        //                         '$lte': toDate,
-
-        //                     }
-        //                 }
-        //             ]
-
-        //         }
-        //     },
-        //     {
-        //         '$lookup': {
-        //             'from': 'tickets',
-        //             'localField': '_id',
-        //             'foreignField': 'shiftId',
-        //             // 'foreignField': 'exitShiftId',
-        //             'as': 'entry_tickets'
-        //         }
-        //     },
-        //     {
-        //         '$lookup': {
-        //             'from': 'tickets',
-        //             'localField': '_id',
-        //             // 'foreignField': 'shiftId',
-        //             'foreignField': 'exitShiftId',
-        //             'as': 'exit_tickets'
-        //         }
-        //     }
-        // ])
-
-
-        let thisMonthEntryTickets = await Ticket.aggregate([
+        let thisMonthShiftsData = await Shift.aggregate([
             {
                 '$addFields': {
-                    entryDateISO: {
-                        $toDate:
-                            { $multiply: [{ $add: [{ $toInt: '$entryTime' }, 19800] }, 1000] }
+                    'shiftStartDateISO': {
+                        '$dateFromString': {
+                            'dateString': '$shiftStartTime',
+                            'format': "%d-%m-%Y %H:%M:%S"
+                        }
                     },
-                }
-            }, {
-                '$addFields': {
-                    entryDateISOMatched: {
-                        $cond: {
-                            if: {
-                                '$and': [
-                                    {
-                                        '$gte': [
-                                            '$entryDateISO', monthStart
-                                        ]
-                                    }, {
-                                        '$lte': [
-                                            '$entryDateISO', toDate
-                                        ]
-                                    }
-                                ]
-                            },
-                            then: true,
-                            else: false
+                    'shiftEndDateISO': {
+                        '$dateFromString': {
+                            'dateString': '$shiftStopTime',
+                            'format': "%d-%m-%Y %H:%M:%S"
                         }
                     }
                 }
-            },
-            {
-                '$match': {
-                    entryDateISOMatched: true
-                }
-            },
-
-        ])
-
-        let thisMonthExitTickets = await Ticket.aggregate([
-            {
-                '$addFields': {
-                    exitDateISO: {
-                        $toDate:
-                            { $multiply: [{ $add: [{ $toInt: '$exitTime' }, 19800] }, 1000] }
-                    },
-                }
             }, {
-                '$addFields': {
-                    exitDateISOMatched: {
-                        $cond: {
-                            if: {
-                                '$and': [
-                                    {
-                                        '$gte': [
-                                            '$exitDateISO', monthStart
-                                        ]
-                                    }, {
-                                        '$lte': [
-                                            '$exitDateISO', toDate
-                                        ]
-                                    }
-                                ]
-                            },
-                            then: true,
-                            else: false
+                '$match': {
+                    $or: [
+                        {
+                            'shiftStartDateISO': {
+                                '$gte': monthStart,
+                                '$lte': toDate,
+
+                            }
+                        }, {
+                            'shiftEndDateISO': {
+                                '$gte': monthStart,
+                                '$lte': toDate,
+
+                            }
                         }
-                    }
+                    ]
+
                 }
             },
             {
-                '$match': {
-                    exitDateISOMatched: true
+                '$lookup': {
+                    'from': 'tickets',
+                    'localField': '_id',
+                    'foreignField': 'shiftId',
+                    // 'foreignField': 'exitShiftId',
+                    'as': 'entry_tickets'
                 }
             },
-
+            {
+                '$lookup': {
+                    'from': 'tickets',
+                    'localField': '_id',
+                    // 'foreignField': 'shiftId',
+                    'foreignField': 'exitShiftId',
+                    'as': 'exit_tickets'
+                }
+            }
         ])
 
         // calculating this months's count, revenue, lostTicket and etc 
-        // thisMonthShiftsData.map(shiftData => {
+        thisMonthShiftsData.map(shiftData => {
 
-        // getting only count from entry tickets
+            // getting only count from entry tickets
 
-        // shiftData.entry_tickets.map(ticket => {
-        thisMonthEntryTickets.map(ticket => {
-            switch (ticket.vehicleType) {
-                case '4':
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+            shiftData.entry_tickets.map(ticket => {
+                switch (ticket.vehicleType) {
+                    case '4':
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    break;
-                case '2':
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        break;
+                    case '2':
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    break;
-                case '3':
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        break;
+                    case '3':
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Entry Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
 
-                    break;
-                default:
-                    break;
-            }
+                        break;
+                    default:
+                        break;
+                }
+            })
+
+
+            // getting count, revenue, lostTicket and etc from exit tickets
+
+            shiftData.exit_tickets.map(ticket => {
+
+                switch (ticket.vehicleType) {
+                    case '4':
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        if (ticket.lostTicket) {
+                            dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        if (ticket.amount > 0) {
+
+                            if (ticket.paymentType == 'cash') {
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+
+                            if (ticket.paymentType == 'upi') {
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+                        }
+                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
+                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        break;
+
+                    case '2':
+
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+
+                        if (ticket.lostTicket) {
+                            dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        if (ticket.amount > 0) {
+
+                            if (ticket.paymentType == 'cash') {
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+
+                            if (ticket.paymentType == 'upi') {
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+                        }
+                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
+                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
+                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+
+                        break;
+
+                    case '3':
+
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                        dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+
+
+                        if (ticket.lostTicket) {
+                            dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                            dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+                        if (ticket.amount > 0) {
+
+                            if (ticket.paymentType == 'cash') {
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+
+                            if (ticket.paymentType == 'upi') {
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+
+                                if (ticket.lostTicket) {
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
+                                    dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
+                                }
+                            }
+                        }
+                        else if (ticket.amount <= 0 && ticket.duration <= 10) {
+                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
+                            dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(shiftData.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
+                        }
+
+
+                        break;
+
+                    default:
+                        break;
+                }
+            })
+
         })
-
-
-        // getting count, revenue, lostTicket and etc from exit tickets
-
-        // shiftData.exit_tickets.map(ticket => {
-        thisMonthExitTickets.map(ticket => {
-
-            switch (ticket.vehicleType) {
-                case '4':
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    if (ticket.lostTicket) {
-                        dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    if (ticket.amount > 0) {
-
-                        if (ticket.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-
-                        if (ticket.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-                    }
-                    else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                        dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('4 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    break;
-
-                case '2':
-
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-
-                    if (ticket.lostTicket) {
-                        dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    if (ticket.amount > 0) {
-
-                        if (ticket.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-
-                        if (ticket.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-                    }
-                    else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                        dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('2 Wheeler')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-
-                    break;
-
-                case '3':
-
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Vehicle Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-                    dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                    dayEndReportData[rowNames.indexOf('MTD Exit Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-
-
-                    if (ticket.lostTicket) {
-                        dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD Lost Ticket Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-                    if (ticket.amount > 0) {
-
-                        if (ticket.paymentType == 'cash') {
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection Cash')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-
-                        if (ticket.paymentType == 'upi') {
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                            dayEndReportData[rowNames.indexOf('MTD Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-
-                            if (ticket.lostTicket) {
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += ticket.amount
-                                dayEndReportData[rowNames.indexOf('MTD Lost Ticket Revenue Collection UPI')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += ticket.amount
-                            }
-                        }
-                    }
-                    else if (ticket.amount <= 0 && ticket.duration <= 10) {
-                        dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Bicycle')].value += 1
-                        dayEndReportData[rowNames.indexOf('MTD FOC upto 10 min Count')].parkingsWiseData[allParkingsIds.indexOf(ticket.parkingId.toString())].vehicleWiseData[vehicleTypes.indexOf('Total')].value += 1
-                    }
-
-
-                    break;
-
-                default:
-                    break;
-            }
-        })
-
-        // })
 
         // Tickets end
 
