@@ -335,11 +335,13 @@ exports.createManualExit = async (req, res) => {
 
             // const amount = index < 210 ? 25 : 0;
             // const paymentType = 'cash';
-            const amount = index < 181 ? 25 : 0;
-            const paymentType = index < 120 ? 'cash' : 'upi';
+            let amount = index < 201 ? 25 : 0;
+            const paymentType = index < 140 ? 'cash' : 'upi';
+            if(paymentType=='cash'&& index == 139)
+            amount = 29
             // const lostTicket = false;
             let exitTime = parseInt(transaction.entryTime);
-            if (index < 181)
+            if (index < 201)
                 exitTime += 19800
             else
                 exitTime += 480
@@ -407,11 +409,11 @@ exports.createManualExit = async (req, res) => {
 
             // const amount = index < 312 ? 10 : 0;
             // const paymentType = 'cash';
-            const amount = index < 297 ? 10 : 0;
-            const paymentType = index < 137 ? 'cash' : 'upi';
+            const amount = index < 332 ? 10 : 0;
+            const paymentType = index < 172 ? 'cash' : 'upi';
             // const lostTicket = false;
             let exitTime = parseInt(transaction.entryTime);
-            if (index < 297)
+            if (index < 332)
                 exitTime += 19800
             else
                 exitTime += 480
