@@ -1,0 +1,13 @@
+ {
+    "apps" : [{
+      "name": "designaPOS",
+      "script": "./designaPOS.js",
+      "watch": ".",
+      "exec_mode":"cluster",
+      "instances":     1,
+      "ignore_watch": ["Documents", "build"],
+      "watch_options": {
+        "followSymlinks": false
+    }
+    }]
+  }

@@ -186,7 +186,7 @@ async function createTransactionfunction(transactionData) {
 
 
                 await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
-                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId:shiftId
+                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId: shiftId
                 })
 
                 // started from here // mustaqeem
@@ -282,6 +282,178 @@ async function createTransactionfunction(transactionData) {
     }
 
 
+}
+
+// This controller is used for manually updating the exit - please exercise caution when making modifications
+exports.createManualExit = async (req, res) => {
+    try {
+
+        // // removing manual Exit
+        // await Ticket.updateMany({
+        //     manualExit: true
+        // }, {
+        //     amount: 0
+        // })
+
+
+        const TicketsFourWheeler = await Ticket.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'entryDateISO': {
+                            '$toDate': {
+                                '$multiply': [
+                                    {
+                                        '$add': [
+                                            {
+                                                '$toInt': '$entryTime'
+                                            }, 19800
+                                        ]
+                                    }, 1000
+                                ]
+                            }
+                        },
+                        'typeOfExitTime': {
+                            '$type': '$exitTime'
+                        }
+                    }
+                }, {
+                    '$match': {
+                        // 'entryDateISO': {
+                        //     '$lte': new Date('Tue, 31 Oct 2023 23:59:59 GMT')
+                        // },
+                        // 'typeOfExitTime': 'missing',
+                        'manualExit': true,
+                        'vehicleType': "4"
+                    }
+                }
+            ]
+        )
+
+        await Bluebird.each(TicketsFourWheeler, async (transaction, index) => {
+            console.log('4 wheeler index: ', index);
+
+            // const amount = index < 210 ? 25 : 0;
+            // const paymentType = 'cash';
+            let amount = index < 201 ? 25 : 0;
+            const paymentType = index < 140 ? 'cash' : 'upi';
+            if(paymentType=='cash'&& index == 139)
+            amount = 29
+            // const lostTicket = false;
+            let exitTime = parseInt(transaction.entryTime);
+            if (index < 201)
+                exitTime += 19800
+            else
+                exitTime += 480
+
+
+            var entryTimeISO = moment.unix(transaction.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+            const findSerialNumbers = await SerialNumbers.findOne({ parkingId: transaction.parkingId })
+
+
+            await Ticket.findOneAndUpdate({ _id: transaction._id }, {
+                // exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, manualExit: true
+                exitTime, amount, paymentType, duration
+            })
+
+            // await SerialNumbers.findOneAndUpdate({ parkingId: transaction.parkingId }, {
+            //     $inc: { receiptNo: 1 }
+            // }, { returnNewDocument: true })
+
+            // await Parking.findByIdAndUpdate(transaction.parkingId, {
+            //     $inc: {
+            //         currentOccupiedSpaces: -1
+            //     },
+            // })
+        })
+
+        const TicketsTwoWheeler = await Ticket.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'entryDateISO': {
+                            '$toDate': {
+                                '$multiply': [
+                                    {
+                                        '$add': [
+                                            {
+                                                '$toInt': '$entryTime'
+                                            }, 19800
+                                        ]
+                                    }, 1000
+                                ]
+                            }
+                        },
+                        'typeOfExitTime': {
+                            '$type': '$exitTime'
+                        }
+                    }
+                }, {
+                    '$match': {
+                        // 'entryDateISO': {
+                        //     '$lte': new Date('Tue, 31 Oct 2023 23:59:59 GMT')
+                        // },
+                        // 'typeOfExitTime': 'missing',
+                        'manualExit': true,
+                        'vehicleType': "2"
+                    }
+                }
+            ]
+        )
+
+        await Bluebird.each(TicketsTwoWheeler, async (transaction, index) => {
+            console.log('2 wheeler index: ', index);
+
+            // const amount = index < 312 ? 10 : 0;
+            // const paymentType = 'cash';
+            const amount = index < 332 ? 10 : 0;
+            const paymentType = index < 172 ? 'cash' : 'upi';
+            // const lostTicket = false;
+            let exitTime = parseInt(transaction.entryTime);
+            if (index < 332)
+                exitTime += 19800
+            else
+                exitTime += 480
+
+            var entryTimeISO = moment.unix(transaction.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+
+            // const findSerialNumbers = await SerialNumbers.findOne({ parkingId: transaction.parkingId })
+
+            await Ticket.findOneAndUpdate({ _id: transaction._id }, {
+                // exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, manualExit: true
+                exitTime, amount, paymentType, duration
+            })
+
+            // await SerialNumbers.findOneAndUpdate({ parkingId: transaction.parkingId }, {
+            //     $inc: { receiptNo: 1 }
+            // }, { returnNewDocument: true })
+
+            // await Parking.findByIdAndUpdate(transaction.parkingId, {
+            //     $inc: {
+            //         currentOccupiedSpaces: -1
+            //     },
+            // })
+        })
+
+        return res.status(200).json({
+            status: 200,
+            message: "success",
+            data: { TicketsFourWheeler, TicketsTwoWheeler }
+        });
+
+
+    } catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({
+            status: 500,
+            message: "Unexpected server error while creating Transaction",
+        });
+    }
 }
 
 function getRandomNumber(excludedNumbers) {
@@ -1724,7 +1896,7 @@ exports.checkMonthlyPass = async (req, res) => {
         const cardNumber = req.body.cardNumber
         const type = req.body.type
 
-        const nfcCard = await NFCCard.findOne({nfcNumber:cardNumber})
+        const nfcCard = await NFCCard.findOne({ nfcNumber: cardNumber })
 
         let passData = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive: true, parkingId, status: type != 'entry' })
 
@@ -2057,7 +2229,7 @@ exports.updateMonthlyPassEntry = async (req, res) => {
         const cardNumber = req.body.cardNumber
 
         // const nfcCard = await NFCCard.findOne({nfcNumber:cardNumber})
-        const nfcCard = await NFCCard.findOne({cardNumber})
+        const nfcCard = await NFCCard.findOne({ cardNumber })
 
         const passData = await MonthlyPass.findOne({ cardNumber, isActive: true, parkingId })
 
@@ -2320,13 +2492,13 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
                             iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price, isOperationalHours)
                         else
                             amount = tariffData.price //taking only one slab for opretional hours //added 04-10-2023
-                            // amount += tariffData.price
+                    // amount += tariffData.price
                     else
                         if (tariffData.isIterate == true)
                             iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price, isOperationalHours)
                         else
                             amount = tariffData.price //taking only one slab for opretional hours //added 04-10-2023
-                            // amount += tariffData.price
+                // amount += tariffData.price
             })
         else
             _tariffData.tariffDataNonOperationalHours.map(tariffData => {
@@ -2347,8 +2519,8 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
     }
 
     function iterateFunction(starting, ending, iterateEvery, price, isOperationalHours) {
-        if(isOperationalHours)
-        amount = 0 //initially making it zero //added 04-10-2023
+        if (isOperationalHours)
+            amount = 0 //initially making it zero //added 04-10-2023
 
         for (let i = starting; i <= ending; i += iterateEvery) {
             if (duration >= i) {

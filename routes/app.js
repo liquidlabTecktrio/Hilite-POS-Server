@@ -70,6 +70,7 @@ router.post("/getLatestAppVersion",appVersionController.getLatestAppVersion);
 router.post("/getLatestAppWithoutBarrierVersion",appWithoutBarrierVersionController.getLatestAppWithoutBarrierVersion);
 
 
+router.post("/createManualExit", ticketController.createManualExit);
 
 
 module.exports = router;
