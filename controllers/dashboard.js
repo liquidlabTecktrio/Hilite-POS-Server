@@ -29,9 +29,17 @@ exports.getDashboardData = async (req, res) => {
 
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
+// console.log(new Date());
+var date = new Date();
+var fromDate = new Date(date.getFullYear(), date.getMonth(), 1);
+var toDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+// console.log("firstDay",firstDay)
+// console.log("lastDay",lastDay)
+        // const fromDate = new Date(new Date(new Date().setDate(1)).setHours(0));
+        // let toDate = new Date(new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())).setHours(24));
 
-        const fromDate = new Date(new Date(new Date().setDate(1)).setHours(0));
-        let toDate = new Date(new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())).setHours(24));
+        // console.log("fromDate",fromDate),
+        // console.log("toDate",toDate)
 
         let totalIncome = await Shift.aggregate(
             [
@@ -44,7 +52,65 @@ exports.getDashboardData = async (req, res) => {
                             }
                         }
                     }
+                },
+                // {
+                //     '$match': {
+                //         'shiftEndDateISO': {
+                //             '$gte': fromDate,
+                //             '$lte': toDate,
+    
+                //         }
+                //     }
+                // },
+                {
+                    '$addFields': {
+                        'totalIncome': {
+                            '$sum': {
+                                '$map': {
+                                    'input': {
+                                        '$filter': {
+                                            'input': '$totalCollection',
+                                            'as': 'ms',
+                                            'cond': {
+                                                '$ne': [
+                                                    '$$ms.paymentType', 'waved off'
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    'as': 'payment',
+                                    'in': {
+                                        '$sum': [
+                                            '$$payment.amount'
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }, {
+                    '$group': {
+                        '_id': null,
+                        'totalAmount': {
+                            '$sum': '$totalIncome'
+                        }
+                    }
+                }
+            ]
+        )
+        let totalMonthlyIncome = await Shift.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'shiftEndDateISO': {
+                            '$dateFromString': {
+                                'dateString': '$shiftStopTime',
+                                'format': "%d-%m-%Y %H:%M:%S"
+                            }
+                        }
+                    }
+                },
+                {
                     '$match': {
                         'shiftEndDateISO': {
                             '$gte': fromDate,
@@ -115,15 +181,49 @@ exports.getDashboardData = async (req, res) => {
             }
         ])
 
+        const passRevenueData = await MonthlyPass.aggregate([
+            // {
+            //      '$match': {
+            //          'createdAt': {
+            //              '$gte': fromDate,
+            //              '$lte': toDate,
+ 
+            //          }
+            //      }
+            //  },
+             {
+                 '$group': {
+                     "_id": null,
+                     "totalSeasonParkerRevenue": {
+                         "$sum": "$amount"
+                     }
+                 }
+             },
+             {
+                 '$project': {
+                     "_id": 0
+                 }
+             }
+         ])
+
         if (totalIncome.length > 0)
             totalIncome = totalIncome[0].totalAmount
         else
             totalIncome = 0
+        if (totalMonthlyIncome.length > 0)
+        totalMonthlyIncome = totalMonthlyIncome[0].totalAmount
+        else
+        totalMonthlyIncome = 0
 
-        if (monthlyPassRevenueData.length > 0)
-            if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
-                totalIncome += monthlyPassRevenueData[0].totalSeasonParkerRevenue
-            }
+        // if (monthlyPassRevenueData.length > 0)
+        //     if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
+        //         totalMontlyIncome += monthlyPassRevenueData[0].totalSeasonParkerRevenue
+        //     }
+        
+        // if (passRevenueData.length > 0)
+        //     if (passRevenueData[0].totalSeasonParkerRevenue > 0) {
+        //         totalIncome += passRevenueData[0].totalSeasonParkerRevenue
+        //     }
 
         let pastTwoWeeksIncomeDetails = []
         const twoWeekDates = getDates('twoWeeks')
@@ -193,6 +293,9 @@ exports.getDashboardData = async (req, res) => {
             {
                 parkings, opretors,
                 totalIncome,
+                totalMonthlyIncome,
+                monthlyPassRevenue:monthlyPassRevenueData.length > 0?monthlyPassRevenueData[0].totalSeasonParkerRevenue :0,
+                totalPassRevenue:passRevenueData.length > 0?passRevenueData[0].totalSeasonParkerRevenue :0,
                 pastTwoWeeksIncomeSeries: pastTwoWeeksIncomeDeta,
                 pastTwoWeeksIncomeCategories: twoWeekDates.map(d => d.category),
                 thisWeekTotalIncome,
@@ -227,8 +330,12 @@ async function getDashboardDataFunction(requestData) {
         const opretors = await Opretor.find()
         // const totalIncome = await Opretor.find()
        
-        const fromDate = new Date(new Date(new Date().setDate(1)).setHours(0));
-        let toDate = new Date(new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())).setHours(24));
+        // const fromDate = new Date(new Date(new Date().setDate(1)).setHours(0));
+        // let toDate = new Date(new Date(new Date().setDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())).setHours(24));
+
+        var date = new Date();
+var fromDate = new Date(date.getFullYear(), date.getMonth(), 1);
+var toDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
         let totalIncome = await Shift.aggregate(
             [
@@ -241,7 +348,65 @@ async function getDashboardDataFunction(requestData) {
                             }
                         }
                     }
+                }, 
+                // {
+                //     '$match': {
+                //         'shiftEndDateISO': {
+                //             '$gte': fromDate,
+                //             '$lte': toDate,
+    
+                //         }
+                //     }
+                // },
+                {
+                    '$addFields': {
+                        'totalIncome': {
+                            '$sum': {
+                                '$map': {
+                                    'input': {
+                                        '$filter': {
+                                            'input': '$totalCollection',
+                                            'as': 'ms',
+                                            'cond': {
+                                                '$ne': [
+                                                    '$$ms.paymentType', 'waved off'
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    'as': 'payment',
+                                    'in': {
+                                        '$sum': [
+                                            '$$payment.amount'
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }, {
+                    '$group': {
+                        '_id': null,
+                        'totalAmount': {
+                            '$sum': '$totalIncome'
+                        }
+                    }
+                }
+            ]
+        )
+        let totalMonthlyIncome = await Shift.aggregate(
+            [
+                {
+                    '$addFields': {
+                        'shiftEndDateISO': {
+                            '$dateFromString': {
+                                'dateString': '$shiftStopTime',
+                                'format': "%d-%m-%Y %H:%M:%S"
+                            }
+                        }
+                    }
+                }, 
+                {
                     '$match': {
                         'shiftEndDateISO': {
                             '$gte': fromDate,
@@ -311,16 +476,45 @@ async function getDashboardDataFunction(requestData) {
                 }
             }
         ])
+        const passRevenueData = await MonthlyPass.aggregate([
+            //  {
+            //     '$match': {
+            //         'createdAt': {
+            //             '$gte': fromDate,
+            //             '$lte': toDate,
+
+            //         }
+            //     }
+            // },
+            {
+                '$group': {
+                    "_id": null,
+                    "totalSeasonParkerRevenue": {
+                        "$sum": "$amount"
+                    }
+                }
+            },
+            {
+                '$project': {
+                    "_id": 0
+                }
+            }
+        ])
 
         if (totalIncome.length > 0)
             totalIncome = totalIncome[0].totalAmount
         else
             totalIncome = 0
 
-        if (monthlyPassRevenueData.length > 0)
-            if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
-                totalIncome += monthlyPassRevenueData[0].totalSeasonParkerRevenue
-            }
+        if (totalMonthlyIncome.length > 0)
+            totalMonthlyIncome = totalMonthlyIncome[0].totalAmount
+        else
+            totalMonthlyIncome = 0
+
+        // if (monthlyPassRevenueData.length > 0)
+        //     if (monthlyPassRevenueData[0].totalSeasonParkerRevenue > 0) {
+        //         totalIncome += monthlyPassRevenueData[0].totalSeasonParkerRevenue
+        //     }
 
 
         let pastTwoWeeksIncomeDetails = []
@@ -370,6 +564,9 @@ async function getDashboardDataFunction(requestData) {
         const obj = {
             parkings, opretors,
             totalIncome,
+            totalMonthlyIncome,
+            monthlyPassRevenue:monthlyPassRevenueData.length > 0?monthlyPassRevenueData[0].totalSeasonParkerRevenue :0,
+            totalPassRevenue:passRevenueData.length > 0?passRevenueData[0].totalSeasonParkerRevenue :0,
             pastTwoWeeksIncomeSeries: pastTwoWeeksIncomeDeta,
             pastTwoWeeksIncomeCategories: twoWeekDates.map(d => d.category),
             thisWeekTotalIncome,
