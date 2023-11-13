@@ -138,13 +138,16 @@ exports.dayEndReportExcelFunc = async (obj) => {
         // Add data to all parking vehicle wise to the worksheet
         obj.dayEndReportData.forEach(rowData => {
 
-            // let colums = [rowData.name]
-            let colums = [getFormatedNameForRows(rowData.name)]
-
-            obj.allParkings.map(p => {
-                rowData.parkingsWiseData.filter(pp => pp._id == p._id).map(p => p.vehicleWiseData.map(v => { colums.push(v.value) }))
-            })
-            worksheet.addRow(colums);
+            if(rowData.name != 'Vehicle Count' && rowData.name != 'MTD Vehicle Count'){
+                
+                // let colums = [rowData.name]
+                let colums = [getFormatedNameForRows(rowData.name)]
+                
+                obj.allParkings.map(p => {
+                    rowData.parkingsWiseData.filter(pp => pp._id == p._id).map(p => p.vehicleWiseData.map(v => { colums.push(v.value) }))
+                })
+                worksheet.addRow(colums);
+            }
         });
 
 
