@@ -337,8 +337,8 @@ exports.createManualExit = async (req, res) => {
             // const paymentType = 'cash';
             let amount = index < 201 ? 25 : 0;
             const paymentType = index < 140 ? 'cash' : 'upi';
-            if(paymentType=='cash'&& index == 139)
-            amount = 29
+            if (paymentType == 'cash' && index == 139)
+                amount = 29
             // const lostTicket = false;
             let exitTime = parseInt(transaction.entryTime);
             if (index < 201)
@@ -1544,6 +1544,20 @@ exports.checkLostTicket = async (req, res) => {
             if (checkTransaction[0].exitTime) {
                 utils.commonResponce(res, 201, "Vehicle already exit the carpark or no entry found", vehicleNo);
             }
+
+            else if (checkTransaction[0].cancelledTicket) {
+                return res.status(201).json({
+                    status: 201,
+                    message: "Ticket has been cancelled",
+                });
+            } else if (checkTransaction[0].fraudTicket) {
+                return res.status(201).json({
+                    status: 201,
+                    message: "Fraud ticket found",
+                });
+            }
+
+
             else {
                 // // if (checkTransaction[0].transactionType == "entry") {
                 // ticketId = checkTransaction[0].ticketId;
@@ -1889,12 +1903,102 @@ function iterateFunction(duration, starting, ending, iterateEvery, price) {
     }
 }
 
+// exports.checkMonthlyPass = async (req, res) => {
+//     try {
+//         console.log('checkMonthlyPass: ', req.body);
+//         const parkingId = req.body.parkingId
+//         const cardNumber = req.body.cardNumber
+//         const type = req.body.type
+
+//         const nfcCard = await NFCCard.findOne({ nfcNumber: cardNumber })
+
+//         let passData = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive: true, parkingId, status: type != 'entry' })
+
+//         if (passData) {
+
+//             passData = JSON.parse(JSON.stringify(passData))
+//             passData.isActive = (new Date(passData.endDate.split('-').reverse().join('-')) >= new Date())
+//             // console.log('new Date(passData.en ', new Date(passData.endDate.split('-').reverse().join('-')));
+//             // console.log('new Date(passData.en ', new Date());
+//             // if(passData.isActive)
+//             // passData.isActive = (new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.fromTime)  >= new Date() &&   new Date() <= new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.toTime))
+
+//             // const nfcTransaction = await NFCTransaction.findOne({ monthlyPassId: passData._id })
+//             const nfcTransaction = await NFCTransaction.aggregate([
+//                 {
+//                     '$match': {
+//                         'monthlyPassId': mongoose.Types.ObjectId(passData._id)
+//                     }
+//                 }, {
+//                     '$sort': {
+//                         'updatedAt': -1
+//                     }
+//                 }, {
+//                     '$limit': 1
+//                 }
+//             ])
+
+//             console.log('passData: ', passData);
+
+
+//             if (type != 'entry')
+//                 if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime)
+//                     utils.commonResponce(
+//                         res,
+//                         201,
+//                         "No entry found for this NFC",
+//                     );
+//                 else {
+
+//                     passData.ticketId = nfcTransaction[0].ticketId
+//                     passData.entryTime = nfcTransaction[0].entryTime
+
+//                     utils.commonResponce(
+//                         res,
+//                         200,
+//                         "Successfully fetched card",
+//                         passData
+//                     );
+//                 }
+//             else {
+//                 utils.commonResponce(
+//                     res,
+//                     200,
+//                     "Successfully fetched card",
+//                     passData
+//                 );
+//             }
+
+
+
+//         } else {
+
+//             utils.commonResponce(
+//                 res,
+//                 201,
+//                 type == 'entry' ? "Card already inside or card details not found" : "Card details not found",
+//             );
+
+//         }
+
+//     } catch (error) {
+//         console.log('error: ', error);
+//         return res.status(500).json({
+//             status: 500,
+//             message: "Unexpected server error while fetching card",
+//         });
+
+//     }
+
+// }
+
 exports.checkMonthlyPass = async (req, res) => {
     try {
         console.log('checkMonthlyPass: ', req.body);
         const parkingId = req.body.parkingId
         const cardNumber = req.body.cardNumber
         const type = req.body.type
+        const exitTime = req.body.exitTime
 
         const nfcCard = await NFCCard.findOne({ nfcNumber: cardNumber })
 
@@ -1910,9 +2014,10 @@ exports.checkMonthlyPass = async (req, res) => {
             // passData.isActive = (new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.fromTime)  >= new Date() &&   new Date() <= new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.toTime))
 
             // const nfcTransaction = await NFCTransaction.findOne({ monthlyPassId: passData._id })
-            const nfcTransaction = await NFCTransaction.aggregate([
+            const nfcTransaction = await Ticket.aggregate([
                 {
                     '$match': {
+                        'isNFCTicket': true,
                         'monthlyPassId': mongoose.Types.ObjectId(passData._id)
                     }
                 }, {
@@ -1927,17 +2032,32 @@ exports.checkMonthlyPass = async (req, res) => {
             console.log('passData: ', passData);
 
 
-            if (type != 'entry')
-                if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime)
+            if (type != 'entry') {
+                if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime) {
                     utils.commonResponce(
                         res,
                         201,
                         "No entry found for this NFC",
                     );
+                }
+                else if (nfcTransaction[0].cancelledTicket) {
+                    return res.status(201).json({
+                        status: 201,
+                        message: "Ticket has been cancelled",
+                    });
+                } else if (nfcTransaction[0].fraudTicket) {
+                    return res.status(201).json({
+                        status: 201,
+                        message: "Fraud ticket found",
+                    });
+                }
                 else {
+
 
                     passData.ticketId = nfcTransaction[0].ticketId
                     passData.entryTime = nfcTransaction[0].entryTime
+
+                    passData.charge = calculateChargeForMonthlyPass(passData, exitTime)
 
                     utils.commonResponce(
                         res,
@@ -1946,7 +2066,8 @@ exports.checkMonthlyPass = async (req, res) => {
                         passData
                     );
                 }
-            else {
+
+            } else {
                 utils.commonResponce(
                     res,
                     200,
@@ -1978,6 +2099,148 @@ exports.checkMonthlyPass = async (req, res) => {
 
 }
 
+async function calculateChargeForMonthlyPass(passData, exitTime) {
+    console.log('calculateChargeForMonthlyPass: ', transactionData);
+    let charge = 0;
+    try {
+
+        let lostTicket = false;
+
+        const findParking = await Parking.findById(passData.parkingId)
+
+        if (findParking) {
+            let tariffData = []
+
+            const data1 = returnTariffID(2)
+            if (data1.tariffId) {
+                const data_1 = await Tariff.findById(data1.tariffId)
+                tariffData.push({
+                    tariffType: data1.tariffType,
+                    tariffData: data_1
+                })
+            }
+
+            const data2 = returnTariffID(3)
+            if (data2.tariffId) {
+                const data_2 = await Tariff.findById(data2.tariffId)
+                tariffData.push({
+                    tariffType: data2.tariffType,
+                    tariffData: data_2
+                })
+            }
+
+            const data3 = returnTariffID(4)
+            if (data3.tariffId) {
+                const data_3 = await Tariff.findById(data3.tariffId)
+                tariffData.push({
+                    tariffType: data3.tariffType,
+                    tariffData: data_3
+                })
+            }
+
+            function returnTariffID(tariffType) {
+                let obj = {}
+                const dayIndex = new Date().getDay()
+                const data = findParking.connectedTariff.filter(t => t.tariffType == tariffType)
+                if (data.length == 1) {
+
+                    const data2 = data[0].tariffData.filter(t => t.dayIndex == dayIndex)
+                    if (data2.length > 0)
+                        obj = {
+                            tariffId: data2[0].tariffId,
+                            tariffType: tariffType
+                        }
+                }
+                return obj
+            }
+
+            let startingOperationalHours = findParking.startingOperationalHours ? findParking.startingOperationalHours : '08:00:00'
+            let endingOperationalHours = findParking.endingOperationalHours ? findParking.endingOperationalHours : '23:59:59'
+            let startingNonOperationalHours = findParking.startingNonOperationalHours ? findParking.startingNonOperationalHours : '00:00:00'
+            let endingNonOperationalHours = findParking.endingNonOperationalHours ? findParking.endingNonOperationalHours : '07:59:59'
+
+            let _tariffData = tariffData.filter(t => t.tariffType == passData.vehicleType)[0].tariffData
+
+
+            var entryTimeISO = moment.unix(passData.entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
+            var totalMin = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
+            let charge = 0
+            let fine = lostTicket ? _tariffData.lostTicket : 0
+            var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
+
+            let _entrytime = moment.unix(entryTime).tz("Asia/Calcutta")
+            let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
+            var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
+
+
+            if (_tariffData.tariffEnableForNonOperationalHours) {
+
+                let entry_Time = new Date(_entrytime.format("MM-DD-YYYY HH:mm:ss"))
+                let exit_Time = new Date(_exitTime.format("MM-DD-YYYY HH:mm:ss"))
+
+                // calculation by days
+                for (i = 0; i <= (daysdiff * 2) + 2; i++) {
+                    entry_Time.setMinutes(entry_Time.getMinutes() + 1)
+                    const startingOperationalHoursDate = new Date(entry_Time.toISOString().split('T')[0] + ' ' + startingOperationalHours)
+
+                    if (entry_Time < exit_Time)
+                        if (entry_Time < startingOperationalHoursDate) {
+
+                            let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
+
+                            if (tillNonOprEndTime > exit_Time)
+                                tillNonOprEndTime = exit_Time
+
+                            let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
+                            // reduce monthly pass duration
+                            mins -= await countMinutesMatchingTimeSlot(entry_Time.format("MM-DD-YYYY HH:mm:ss"), tillNonOprEndTime.format("MM-DD-YYYY HH:mm:ss"), passData.fromTime, passData.toTime)
+
+                            charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, false)
+
+                            entry_Time = tillNonOprEndTime
+
+                        } else {
+
+                            let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
+
+                            if (tillOprEndTime > exit_Time)
+                                tillOprEndTime = exit_Time
+
+                            let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
+                            // reduce monthly pass duration
+                            mins -= await countMinutesMatchingTimeSlot(entry_Time.format("MM-DD-YYYY HH:mm:ss"), tillOprEndTime.format("MM-DD-YYYY HH:mm:ss"), passData.fromTime, passData.toTime)
+
+                            charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, true)
+
+                            entry_Time = tillOprEndTime
+                        }
+
+                }
+            } else {
+
+                // reduce monthly pass duration
+                let monthlyPassDuration = await countMinutesMatchingTimeSlot(entryTimeISO, exitTimeISO, passData.fromTime, passData.toTime)
+
+                charge += calculateAmountBasedOnActiveTariff_v2(totalMin, _tariffData, true)
+            }
+
+
+        } else {
+            charge = 0
+        }
+
+    } catch (error) {
+        console.log('error: ', error);
+
+        charge = 0
+    }
+
+    return charge
+
+}
+
 exports.createTransactionNFC = async (req, res) => {
     try {
         console.log('createTransactionNFC: ', req.body);
@@ -1999,7 +2262,7 @@ exports.createTransactionNFC = async (req, res) => {
 
         if (transactionType == 'entry') {
 
-            await NFCTransaction.create({
+            await Ticket.create({
                 ticketId: ticketId,
 
                 entryTime: entryTime,
@@ -2011,7 +2274,7 @@ exports.createTransactionNFC = async (req, res) => {
                 vehicleNo: vehicleNo,
                 // lostTicket: lostTicket,
                 // supervisorId: supervisorId
-                monthlyPassUsed: monthlyPassUsed,
+                isNFCTicket: monthlyPassUsed,
                 monthlyPassId: monthlyPassId,
             })
             //increment parking ocuupancy
@@ -2070,13 +2333,13 @@ exports.createTransactionNFC = async (req, res) => {
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-
+            
             // const findSerialNumbers = await SerialNumbers.findOne({ parkingId: shiftData.parkingId })
 
-            await NFCTransaction.findOneAndUpdate({ ticketId: ticketId }, {
+            await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
                 exitTime, amount, duration,
                 // receiptNo: findSerialNumbers.receiptNo,
-                paymentType, lostTicket
+                paymentType, lostTicket, exitShiftId: shiftId
             })
 
             // started from here // mustaqeem
@@ -2155,7 +2418,7 @@ exports.registerFraudTicketNFC = async (req, res) => {
         const ticketId = req.body.ticketId
         const shiftId = req.body.shiftId
 
-        const findTicket = await NFCTransaction.findOne({ ticketId: ticketId })
+        const findTicket = await Ticket.findOne({ ticketId: ticketId })
 
         if (findTicket) {
             if (findTicket.exitTime) {
@@ -2167,7 +2430,7 @@ exports.registerFraudTicketNFC = async (req, res) => {
                 );
             } else {
 
-                await NFCTransaction.findByIdAndUpdate(findTicket._id, {
+                await Ticket.findByIdAndUpdate(findTicket._id, {
                     fraudTicket: true
                 }).then(async (createdParking) => {
 
@@ -2475,6 +2738,46 @@ function getDifferenceInMinutes(date1, date2) {
     const diffInMs = Math.abs(date2 - date1);
     return parseInt((diffInMs / (1000 * 60)))
 }
+
+// calculateMinutesWithinTimeSlab for designa monthlyPass over time charge
+async function countMinutesMatchingTimeSlot(time1, time2, starting, ending) {
+    const parseDateTime = (dateTime) => {
+      const [date, time] = dateTime.split(' ');
+      const [year, month, day] = date.split('-');
+      const [hour, min, sec] = time.split(':');
+      return { year: parseInt(year), month: parseInt(month) - 1, day: parseInt(day), hour: parseInt(hour), min: parseInt(min), sec: parseInt(sec) };
+    };
+  
+    const startTime = parseDateTime(time1);
+    const endTime = parseDateTime(time2);
+    const startSlot = parseDateTime(`2000-01-01 ${starting}:00`);
+    const endSlot = parseDateTime(`2000-01-01 ${ending}:00`);
+  
+    let count = 0;
+    let current = new Date(startTime.year, startTime.month, startTime.day, startTime.hour, startTime.min, startTime.sec);
+    let end = new Date(endTime.year, endTime.month, endTime.day, endTime.hour, endTime.min, endTime.sec);
+  
+    for (
+      let current = new Date(startTime.year, startTime.month, startTime.day, startTime.hour, startTime.min, startTime.sec);
+      current <= new Date(endTime.year, endTime.month, endTime.day, endTime.hour, endTime.min, endTime.sec);
+      current.setMinutes(current.getMinutes() + 1)
+      
+    ) {
+  
+      const currentHour = current.getHours();
+      const currentMin = current.getMinutes();
+  
+  
+      if (
+        (currentHour > startSlot.hour || (currentHour === startSlot.hour && currentMin >= startSlot.min)) &&
+        (currentHour < endSlot.hour || (currentHour === endSlot.hour && currentMin <= endSlot.min))
+      ) {
+        count++;
+      }
+    }
+  
+    return count;
+  }
 
 function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperationalHours) {
     let amount = 0

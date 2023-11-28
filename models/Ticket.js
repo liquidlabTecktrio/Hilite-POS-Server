@@ -50,12 +50,6 @@ const Ticket = new Schema(
         supervisorId: {
             type: mongoose.Types.ObjectId,
         },
-        monthlyPassUsed: {
-            type: Boolean,
-        },
-        monthlyPassId: {
-            type: mongoose.Types.ObjectId,
-        },
         paymentsType: {
             type: String,
         },
@@ -65,6 +59,13 @@ const Ticket = new Schema(
         },
         manualExit: {
             type: Boolean,
+        },
+        
+        isNFCTicket: {
+            type: Boolean,
+        },
+        monthlyPassId: {
+            type: mongoose.Types.ObjectId,
         },
     },
     {
