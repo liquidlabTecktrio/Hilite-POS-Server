@@ -36,7 +36,44 @@ exports.createMonthlyPass = async (req, res) => {
         const paymentType = req.body.paymentType
         const nfcCardObjId = req.body.nfcCardObjId
 
-        const nfcCard = await NFCCard.findById(nfcCardObjId)
+        // const nfcCard = await NFCCard.findById(nfcCardObjId)
+
+        const nfcCard = await NFCCard.aggregate([
+                {
+                    '$match':{
+                        '_id':nfcCardObjId
+                    }
+                },
+                {
+                    '$lookup': {
+                        'from': 'monthlypasses',
+                        'localField': '_id',
+                        'foreignField': 'nfcCardId',
+                        'as': 'result'
+                    }
+                }, {
+                    '$addFields': {
+                        'size': {
+                            '$size': '$result'
+                        }
+                    }
+                }, {
+                    '$match': {
+                        'size': {
+                            $lt: 1
+                        }
+                    }
+                }, {
+                    '$project': {
+                        'result': 0,
+                        'size': 0
+                    }
+                }
+        ])
+
+        if(nfcCard.length == 0){
+
+     
 
         const packageData = await Package.findById(packageId)
         const activeMonthlyPassExist = await MonthlyPass.findOne({ nfcCardId: nfcCard._id })
@@ -99,6 +136,56 @@ exports.createMonthlyPass = async (req, res) => {
                 "Card already in use try to renew"
             );
         }
+
+    }else{
+   
+        await NFCCard.aggregate([
+            [
+                {
+                    '$lookup': {
+                        'from': 'monthlypasses',
+                        'localField': '_id',
+                        'foreignField': 'nfcCardId',
+                        'as': 'result'
+                    }
+                }, {
+                    '$addFields': {
+                        'size': {
+                            '$size': '$result'
+                        }
+                    }
+                }, {
+                    '$match': {
+                        'size': {
+                            $lt: 1
+                        }
+                    }
+                }, {
+                    '$project': {
+                        'result': 0,
+                        'size': 0
+                    }
+                }
+            ]
+        ]) .then(async (nfcCardsData) => {
+
+            utils.commonResponce(
+                res,
+                202,
+                "Card already in use",
+                nfcCardsData
+            );
+
+        }).catch((err) => {
+            utils.commonResponce(
+                res,
+                201,
+                "Error Occured While fetching NFC Cards",
+                err.toString()
+            );
+        });
+            
+    }
 
 
     } catch (error) {
