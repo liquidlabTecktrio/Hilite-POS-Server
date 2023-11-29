@@ -34,158 +34,251 @@ exports.createMonthlyPass = async (req, res) => {
         const packageId = req.body.packageId
 
         const paymentType = req.body.paymentType
-        const nfcCardObjId = req.body.nfcCardObjId
+        // const nfcCardObjId = req.body.nfcCardObjId
+
+        const cardNumber = req.body.cardNumber
+        const nfcNumber = req.body.nfcNumber
 
         // const nfcCard = await NFCCard.findById(nfcCardObjId)
 
-        const nfcCard = await NFCCard.aggregate([
-                {
-                    '$match':{
-                        '_id':nfcCardObjId
-                    }
-                },
-                {
-                    '$lookup': {
-                        'from': 'monthlypasses',
-                        'localField': '_id',
-                        'foreignField': 'nfcCardId',
-                        'as': 'result'
-                    }
-                }, {
-                    '$addFields': {
-                        'size': {
-                            '$size': '$result'
+        const checkNFCAlreadysExist = await NFCCard.aggregate([
+            {
+                '$match': {
+                    '$or': [
+                        {
+                            'cardNumber': cardNumber
+                        }, {
+                            'nfcNumber': nfcNumber
                         }
-                    }
-                }, {
-                    '$match': {
-                        'size': {
-                            $lt: 1
-                        }
-                    }
-                }, {
-                    '$project': {
-                        'result': 0,
-                        'size': 0
-                    }
+                    ]
                 }
+            }
         ])
 
-        if(nfcCard.length == 0){
+        if (checkNFCAlreadysExist.length > 0) {
 
-     
-
-        const packageData = await Package.findById(packageId)
-        const activeMonthlyPassExist = await MonthlyPass.findOne({ nfcCardId: nfcCard._id })
-
-        if (!activeMonthlyPassExist) {
-            if (packageData && packageData.vehicleType == vehicleType) {
-
-                await MonthlyPass.create({
-                    passHolderName: passHolderName,
-                    phoneNumber: phoneNumber,
-                    email: email,
-                    address: address,
-                    startDate: startDate,
-                    endDate: endDate,
-                    // cardNumber: cardNumber,
-                    vehicleType: vehicleType,
-                    parkingId: parkingId,
-                    packageId: packageData._id,
-                    amount: packageData.amount,
-                    fromTime: packageData.fromTime,
-                    toTime: packageData.toTime,
-                    status: false,
-                    isActive: true,
-                    purchaseDate: formatDate(new Date()),
-                    paymentType: paymentType,
-                    cardNumber: nfcCard.cardNumber,
-                    nfcCardId: nfcCard._id
-                }).then(createMonthlyPass => {
-
-                    utils.commonResponce(
-                        res,
-                        200,
-                        "Successfully created Monthly Pass",
-                        createMonthlyPass
-                    );
-                }).catch((err) => {
-                    console.log("err", err)
-                    utils.commonResponce(
-                        res,
-                        201,
-                        "Error Occured While fetching Monthly Pass",
-                        err.toString()
-                    );
-                });
-
-            } else {
-
-                utils.commonResponce(
-                    res,
-                    201,
-                    "Active Package Details Not Found"
-                );
-            }
+            utils.commonResponce(
+                res,
+                201,
+                "Duplicate Card / NFC number"
+            );
 
         } else {
 
-            utils.commonResponce(
-                res,
-                201,
-                "Card already in use try to renew"
-            );
-        }
 
-    }else{
-   
-        await NFCCard.aggregate([
-            [
-                {
-                    '$lookup': {
-                        'from': 'monthlypasses',
-                        'localField': '_id',
-                        'foreignField': 'nfcCardId',
-                        'as': 'result'
-                    }
-                }, {
-                    '$addFields': {
-                        'size': {
-                            '$size': '$result'
-                        }
-                    }
-                }, {
-                    '$match': {
-                        'size': {
-                            $lt: 1
-                        }
-                    }
-                }, {
-                    '$project': {
-                        'result': 0,
-                        'size': 0
-                    }
+            // const nfcCard = await NFCCard.aggregate([
+            //     {
+            //         '$match': {
+            //             '_id': nfcCardObjId
+            //         }
+            //     },
+            //     {
+            //         '$lookup': {
+            //             'from': 'monthlypasses',
+            //             'localField': '_id',
+            //             'foreignField': 'nfcCardId',
+            //             'as': 'result'
+            //         }
+            //     }, {
+            //         '$addFields': {
+            //             'size': {
+            //                 '$size': '$result'
+            //             }
+            //         }
+            //     }, {
+            //         '$match': {
+            //             'size': {
+            //                 $lt: 1
+            //             }
+            //         }
+            //     }, {
+            //         '$project': {
+            //             'result': 0,
+            //             'size': 0
+            //         }
+            //     }
+            // ])
+
+            await NFCCard.create({
+                cardNumber: cardNumber,
+                nfcNumber: nfcNumber
+            }).then(async(nfcCard) => {
+
+                const packageData = await Package.findById(packageId)
+
+                if (packageData && packageData.vehicleType == vehicleType) {
+
+                    await MonthlyPass.create({
+                        passHolderName: passHolderName,
+                        phoneNumber: phoneNumber,
+                        email: email,
+                        address: address,
+                        startDate: startDate,
+                        endDate: endDate,
+                        // cardNumber: cardNumber,
+                        vehicleType: vehicleType,
+                        parkingId: parkingId,
+                        packageId: packageData._id,
+                        amount: packageData.amount,
+                        fromTime: packageData.fromTime,
+                        toTime: packageData.toTime,
+                        status: false,
+                        isActive: true,
+                        purchaseDate: formatDate(new Date()),
+                        paymentType: paymentType,
+                        cardNumber: nfcCard.cardNumber,
+                        nfcCardId: nfcCard._id
+                    }).then(createMonthlyPass => {
+
+                        utils.commonResponce(
+                            res,
+                            200,
+                            "Successfully created Monthly Pass",
+                            createMonthlyPass
+                        );
+                    }).catch((err) => {
+                        console.log("err", err)
+                        utils.commonResponce(
+                            res,
+                            201,
+                            "Error Occured While creating Monthly Pass",
+                            err.toString()
+                        );
+                    });
+
+                } else {
+
+                    utils.commonResponce(
+                        res,
+                        201,
+                        "Active Package Details Not Found"
+                    );
                 }
-            ]
-        ]) .then(async (nfcCardsData) => {
 
-            utils.commonResponce(
-                res,
-                202,
-                "Card already in use",
-                nfcCardsData
-            );
+            }).catch((err) => {
+                console.log("err", err)
+                utils.commonResponce(
+                    res,
+                    201,
+                    "Error Occured While fetching NFC Card",
+                    err.toString()
+                );
+            });
 
-        }).catch((err) => {
-            utils.commonResponce(
-                res,
-                201,
-                "Error Occured While fetching NFC Cards",
-                err.toString()
-            );
-        });
-            
-    }
+            // if (nfcCard.length == 0) {
+
+            //     const packageData = await Package.findById(packageId)
+            //     const activeMonthlyPassExist = await MonthlyPass.findOne({ nfcCardId: nfcCard._id })
+
+            //     if (!activeMonthlyPassExist) {
+            //         if (packageData && packageData.vehicleType == vehicleType) {
+
+            //             await MonthlyPass.create({
+            //                 passHolderName: passHolderName,
+            //                 phoneNumber: phoneNumber,
+            //                 email: email,
+            //                 address: address,
+            //                 startDate: startDate,
+            //                 endDate: endDate,
+            //                 // cardNumber: cardNumber,
+            //                 vehicleType: vehicleType,
+            //                 parkingId: parkingId,
+            //                 packageId: packageData._id,
+            //                 amount: packageData.amount,
+            //                 fromTime: packageData.fromTime,
+            //                 toTime: packageData.toTime,
+            //                 status: false,
+            //                 isActive: true,
+            //                 purchaseDate: formatDate(new Date()),
+            //                 paymentType: paymentType,
+            //                 cardNumber: nfcCard.cardNumber,
+            //                 nfcCardId: nfcCard._id
+            //             }).then(createMonthlyPass => {
+
+            //                 utils.commonResponce(
+            //                     res,
+            //                     200,
+            //                     "Successfully created Monthly Pass",
+            //                     createMonthlyPass
+            //                 );
+            //             }).catch((err) => {
+            //                 console.log("err", err)
+            //                 utils.commonResponce(
+            //                     res,
+            //                     201,
+            //                     "Error Occured While fetching Monthly Pass",
+            //                     err.toString()
+            //                 );
+            //             });
+
+            //         } else {
+
+            //             utils.commonResponce(
+            //                 res,
+            //                 201,
+            //                 "Active Package Details Not Found"
+            //             );
+            //         }
+
+            //     } else {
+
+            //         utils.commonResponce(
+            //             res,
+            //             201,
+            //             "Card already in use try to renew"
+            //         );
+            //     }
+
+            // } else {
+
+            //     await NFCCard.aggregate([
+            //         [
+            //             {
+            //                 '$lookup': {
+            //                     'from': 'monthlypasses',
+            //                     'localField': '_id',
+            //                     'foreignField': 'nfcCardId',
+            //                     'as': 'result'
+            //                 }
+            //             }, {
+            //                 '$addFields': {
+            //                     'size': {
+            //                         '$size': '$result'
+            //                     }
+            //                 }
+            //             }, {
+            //                 '$match': {
+            //                     'size': {
+            //                         $lt: 1
+            //                     }
+            //                 }
+            //             }, {
+            //                 '$project': {
+            //                     'result': 0,
+            //                     'size': 0
+            //                 }
+            //             }
+            //         ]
+            //     ]).then(async (nfcCardsData) => {
+
+            //         utils.commonResponce(
+            //             res,
+            //             202,
+            //             "Card already in use",
+            //             nfcCardsData
+            //         );
+
+            //     }).catch((err) => {
+            //         utils.commonResponce(
+            //             res,
+            //             201,
+            //             "Error Occured While fetching NFC Cards",
+            //             err.toString()
+            //         );
+            //     });
+
+            // }
+        }
 
 
     } catch (error) {
@@ -343,9 +436,9 @@ exports.getMonthlyPass = async (req, res) => {
 exports.updateMonthlyPass = async (req, res) => {
     try {
         const monthlyPassId = req.body.monthlyPassId
-        console.log("monthlyPassId",monthlyPassId)
+        console.log("monthlyPassId", monthlyPassId)
         const isActive = req.body.isActive
-        console.log("isActive",isActive)
+        console.log("isActive", isActive)
 
         // const name = req.body.updateMonthlyPassData.updateName
 
@@ -364,7 +457,7 @@ exports.updateMonthlyPass = async (req, res) => {
         // const amount = req.body.updateMonthlyPassData.updateAmount;
 
         const monthlyPassExist = await MonthlyPass.findById(monthlyPassId);
-        console.log("monthlyPassExist",monthlyPassExist)
+        console.log("monthlyPassExist", monthlyPassExist)
         if (monthlyPassExist && monthlyPassExist.isActive) {
 
             const options = { useFindAndModify: false, new: true };
