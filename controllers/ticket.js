@@ -1992,6 +1992,72 @@ function iterateFunction(duration, starting, ending, iterateEvery, price) {
 
 // }
 
+function isBeforeOrEqualDate(dateString) {
+    // Convert the input date string to a Date object
+    let inputDate = new Date(dateString);
+
+    // Get today's date
+    let today = new Date();
+    today.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to 0 for comparison
+
+    // Compare the input date with today's date
+    return inputDate >= today;
+}
+
+function isBeforeTime(timeString) {
+    // Get the current time
+    // let currentTime = new Date();
+    let currentTime = getCurrentTimeIST();
+    let hours = currentTime.getHours();
+    let minutes = currentTime.getMinutes();
+
+    // Extract hours and minutes from the given time string
+    let [givenHours, givenMinutes] = timeString.split(":").map(Number);
+
+    // Compare the times
+    if (hours < givenHours) {
+        return true;
+    } else if (hours === givenHours && minutes < givenMinutes) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function isAfterTime(timeString) {
+    // Get the current time
+    // let currentTime = new Date();
+    let currentTime = getCurrentTimeIST();
+    let hours = currentTime.getHours();
+    let minutes = currentTime.getMinutes();
+
+    // Extract hours and minutes from the given time string
+    let [givenHours, givenMinutes] = timeString.split(":").map(Number);
+
+    // Compare the times
+    if (hours > givenHours) {
+        return true;
+    } else if (hours === givenHours && minutes > givenMinutes) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function getCurrentTimeIST() {
+    // Get the current date in UTC
+    let now = new Date();
+
+    // UTC to IST offset: UTC+5:30 hours
+    let ISTOffset = 5.5 * 60 * 60 * 1000;
+
+    // Get the current UTC time and add the offset for IST
+    let ISTTime = new Date(now.getTime() + ISTOffset);
+
+    return ISTTime;
+}
+
+
 exports.checkMonthlyPass = async (req, res) => {
     try {
         console.log('checkMonthlyPass: ', req.body);
@@ -2002,66 +2068,83 @@ exports.checkMonthlyPass = async (req, res) => {
 
         const nfcCard = await NFCCard.findOne({ nfcNumber: cardNumber })
 
-        // let passData = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive: true, parkingId, status: type != 'entry' })
         let passData = await MonthlyPass.findOne({ nfcCardId: nfcCard._id, isActive: true, parkingId })
 
         if (passData) {
 
-            if (passData.status == (type != 'entry')) {
+            if (passData.status == (type != 'entry')) { //check if vehicle already in or out based on entry or exit
 
-            passData = JSON.parse(JSON.stringify(passData))
-            passData.isActive = (new Date(passData.endDate.split('-').reverse().join('-')) >= new Date())
-    
-            // if(passData.isActive)
-            // passData.isActive = (new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.fromTime)  >= new Date() &&   new Date() <= new Date(new Date().toLocaleString().split(',')[0].split('/').reverse().join('-')+ 'T' + passData.toTime))
+                passData = JSON.parse(JSON.stringify(passData))
 
-            // const nfcTransaction = await NFCTransaction.findOne({ monthlyPassId: passData._id })
-            const nfcTransaction = await Ticket.aggregate([
-                {
-                    '$match': {
-                        'isNFCTicket': true,
-                        'monthlyPassId': mongoose.Types.ObjectId(passData._id)
+                if (type == 'entry') {
+                    if (passData.isActive) {
+                        passData.isActive = false
+
+                        if (isBeforeOrEqualDate(new Date(passData.endDate.split('-').reverse().join('-')))) { //checks expiry date
+                            if (!isBeforeTime(passData.fromTime)) //checks entry is not before entry time
+                                if (!isAfterTime(passData.toTime)) //checks entry is not after exit time
+                                    passData.isActive = true
+                        }
                     }
-                }, {
-                    '$sort': {
-                        'updatedAt': -1
+                } else {
+                    // BECAUSE NO USE OF isActive in exit - charge should be calculated by pass time and expiry date
+                    passData.isActive = true
+                }
+
+
+                const nfcTransaction = await Ticket.aggregate([
+                    {
+                        '$match': {
+                            'isNFCTicket': true,
+                            'monthlyPassId': mongoose.Types.ObjectId(passData._id)
+                        }
+                    }, {
+                        '$sort': {
+                            'updatedAt': -1
+                        }
+                    }, {
+                        '$limit': 1
                     }
-                }, {
-                    '$limit': 1
-                }
-            ])
+                ])
 
 
+                if (type != 'entry') {
+                    if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime || nfcTransaction.length == 0) {
+                        utils.commonResponce(
+                            res,
+                            201,
+                            "No entry found for this NFC",
+                        );
+                    }
 
-            if (type != 'entry') {
-                if (nfcTransaction.length == 1 && nfcTransaction[0].exitTime || nfcTransaction.length == 0) {
-                    utils.commonResponce(
-                        res,
-                        201,
-                        "No entry found for this NFC",
-                    );
-                }
-           
-                else if (nfcTransaction.length == 1 && nfcTransaction[0].cancelledTicket) {
-                    return res.status(201).json({
-                        status: 201,
-                        message: "Ticket has been cancelled",
-                    });
-                } else if (nfcTransaction.length == 1 && nfcTransaction[0].fraudTicket) {
-                    return res.status(201).json({
-                        status: 201,
-                        message: "Fraud ticket found",
-                    });
-                }
-                else {
+                    else if (nfcTransaction.length == 1 && nfcTransaction[0].cancelledTicket) {
+                        return res.status(201).json({
+                            status: 201,
+                            message: "Ticket has been cancelled",
+                        });
+                    } else if (nfcTransaction.length == 1 && nfcTransaction[0].fraudTicket) {
+                        return res.status(201).json({
+                            status: 201,
+                            message: "Fraud ticket found",
+                        });
+                    }
+                    else {
 
+                        passData.ticketId = nfcTransaction[0].ticketId
+                        passData.entryTime = nfcTransaction[0].entryTime
 
-                    passData.ticketId = nfcTransaction[0].ticketId
-                    passData.entryTime = nfcTransaction[0].entryTime
+                        const charge = await calculateChargeForMonthlyPass(passData, exitTime)
+                        passData.charge = charge
 
-                    const charge = await calculateChargeForMonthlyPass(passData, exitTime)
-                    passData.charge = charge
+                        utils.commonResponce(
+                            res,
+                            200,
+                            "Successfully fetched card",
+                            passData
+                        );
+                    }
 
+                } else {
                     utils.commonResponce(
                         res,
                         200,
@@ -2070,36 +2153,27 @@ exports.checkMonthlyPass = async (req, res) => {
                     );
                 }
 
+
+
             } else {
+
                 utils.commonResponce(
                     res,
-                    200,
-                    "Successfully fetched card",
-                    passData
+                    201,
+                    type == 'entry' ? "Card already inside" : "No entry found for this card",
                 );
+
             }
-
-
 
         } else {
 
             utils.commonResponce(
                 res,
                 201,
-                type == 'entry' ? "Card already inside" : "No entry found for this card",
+                "Card details not found",
             );
 
         }
-
-    } else {
-
-        utils.commonResponce(
-            res,
-            201,
-            "Card details not found",
-        );
-
-    }
 
     } catch (error) {
         console.log('error: ', error);
@@ -2180,34 +2254,40 @@ async function calculateChargeForMonthlyPass(passData, exitTime) {
             var mins = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
             let fine = lostTicket ? _tariffData.lostTicket : 0
             var daysdiff = moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"), 'days')
-            
+
             let _entrytime = moment.unix(passData.entryTime).tz("Asia/Calcutta")
             let _entryDateEndingTime = moment(_entrytime.format("DD-MM-YYYY HH:mm:ss").split(' ')[0].split('-').reverse().join('-') + ' 23:59:59')
             var _exitTime = moment.unix(exitTime).tz("Asia/Calcutta");
-            
-            
+
+            let passEndDate = new Date(passData.endDate.split('-').reverse().join('-'))
+            passEndDate.setHours(parseInt(passData.toTime.split(':')[0]))
+            passEndDate.setMinutes(parseInt(passData.toTime.split(':')[1]))
+
 
             if (_tariffData.tariffEnableForNonOperationalHours) {
 
                 let entry_Time = new Date(_entrytime.format("MM-DD-YYYY HH:mm:ss"))
                 let exit_Time = new Date(_exitTime.format("MM-DD-YYYY HH:mm:ss"))
+                
 
                 // calculation by days
-                for (i = 0; i <= (daysdiff * 2) + 2; i++) {
+                for (i = 0; i <= ((daysdiff * 2) + 2); i++) {
+
                     entry_Time.setMinutes(entry_Time.getMinutes() + 1)
+
                     const startingOperationalHoursDate = new Date(entry_Time.toISOString().split('T')[0] + ' ' + startingOperationalHours)
 
                     if (entry_Time < exit_Time)
                         if (entry_Time < startingOperationalHoursDate) {
 
                             let tillNonOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingNonOperationalHours)
-                            
+
                             if (tillNonOprEndTime > exit_Time)
-                            tillNonOprEndTime = exit_Time
-                            
+                                tillNonOprEndTime = exit_Time
+                                
                             let mins = getDifferenceInMinutes(entry_Time, tillNonOprEndTime)
-                            // reduce monthly pass duration
-                            mins -= await countMinutesMatchingTimeSlot(formatDate(entry_Time), formatDate(tillNonOprEndTime), passData.fromTime, passData.toTime)
+                            // reduce monthly pass duration before expiry date
+                            mins -= await countMinutesMatchingPassTimeSlot(formatDate(entry_Time), formatDate(tillNonOprEndTime), passData.fromTime, passData.toTime, passEndDate)
 
                             charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, false)
 
@@ -2216,14 +2296,14 @@ async function calculateChargeForMonthlyPass(passData, exitTime) {
                         } else {
 
                             let tillOprEndTime = new Date(entry_Time.toISOString().split('T')[0] + ' ' + endingOperationalHours)
-                            
+
                             if (tillOprEndTime > exit_Time)
-                            tillOprEndTime = exit_Time
-                            
+                                tillOprEndTime = exit_Time
+                                
 
                             let mins = getDifferenceInMinutes(entry_Time, tillOprEndTime)
-                            // reduce monthly pass duration
-                            mins -= await countMinutesMatchingTimeSlot(formatDate(entry_Time), formatDate(tillOprEndTime), passData.fromTime, passData.toTime)
+                            // reduce monthly pass duration before expiry date
+                            mins -= await countMinutesMatchingPassTimeSlot(formatDate(entry_Time), formatDate(tillOprEndTime), passData.fromTime, passData.toTime, passEndDate)
 
                             charge += calculateAmountBasedOnActiveTariff_v2(mins, _tariffData, true)
 
@@ -2233,8 +2313,8 @@ async function calculateChargeForMonthlyPass(passData, exitTime) {
                 }
             } else {
 
-                // reduce monthly pass duration
-                let monthlyPassDuration = await countMinutesMatchingTimeSlot(entryTimeISO, exitTimeISO, passData.fromTime, passData.toTime)
+                // reduce monthly pass duration before expiry date
+                let monthlyPassDuration = await countMinutesMatchingPassTimeSlot(entryTimeISO, exitTimeISO, passData.fromTime, passData.toTime, passEndDate)
 
                 charge += calculateAmountBasedOnActiveTariff_v2((totalMin - monthlyPassDuration), _tariffData, true)
             }
@@ -2260,10 +2340,10 @@ function formatDate(date) {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-  
+
     return `${month}-${day}-${year} ${hours}:${minutes}:${seconds}`;
-  }
-  
+}
+
 
 exports.createTransactionNFC = async (req, res) => {
     try {
@@ -2357,7 +2437,7 @@ exports.createTransactionNFC = async (req, res) => {
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var duration = Math.ceil((moment(exitTimeISO, "DD-MM-YYYY HH:mm:ss").diff(moment(entryTimeISO, "DD-MM-YYYY HH:mm:ss"))) / 60000)
-            
+
             // const findSerialNumbers = await SerialNumbers.findOne({ parkingId: shiftData.parkingId })
 
             await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
@@ -2763,45 +2843,45 @@ function getDifferenceInMinutes(date1, date2) {
     return parseInt((diffInMs / (1000 * 60)))
 }
 
-// calculateMinutesWithinTimeSlab for designa monthlyPass over time charge
-async function countMinutesMatchingTimeSlot(time1, time2, starting, ending) {
+// calculate Minutes Within TimeSlab for designa monthlyPass over time charge
+async function countMinutesMatchingPassTimeSlot(time1, time2, starting, ending, passExpiryDate) {
     const parseDateTime = (dateTime) => {
-      const [date, time] = dateTime.split(' ');
-      const [year, month, day] = date.split('-');
-      const [hour, min, sec] = time.split(':');
-      return { year: parseInt(year), month: parseInt(month) - 1, day: parseInt(day), hour: parseInt(hour), min: parseInt(min), sec: parseInt(sec) };
+        const [date, time] = dateTime.split(' ');
+        // const [year, month, day] = date.split('-');
+        const [month, day, year] = date.split('-');
+        const [hour, min, sec] = time.split(':');
+        return { year: parseInt(year), month: parseInt(month) - 1, day: parseInt(day), hour: parseInt(hour), min: parseInt(min), sec: parseInt(sec) };
     };
-  
+
     const startTime = parseDateTime(time1);
     const endTime = parseDateTime(time2);
     const startSlot = parseDateTime(`2000-01-01 ${starting}:00`);
     const endSlot = parseDateTime(`2000-01-01 ${ending}:00`);
-  
+
     let count = 0;
     let current = new Date(startTime.year, startTime.month, startTime.day, startTime.hour, startTime.min, startTime.sec);
-    let end = new Date(endTime.year, endTime.month, endTime.day, endTime.hour, endTime.min, endTime.sec);
-  
+
     for (
-      let current = new Date(startTime.year, startTime.month, startTime.day, startTime.hour, startTime.min, startTime.sec);
-      current <= new Date(endTime.year, endTime.month, endTime.day, endTime.hour, endTime.min, endTime.sec);
-      current.setMinutes(current.getMinutes() + 1)
-      
+        let current = new Date(startTime.year, startTime.month, startTime.day, startTime.hour, startTime.min, startTime.sec);
+        current <= new Date(endTime.year, endTime.month, endTime.day, endTime.hour, endTime.min, endTime.sec);
+        current.setMinutes(current.getMinutes() + 1)
+
     ) {
-  
-      const currentHour = current.getHours();
-      const currentMin = current.getMinutes();
-  
-  
-      if (
-        (currentHour > startSlot.hour || (currentHour === startSlot.hour && currentMin >= startSlot.min)) &&
-        (currentHour < endSlot.hour || (currentHour === endSlot.hour && currentMin <= endSlot.min))
-      ) {
-        count++;
-      }
+
+        const currentHour = current.getHours();
+        const currentMin = current.getMinutes();
+
+        if (
+            (currentHour > startSlot.hour || (currentHour === startSlot.hour && currentMin >= startSlot.min)) &&
+            (currentHour < endSlot.hour || (currentHour === endSlot.hour && currentMin <= endSlot.min))
+        ) {
+            if (passExpiryDate > current) // if current Time is after expiry it will be charged
+                count++;
+        }
     }
-  
+
     return count;
-  }
+}
 
 function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperationalHours) {
     let amount = 0
@@ -2834,12 +2914,14 @@ function calculateAmountBasedOnActiveTariff_v2(duration, _tariffData, isOperatio
                         if (tariffData.isIterate == true)
                             iterateFunction(tariffData.starting, duration, tariffData.iterateEvery, tariffData.price)
                         else
-                            amount += tariffData.price
+                            amount = tariffData.price
+                            // amount += tariffData.price
                     else
                         if (tariffData.isIterate == true)
                             iterateFunction(tariffData.starting, tariffData.ending, tariffData.iterateEvery, tariffData.price)
                         else
-                            amount += tariffData.price
+                            amount = tariffData.price
+                            // amount += tariffData.price
             })
 
 
