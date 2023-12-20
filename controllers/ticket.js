@@ -2435,7 +2435,7 @@ exports.createTransactionNFC = async (req, res) => {
             const exitTime = req.body.exitTime;
             const supervisorPin = req.body.supervisorPin;
             // const exitTime = req.body.exitTime.substring(7);
-            const remark = transactionData.remark;
+            const remark = req.body.remark;
 
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
