@@ -129,6 +129,7 @@ function getShiftEndDeatils() {
       TicketCollectedCount: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
+      Total_Foc: 0,
       Lost_Ticket_Count: 0,
       Lost_Ticket_Collection_Cash: 0,
       Lost_Ticket_Collection_UPI: 0,
@@ -144,6 +145,7 @@ function getShiftEndDeatils() {
       TicketCollectedCount: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
+      Total_Foc: 0,
       Lost_Ticket_Count: 0,
       Lost_Ticket_Collection_Cash: 0,
       Lost_Ticket_Collection_UPI: 0,
@@ -159,6 +161,7 @@ function getShiftEndDeatils() {
       TicketCollectedCount: 0,
       Collection_Cash: 0,
       Collection_UPI: 0,
+      Total_Foc: 0,
       Lost_Ticket_Count: 0,
       Lost_Ticket_Collection_Cash: 0,
       Lost_Ticket_Collection_UPI: 0,
@@ -192,19 +195,19 @@ exports.closeShift_v2 = async (req, res, next) => {
     const findShift = await Shift.findOne(
       {
         _id: mongoose.Types.ObjectId(shiftId),
-        isActive: true
+        // isActive: true
       }
     );
     if (findShift) {
 
-      await Shift.findByIdAndUpdate(shiftId, {
-        shiftStopTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-        isActive: false
-      }, { new: true }).then(async (shiftData) => {
+      // await Shift.findByIdAndUpdate(shiftId, {
+      //   shiftStopTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
+      //   isActive: false
+      // }, { new: true }).then(async (shiftData) => {
 
-        await Opretor.findByIdAndUpdate(findShift.opretorId, {
-          isShiftIn: false
-        })
+        // await Opretor.findByIdAndUpdate(findShift.opretorId, {
+        //   isShiftIn: false
+        // })
 
 
         let _shiftData = await Shift.aggregate([
@@ -240,8 +243,6 @@ exports.closeShift_v2 = async (req, res, next) => {
         ])
 
 
-        console.log('closeShift_v2 length: ', _shiftData.length);
-
         _shiftData = _shiftData[0]
         _shiftData = JSON.parse(JSON.stringify(_shiftData))
 
@@ -251,7 +252,8 @@ exports.closeShift_v2 = async (req, res, next) => {
           _shiftData.TicketCollectedCount = 0,
           _shiftData.Collection_Cash = 0;
         _shiftData.Collection_UPI = 0;
-        _shiftData.Lost_Ticket_Count = 0;
+        _shiftData.Total_Foc = 0,
+          _shiftData.Lost_Ticket_Count = 0;
         _shiftData.Lost_Ticket_Collection_Cash = 0;
         _shiftData.Lost_Ticket_Collection_UPI = 0;
         _shiftData.Over_Night_Vehicle_Count = 0;
@@ -417,21 +419,18 @@ exports.closeShift_v2 = async (req, res, next) => {
           _shiftDataWithExitTickets = _shiftDataWithExitTickets[0]
           _shiftDataWithExitTickets = JSON.parse(JSON.stringify(_shiftDataWithExitTickets))
 
-          // let vehicleTypes = ['2', '4', 'Bicycle', 'Total']
 
           _shiftDataWithExitTickets.tickets.map(ticket => {
             switch (ticket.vehicleType) {
               case '4':
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].TicketCollectedCount += 1
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
                 _shiftData.Count += 1
                 _shiftData.TicketCollectedCount += 1
 
 
                 if (ticket.lostTicket) {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Count += 1
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
                   _shiftData.Lost_Ticket_Count += 1
                 }
 
@@ -442,26 +441,28 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                   if (ticket.paymentType == 'cash') {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_Cash += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
                     _shiftData.Collection_Cash += ticket.amount
 
                     if (ticket.lostTicket) {
                       _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_Cash += ticket.amount
-                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
                       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
                     }
                   }
 
                   if (ticket.paymentType == 'upi') {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Collection_UPI += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
                     _shiftData.Collection_UPI += ticket.amount
 
                     if (ticket.lostTicket) {
                       _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Lost_Ticket_Collection_UPI += ticket.amount
-                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
                       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
                     }
+                  }
+
+                  // added on 20-12-2023
+                  if (ticket.paymentType == 'foc') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('4')].Total_Foc += ticket.amount
+                    _shiftData.Total_Foc += ticket.amount
                   }
                 }
 
@@ -471,14 +472,12 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].TicketCollectedCount += 1
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
                 _shiftData.Count += 1
                 _shiftData.TicketCollectedCount += 1
 
 
                 if (ticket.lostTicket) {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Count += 1
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
                   _shiftData.Lost_Ticket_Count += 1
                 }
 
@@ -488,26 +487,28 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                   if (ticket.paymentType == 'cash') {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_Cash += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
                     _shiftData.Collection_Cash += ticket.amount
 
                     if (ticket.lostTicket) {
                       _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_Cash += ticket.amount
-                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
                       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
                     }
                   }
 
                   if (ticket.paymentType == 'upi') {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Collection_UPI += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
                     _shiftData.Collection_UPI += ticket.amount
 
                     if (ticket.lostTicket) {
                       _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Lost_Ticket_Collection_UPI += ticket.amount
-                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
                       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
                     }
+                  }
+
+                  // added on 20-12-2023
+                  if (ticket.paymentType == 'foc') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('2')].Total_Foc += ticket.amount
+                    _shiftData.Total_Foc += ticket.amount
                   }
                 }
 
@@ -517,13 +518,11 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Count += 1
                 _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].TicketCollectedCount += 1
-                // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Count += 1
                 _shiftData.Count += 1
                 _shiftData.TicketCollectedCount += 1
 
                 if (ticket.lostTicket) {
                   _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Count += 1
-                  // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Count += 1
                   _shiftData.Lost_Ticket_Count += 1
                 }
 
@@ -533,26 +532,28 @@ exports.closeShift_v2 = async (req, res, next) => {
 
                   if (ticket.paymentType == 'cash') {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_Cash += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_Cash += ticket.amount
                     _shiftData.Collection_Cash += ticket.amount
 
                     if (ticket.lostTicket) {
                       _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_Cash += ticket.amount
-                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_Cash += ticket.amount
                       _shiftData.Lost_Ticket_Collection_Cash += ticket.amount
                     }
                   }
 
                   if (ticket.paymentType == 'upi') {
                     _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Collection_UPI += ticket.amount
-                    // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Collection_UPI += ticket.amount
                     _shiftData.Collection_UPI += ticket.amount
 
                     if (ticket.lostTicket) {
                       _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Lost_Ticket_Collection_UPI += ticket.amount
-                      // _shiftData.shiftEndDetails[vehicleTypes.indexOf('Total')].Lost_Ticket_Collection_UPI += ticket.amount
                       _shiftData.Lost_Ticket_Collection_UPI += ticket.amount
                     }
+                  }
+
+                  // added on 20-12-2023
+                  if (ticket.paymentType == 'foc') {
+                    _shiftData.shiftEndDetails[vehicleTypes.indexOf('Bicycle')].Total_Foc += ticket.amount
+                    _shiftData.Total_Foc += ticket.amount
                   }
                 }
 
@@ -564,12 +565,7 @@ exports.closeShift_v2 = async (req, res, next) => {
 
           })
 
-          delete _shiftData.tickets
-
         }
-
-        // console.log('closeShift_v2 length: ', _shiftData);
-
 
 
         return res.status(200).json({
@@ -582,7 +578,7 @@ exports.closeShift_v2 = async (req, res, next) => {
           },
         });
 
-      })
+      // })
 
     } else {
       return res.status(404).json({

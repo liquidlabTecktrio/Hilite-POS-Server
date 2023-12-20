@@ -33,6 +33,9 @@ const Ticket = new Schema(
         paymentType: {
             type: String,
         },
+        remark:{
+            type:String
+        },
         cancelledTicket: {
             type: Boolean,
             default: false

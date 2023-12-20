@@ -160,6 +160,7 @@ async function createTransactionfunction(transactionData) {
             const exitTime = transactionData.exitTime;
             const supervisorPin = transactionData.supervisorPin;
             // const exitTime = transactionData.exitTime.substring(7);
+            const remark = transactionData.remark;
 
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -186,7 +187,8 @@ async function createTransactionfunction(transactionData) {
 
 
                 await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
-                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId: shiftId
+                    exitTime, amount, duration, receiptNo: findSerialNumbers.receiptNo, paymentType, lostTicket, exitShiftId: shiftId,
+                    remark
                 })
 
                 // started from here // mustaqeem
@@ -2433,6 +2435,7 @@ exports.createTransactionNFC = async (req, res) => {
             const exitTime = req.body.exitTime;
             const supervisorPin = req.body.supervisorPin;
             // const exitTime = req.body.exitTime.substring(7);
+            const remark = transactionData.remark;
 
             var entryTimeISO = moment.unix(entryTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
             var exitTimeISO = moment.unix(exitTime).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss");
@@ -2443,7 +2446,7 @@ exports.createTransactionNFC = async (req, res) => {
             await Ticket.findOneAndUpdate({ ticketId: ticketId }, {
                 exitTime, amount, duration,
                 // receiptNo: findSerialNumbers.receiptNo,
-                paymentType, lostTicket, exitShiftId: shiftId
+                paymentType, lostTicket, exitShiftId: shiftId, remark
             })
 
             // started from here // mustaqeem
