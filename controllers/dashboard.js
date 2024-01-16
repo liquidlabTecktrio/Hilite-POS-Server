@@ -314,7 +314,7 @@ var toDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     }
 }
 
-async function getDashboardDataFunction(requestData) {
+async function getDashboardDataFunctionReal(requestData) {
     try {
 
         let parkings = JSON.parse(JSON.stringify(await Parking.find()))
@@ -596,6 +596,17 @@ var toDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
         //     lastWeekTotalIncome: 0,
         //     // posHeartbeats
         // }
+    }
+}
+
+async function getDashboardDataFunction(requestData) {
+    try {
+
+    // do nothing
+
+    } catch (error) {
+        console.log('error: ', error);
+      
     }
 }
 
