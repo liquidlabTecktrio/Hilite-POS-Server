@@ -102,6 +102,7 @@ exports.closeShift = async (req, res, next) => {
         isShiftIn: false
       })
 
+      console.log('shift close', shiftData)
       return res.status(200).json({
         status: 200,
         message: "shift closed successfull",
@@ -189,6 +190,8 @@ function getShiftEndDeatils() {
 exports.closeShift_v2 = async (req, res, next) => {
   try {
 
+    console.log('on v2')
+
     const shiftId = req.body.shiftId;
 
     // checking shift exist or not
@@ -200,14 +203,14 @@ exports.closeShift_v2 = async (req, res, next) => {
     );
     if (findShift) {
 
-      // await Shift.findByIdAndUpdate(shiftId, {
-      //   shiftStopTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
-      //   isActive: false
-      // }, { new: true }).then(async (shiftData) => {
+      await Shift.findByIdAndUpdate(shiftId, {
+        shiftStopTime: moment.unix(Date.now() / 1000).tz("Asia/Calcutta").format("DD-MM-YYYY HH:mm:ss"),
+        isActive: false
+      }, { new: true }).then(async (shiftData) => {
 
-        // await Opretor.findByIdAndUpdate(findShift.opretorId, {
-        //   isShiftIn: false
-        // })
+        await Opretor.findByIdAndUpdate(findShift.opretorId, {
+          isShiftIn: false
+        })
 
 
         let _shiftData = await Shift.aggregate([
@@ -578,7 +581,7 @@ exports.closeShift_v2 = async (req, res, next) => {
           },
         });
 
-      // })
+      })
 
     } else {
       return res.status(404).json({
